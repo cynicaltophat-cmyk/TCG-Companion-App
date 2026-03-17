@@ -143,6 +143,11 @@ export async function getCardPrice(
   forceRefresh = false, 
   artType: ArtVariantType = "Base art"
 ): Promise<string | null> {
+  // Automatic price fetching disabled due to Vercel blocking Yuyutei
+  // Users can still view prices via the direct link in card details
+  return null;
+
+  /* Original fetching logic disabled:
   // Check cache first unless forcing refresh
   const cacheKey = `${cardNumber}_${cardName}_${artType}`;
   if (!forceRefresh && priceCache[cacheKey]) {
@@ -192,4 +197,5 @@ export async function getCardPrice(
     priceQueue.push(request);
     processQueue();
   });
+  */
 }

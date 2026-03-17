@@ -822,8 +822,8 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
                 </div>
               </div>
 
-              {/* Total Value & Price Switcher */}
-              <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm space-y-4">
+              {/* Total Value & Price Switcher hidden as requested */}
+              {/* <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">Total Deck Value</span>
                   <span className="text-lg font-bold text-emerald-600">{formatCurrency(totalValue, priceMode)}</span>
@@ -848,7 +848,7 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
                     ))}
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Deck Size Warning */}
               {!isValidSize && totalCards > 0 && (

@@ -165,80 +165,20 @@ const RarityTag = ({ rarity }: { rarity: GundamCard['rarity'] }) => {
 };
 
 const CardPrice = React.memo(({ cardNumber, cardName, artType = "Base art", mode, onModeChange }: { cardNumber: string, cardName: string, artType?: ArtVariantType, mode: PriceDisplayMode, onModeChange: (mode: PriceDisplayMode) => void }) => {
-  const [price, setPrice] = useState<string | null>(() => getCachedPrice(cardNumber, cardName, artType));
-  const [loading, setLoading] = useState(!getCachedPrice(cardNumber, cardName, artType));
-
-  const fetchPrice = async (force = false) => {
-    setLoading(true);
-    const result = await getCardPrice(cardNumber, cardName, force, artType);
-    setPrice(result);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchPrice();
-  }, [cardNumber, cardName, artType]);
-
-  const displayPrice = formatPrice(price, mode);
-
-  if (loading && !price) {
-    return (
-      <div className="flex items-center gap-2 text-stone-400 text-xs animate-pulse">
-        <Loader2 size={12} className="animate-spin" />
-        <span>Fetching Yuyu-tei price...</span>
-      </div>
-    );
-  }
-
+  // Automatic price fetching disabled due to Vercel blocking Yuyutei
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        {price ? (
-          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1.5">
-            {mode === 'JPY' ? 'Yuyu-tei' : 'SGD'}: {displayPrice}
-            {loading && <Loader2 size={10} className="animate-spin opacity-50" />}
-          </span>
-        ) : (
-          <span className="text-xs text-stone-400 italic">Yuyu-tei: Price not found</span>
-        )}
-        
         <div className="flex items-center gap-2">
           <a 
             href={`https://yuyu-tei.jp/sell/gcg/s/search?search_word=${cardNumber}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 text-[10px] font-bold text-stone-400 hover:text-stone-600 hover:bg-stone-100 px-2 py-1 rounded-md transition-all border border-transparent hover:border-stone-200"
+            className="flex items-center gap-2 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full transition-all border border-amber-200 shadow-sm"
           >
-            View on Yuyu-tei
-            <ExternalLink size={10} />
+            <ExternalLink size={12} />
+            View Price on Yuyu-tei
           </a>
-          <button 
-            onClick={() => fetchPrice(true)}
-            disabled={loading}
-            className="p-1 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors disabled:opacity-50"
-            title="Refresh price"
-          >
-            <RefreshCw size={12} className={cn(loading && "animate-spin")} />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="flex bg-white border border-stone-200 rounded-lg p-0.5">
-          {(['JPY', 'SGD130', 'SGD120'] as PriceDisplayMode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => onModeChange(m)}
-              className={cn(
-                "px-2 py-1 rounded-md text-[10px] font-bold transition-all",
-                mode === m 
-                  ? "bg-[#141414] text-white" 
-                  : "text-stone-400 hover:text-stone-600"
-              )}
-            >
-              {m === 'JPY' ? '¥' : m === 'SGD130' ? 'YYT/130' : 'YYT/120'}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -396,12 +336,13 @@ const GridItem = React.memo(({
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <RarityTag rarity={card.rarity} />
-            <MiniPrice 
+            {/* MiniPrice hidden as requested */}
+            {/* <MiniPrice 
               cardNumber={card.cardNumber} 
               cardName={card.name} 
               artType={card.variantType || "Base art"}
               mode={priceMode}
-            />
+            /> */}
           </div>
         </div>
       </div>
@@ -1026,8 +967,8 @@ export default function App() {
   const activeDeck = decks.find(d => d.id === activeDeckId);
   const displayDeckSize = activeDeck ? activeDeck.items.reduce((s, i) => s + i.count, 0) : 0;
 
-  // Prefetch prices for cards in all decks
-  useEffect(() => {
+  // Prefetch prices for cards in all decks - disabled as requested
+  /* useEffect(() => {
     decks.forEach(deck => {
       deck.items.forEach(item => {
         if (!getCachedPrice(item.card.cardNumber, item.card.name, item.artType)) {
@@ -1035,7 +976,7 @@ export default function App() {
         }
       });
     });
-  }, [decks]);
+  }, [decks]); */
 
   const uniqueSets = ALL_SETS;
 
@@ -1446,7 +1387,8 @@ export default function App() {
             <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
               {filteredCards.length} Cards Found
             </p>
-            <div className="flex bg-white border border-stone-200 rounded-lg p-0.5">
+            {/* Price mode switcher hidden as requested */}
+            {/* <div className="flex bg-white border border-stone-200 rounded-lg p-0.5">
               {(['JPY', 'SGD130', 'SGD120'] as PriceDisplayMode[]).map((m) => (
                 <button
                   key={m}
@@ -1461,7 +1403,7 @@ export default function App() {
                   {m === 'JPY' ? '¥' : m === 'SGD130' ? 'YYT/130' : 'YYT/120'}
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
         </div>
 
