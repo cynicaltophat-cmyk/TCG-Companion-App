@@ -1095,6 +1095,22 @@ registerSet("GD 01", [
     imageUrl: "/img/GD01/GD01-068.webp"
   },
   {
+    id: "gd01-071",
+    name: "Gundam Pharact",
+    cardNumber: "GD01-071",
+    type: "Unit",
+    color: "White",
+    rarity: "R",
+    cost: 3,
+    level: 4,
+    ap: 3,
+    hp: 4,
+    traits: ["Academy"],
+    link: "Academy trait",
+    ability: "During Link【Attack】Choose 1 enemy Unit. It gets AP-2 during this battle.",
+    imageUrl: "/img/GD01/GD01-071.webp"
+  },
+  {
     id: "gd01-072",
     name: "Launcher Strike Gundam",
     cardNumber: "GD01-072",
@@ -1121,8 +1137,57 @@ registerSet("GD 01", [
     ap: 4,
     hp: 3,
     traits: ["Earth Alliance"],
+    link: "Earth Alliance trait",
     ability: "[During Link] [Attack] Choose 1 enemy Unit with 2 or less HP. Return it to its owner's hand.",
     imageUrl: "/img/GD01/GD01-073.webp"
+  },
+  {
+    id: "gd01-074",
+    name: "Chuchu's Demi Trainer",
+    cardNumber: "GD01-074",
+    type: "Unit",
+    color: "White",
+    rarity: "R",
+    cost: 2,
+    level: 2,
+    ap: 3,
+    hp: 1,
+    traits: ["Academy"],
+    link: "Chuatury Panlunch",
+    ability: "【Attack】Draw 1. Then, discard 1.",
+    imageUrl: "/img/GD01/GD01-074.webp"
+  },
+  {
+    id: "gd01-076",
+    name: "Michaelis",
+    cardNumber: "GD01-076",
+    type: "Unit",
+    color: "White",
+    rarity: "U",
+    cost: 2,
+    level: 3,
+    ap: 3,
+    hp: 3,
+    traits: ["Academy"],
+    link: "Academy trait",
+    ability: "While there are 4 or more Command cards in your trash, this Unit gets AP+1 and HP+1.",
+    imageUrl: "/img/GD01/GD01-076.webp"
+  },
+  {
+    id: "gd01-085",
+    name: "Demi Garrison",
+    cardNumber: "GD01-085",
+    type: "Unit",
+    color: "White",
+    rarity: "C",
+    cost: 1,
+    level: 2,
+    ap: 2,
+    hp: 2,
+    traits: ["Academy"],
+    link: "",
+    ability: "",
+    imageUrl: "/img/GD01/GD01-085.webp"
   },
   {
     id: "gd01-086",
@@ -1153,6 +1218,18 @@ registerSet("GD 01", [
     traits: ["Civilian", "Newtype"],
     ability: "[Burst] Add this card to your hand. [When Linked] Draw 1.",
     imageUrl: "/img/GD01/GD01-088.webp"
+  },
+  {
+    id: "gd01-098",
+    name: "Elan Ceres (Enhanced Person Number 4)",
+    cardNumber: "GD01-098",
+    type: "Pilot",
+    color: "White",
+    rarity: "C",
+    cost: 1,
+    level: 4,
+    ability: "【Burst】Add this card to your hand.【Activate･Action】【Once per Turn】If an enemy Unit with 1 or less AP is in play, this Unit recovers 1 HP.",
+    imageUrl: "/img/ST01/GD01-098.webp"
   },
   {
     id: "gd01-093",
@@ -1192,6 +1269,21 @@ registerSet("GD 01", [
     level: 2,
     ability: "[Main] Draw 2. Then, discard 1.",
     imageUrl: "/img/GD01/GD01-118.webp"
+  },
+  {
+    id: "gd01-119",
+    name: "Iron-Fisted Discipline",
+    cardNumber: "GD01-119",
+    type: "Command",
+    color: "White",
+    rarity: "R",
+    cost: 1,
+    level: 2,
+    ap: +1,
+    hp: +0,
+    traits: ["Academy"],
+    ability: "【Main】/【Action】Choose 1 enemy Unit that is Lv.4 or lower. It gets AP-2 during this turn.【Pilot】[Chuatury Panlunch]",
+    imageUrl: "/img/GD01/GD01-119.webp"
   },
   {
     id: "gd01-120",

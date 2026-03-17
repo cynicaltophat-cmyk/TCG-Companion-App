@@ -103,23 +103,26 @@ export const DeckList: React.FC<DeckListProps> = ({
         </div>
       )}
       {/* Header */}
-      <header className="bg-white border-b border-stone-200 px-4 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
-            <ChevronRight className="rotate-180" size={24} />
+      <header className="bg-white border-b border-stone-200 sticky top-0 z-10">
+        <div className="w-full px-4 lg:px-12 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+              <ChevronRight className="rotate-180" size={24} />
+            </button>
+            <h2 className="font-bold text-lg tracking-tight">My Decks</h2>
+          </div>
+          <button 
+            onClick={() => setIsCreating(true)}
+            className="p-2 bg-[#141414] text-white rounded-full hover:bg-stone-800 transition-colors shadow-lg shadow-black/10 active:scale-95"
+          >
+            <Plus size={20} />
           </button>
-          <h2 className="font-bold text-lg tracking-tight">My Decks</h2>
         </div>
-        <button 
-          onClick={() => setIsCreating(true)}
-          className="p-2 bg-[#141414] text-white rounded-full hover:bg-stone-800 transition-colors shadow-lg shadow-black/10 active:scale-95"
-        >
-          <Plus size={20} />
-        </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-4">
-        {isCreating && (
+      <div className="flex-1 overflow-y-auto">
+        <div className="w-full p-4 lg:px-12 pb-20 space-y-4">
+          {isCreating && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -193,7 +196,7 @@ export const DeckList: React.FC<DeckListProps> = ({
                   <div className="flex items-stretch">
                     <div 
                       onClick={() => onSelectDeck(deck.id)}
-                      className="flex-1 p-4 flex items-center gap-4 cursor-pointer hover:bg-stone-50/50 transition-colors"
+                      className="flex-1 min-w-0 p-4 flex items-center gap-4 cursor-pointer hover:bg-stone-50/50 transition-colors"
                     >
                       <div className="w-12 h-12 bg-stone-100 rounded-xl flex items-center justify-center text-stone-400">
                         <Layout size={24} />
@@ -214,7 +217,7 @@ export const DeckList: React.FC<DeckListProps> = ({
                           </div>
                         ) : (
                           <>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <h3 className="font-bold text-sm truncate">{deck.name}</h3>
                               <button 
                                 onClick={(e) => {
@@ -261,6 +264,7 @@ export const DeckList: React.FC<DeckListProps> = ({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
+  </motion.div>
   );
 };

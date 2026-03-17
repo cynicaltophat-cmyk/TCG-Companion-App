@@ -250,7 +250,7 @@ const ListContainer = React.forwardRef(({ style, children, ...props }: any, ref:
     ref={ref}
     {...props}
     style={{ ...style }}
-    className="grid gap-2 grid-cols-3 pb-32"
+    className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 pb-32"
   >
     {children}
   </div>
@@ -413,6 +413,36 @@ const GridItem = React.memo(({
 
 export default function App() {
   const [selectedCard, setSelectedCard] = useState<GundamCard | null>(null);
+  const linkedCards = useMemo(() => {
+    if (!selectedCard) return [];
+    
+    const results: GundamCard[] = [];
+    
+    if (selectedCard.type === 'Unit') {
+      // 1. Find the pilot(s) this unit explicitly links to
+      if (selectedCard.link) {
+        const pilots = GUNDAM_CARDS.filter(c => c.name === selectedCard.link && c.type === 'Pilot');
+        results.push(...pilots);
+      }
+      // 2. Find any pilots that explicitly link to this unit
+      const linkingPilots = GUNDAM_CARDS.filter(c => c.link === selectedCard.name && c.type === 'Pilot');
+      results.push(...linkingPilots);
+    } else if (selectedCard.type === 'Pilot') {
+      // 1. Find the unit(s) this pilot explicitly links to
+      if (selectedCard.link) {
+        const units = GUNDAM_CARDS.filter(c => c.name === selectedCard.link && c.type === 'Unit');
+        results.push(...units);
+      }
+      // 2. Find any units that explicitly link to this pilot
+      const linkingUnits = GUNDAM_CARDS.filter(c => c.link === selectedCard.name && c.type === 'Unit');
+      results.push(...linkingUnits);
+    }
+    
+    // Remove duplicates by ID
+    return results.filter((card, index, self) => 
+      index === self.findIndex((t) => t.id === card.id)
+    );
+  }, [selectedCard]);
   const [selectedArtType, setSelectedArtType] = useState<ArtVariantType>("Base art");
   const [showAnatomy, setShowAnatomy] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
@@ -444,6 +474,54 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [matches, setMatches] = useState<MatchEntry[]>([]);
+
+  // Handle Deck Import from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const importData = params.get('import');
+    if (importData) {
+      try {
+        const decoded = atob(importData);
+        const deckData = JSON.parse(decoded);
+        
+        // Clean up URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+
+        // Create the deck
+        const importNewDeck = async () => {
+          const deckId = Math.random().toString(36).substr(2, 9);
+          const newDeck: Deck = {
+            ...deckData,
+            id: deckId,
+            lastModified: Date.now(),
+            name: `${deckData.name} (Imported)`
+          };
+
+          if (!user) {
+            const updatedDecks = [newDeck, ...decks];
+            setDecks(updatedDecks);
+            localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
+            setActiveDeckId(deckId);
+            setIsDeckEditorOpen(true);
+            setCurrentTab('decks');
+            return;
+          }
+
+          const deckWithUid = { ...newDeck, uid: user.uid };
+          await setDoc(doc(db, 'decks', deckId), deckWithUid);
+          setActiveDeckId(deckId);
+          setIsDeckEditorOpen(true);
+          setCurrentTab('decks');
+          showToast("Deck imported successfully!");
+        };
+        
+        importNewDeck();
+      } catch (e) {
+        console.error("Failed to import deck from URL:", e);
+      }
+    }
+  }, [user, isAuthReady]);
 
   // Auth Listener
   useEffect(() => {
@@ -639,6 +717,83 @@ export default function App() {
       await setDoc(doc(db, 'decks', deckId), deckWithUid);
     } catch (error) {
       console.error("Error creating deck:", error);
+    }
+  };
+
+  const duplicateDeck = async (deck: Deck) => {
+    const deckId = Math.random().toString(36).substr(2, 9);
+    const newDeck: Deck = {
+      ...deck,
+      id: deckId,
+      name: `${deck.name} (Copy)`,
+      lastModified: Date.now()
+    };
+
+    if (!user) {
+      const updatedDecks = [newDeck, ...decks];
+      setDecks(updatedDecks);
+      localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
+      setActiveDeckId(deckId);
+      return;
+    }
+
+    const deckWithUid = { ...newDeck, uid: user.uid };
+    try {
+      await setDoc(doc(db, 'decks', deckId), deckWithUid);
+      setActiveDeckId(deckId);
+    } catch (error) {
+      console.error("Error duplicating deck:", error);
+    }
+  };
+
+  const importDeckFromText = async (text: string) => {
+    const lines = text.split('\n');
+    const items: DeckItem[] = [];
+    
+    for (const line of lines) {
+      const match = line.match(/(\d+)x\s+([A-Z0-9-]+)/i);
+      if (match) {
+        const count = parseInt(match[1]);
+        const cardNumber = match[2].toUpperCase();
+        
+        const card = GUNDAM_CARDS.find(c => c.cardNumber.toUpperCase() === cardNumber);
+        if (card) {
+          items.push({
+            card,
+            count: Math.min(count, 4),
+            artType: "Base art"
+          });
+        }
+      }
+    }
+
+    if (items.length === 0) {
+      showToast("No valid cards found in text.");
+      return;
+    }
+
+    const deckId = Math.random().toString(36).substr(2, 9);
+    const newDeck: Deck = {
+      id: deckId,
+      name: "Imported Deck",
+      items,
+      lastModified: Date.now()
+    };
+
+    if (!user) {
+      const updatedDecks = [newDeck, ...decks];
+      setDecks(updatedDecks);
+      localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
+      setActiveDeckId(deckId);
+      return;
+    }
+
+    const deckWithUid = { ...newDeck, uid: user.uid };
+    try {
+      await setDoc(doc(db, 'decks', deckId), deckWithUid);
+      setActiveDeckId(deckId);
+    } catch (error) {
+      console.error("Error importing deck:", error);
     }
   };
 
@@ -926,7 +1081,8 @@ export default function App() {
         card.cardNumber.toLowerCase().includes(query) ||
         (normalizedQuery.length > 2 && normalizedCardNumber.includes(normalizedQuery)) ||
         (card.link && card.link.toLowerCase().includes(query)) ||
-        (card.traits && card.traits.some(trait => trait.toLowerCase().includes(query)))
+        (card.traits && card.traits.some(trait => trait.toLowerCase().includes(query))) ||
+        (card.ability && card.ability.toLowerCase().includes(query))
       );
       
       // New multi-select filters
@@ -1250,7 +1406,7 @@ export default function App() {
         </div>
       )}
 
-      <main className={cn("max-w-md mx-auto px-4 pt-4", currentTab !== 'cards' && "hidden")}>
+      <main className={cn("max-w-md lg:max-w-none mx-auto px-4 lg:px-12 pt-4", currentTab !== 'cards' && "hidden")}>
         {/* Filters */}
         {currentTab === 'cards' && (
           <>
@@ -2055,17 +2211,6 @@ export default function App() {
                   </div>
                 )}
 
-                {selectedCard.link && (
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest flex items-center gap-2">
-                      <RefreshCw size={14} /> Link
-                    </h4>
-                    <div className="bg-white p-4 rounded-2xl border border-stone-200 text-sm font-bold text-blue-600">
-                      {renderAbilityText(selectedCard.link)}
-                    </div>
-                  </div>
-                )}
-
                 <div className="space-y-3">
                   <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest flex items-center gap-2">
                     <Info size={14} /> Ability
@@ -2074,6 +2219,39 @@ export default function App() {
                     {renderAbilityText(selectedCard.ability)}
                   </div>
                 </div>
+
+                {linkedCards.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest flex items-center gap-2">
+                      <RefreshCw size={14} /> {selectedCard.type === 'Pilot' ? 'Linked Units' : 'Linked Pilot'}
+                    </h4>
+                    <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-show">
+                      {linkedCards.map(card => (
+                        <div 
+                          key={card.id}
+                          onClick={() => {
+                            setSelectedCard(card);
+                            setSelectedArtType("Base art");
+                            setShowAnatomy(false);
+                          }}
+                          className="group cursor-pointer space-y-2 w-28 shrink-0"
+                        >
+                          <div className="aspect-[5/7] rounded-lg overflow-hidden ring-1 ring-black/5 shadow-sm group-hover:shadow-md group-hover:ring-amber-500/50 transition-all">
+                            <img 
+                              src={card.imageUrl} 
+                              alt={card.name}
+                              className="w-full h-full object-fill"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                          <p className="text-[10px] font-bold text-stone-600 leading-tight text-center group-hover:text-amber-600 transition-colors line-clamp-2">
+                            {card.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {selectedCard.flavorText && (
                   <div className="space-y-3">
@@ -2269,6 +2447,8 @@ export default function App() {
             onPriceModeChange={setPriceMode}
             onPlayModeChange={setIsDeckInPlayMode}
             onResetHistory={resetDeckHistory}
+            onDuplicateDeck={duplicateDeck}
+            onImportDeck={importDeckFromText}
             onEnterBuilderMode={(types) => {
               setIsDeckBuilderMode(true);
               setIsDeckEditorOpen(true); // Keep open but hidden
