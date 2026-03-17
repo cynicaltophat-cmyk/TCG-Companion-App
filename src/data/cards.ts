@@ -1229,7 +1229,7 @@ registerSet("GD 01", [
     cost: 1,
     level: 4,
     ability: "【Burst】Add this card to your hand.【Activate･Action】【Once per Turn】If an enemy Unit with 1 or less AP is in play, this Unit recovers 1 HP.",
-    imageUrl: "/img/ST01/GD01-098.webp"
+    imageUrl: "/img/GD01/GD01-098.webp"
   },
   {
     id: "gd01-093",
