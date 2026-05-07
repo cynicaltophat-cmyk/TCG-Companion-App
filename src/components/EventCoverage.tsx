@@ -15,6 +15,7 @@ import { TournamentEvent, DeckSubmission, ALL_SETS, GundamCard } from '../types'
 import { 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
   Calendar, 
   Trophy, 
   User, 
@@ -28,10 +29,18 @@ import {
   MoreHorizontal,
   Copy,
   Download,
-  Check
+  Check,
+  Globe
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
+import CryptoJS from 'crypto-js';
+
+const getGravatarUrl = (email?: string) => {
+  if (!email) return null;
+  const hash = CryptoJS.MD5(email.trim().toLowerCase()).toString();
+  return `https://www.gravatar.com/avatar/${hash}?d=mp&s=150`;
+};
 
 interface EventCoverageProps {
   onSelectSubmission?: (submission: DeckSubmission) => void;
@@ -44,9 +53,18 @@ const SEASONS = [
 
 const cleanPlacement = (placement: string) => {
   if (!placement) return "";
-  // Check if it's "Top X" and return just X, or handle "Winner", "1st", etc.
   let p = placement.trim();
   p = p.replace(/^Top\s+/i, '');
+  
+  // If it's a number, add ordinal suffix
+  const num = parseInt(p);
+  if (!isNaN(num)) {
+    const s = ["th", "st", "nd", "rd"];
+    const v = num % 100;
+    const suffix = s[(v - 20) % 10] || s[v] || s[0];
+    return `${num}${suffix}`;
+  }
+  
   return p;
 };
 
@@ -97,6 +115,8 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
   const [loading, setLoading] = useState(true);
   const [selectedSeason, setSelectedSeason] = useState(SEASONS[0].id);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [countryFilter, setCountryFilter] = useState<'Global' | 'Singapore'>('Global');
+  const [showCountryMenu, setShowCountryMenu] = useState(false);
   const dragX = useMotionValue(0);
   const isDragging = useRef(false);
   
@@ -145,11 +165,20 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
     });
 
     // Fetch top 5 recent approved submissions across all seasons for the carousel
-    const qRecent = query(
-      collection(db, 'deck_submissions'), 
+    // Filtered by country if Singapore is selected. Global shows all.
+    const recentQueryConstraints = [
       where('status', '==', 'approved'),
       orderBy('createdAt', 'desc'),
       limit(5)
+    ];
+
+    if (countryFilter === 'Singapore') {
+      recentQueryConstraints.splice(1, 0, where('country', '==', 'Singapore'));
+    }
+
+    const qRecent = query(
+      collection(db, 'deck_submissions'), 
+      ...recentQueryConstraints
     );
     const unsubscribeRecent = onSnapshot(qRecent, (snapshot) => {
       let recentData: DeckSubmission[] = [];
@@ -180,7 +209,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
       unsubscribeSubmissions();
       unsubscribeRecent();
     };
-  }, [selectedSeason]);
+  }, [selectedSeason, countryFilter]);
 
   const getColorBg = (color: string) => {
     switch (color) {
@@ -297,9 +326,18 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
                           {deck.deckName}
                         </h3>
                         <div className="flex items-center gap-x-1.5 sm:gap-x-3 mt-0.5 overflow-hidden">
-                          <p className="text-[10px] sm:text-xs font-bold text-stone-400 capitalize truncate max-w-[70px] sm:max-w-[150px]">
-                            By {deck.playerName}
-                          </p>
+                          <div className="flex items-center gap-1 min-w-0">
+                            {deck.email && (
+                              <img 
+                                src={getGravatarUrl(deck.email) || ""} 
+                                alt="" 
+                                className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border border-stone-100 shrink-0" 
+                              />
+                            )}
+                            <p className="text-[10px] sm:text-xs font-bold text-stone-400 capitalize truncate max-w-[70px] sm:max-w-[150px]">
+                              {deck.playerName} {deck.country && <span className="text-[9px] opacity-70 ml-1">({deck.country})</span>}
+                            </p>
+                          </div>
                           <p className="text-[10px] sm:text-xs font-bold text-stone-300 shrink-0">
                             {new Date(deck.date).toLocaleDateString(undefined, { year: '2-digit', month: '2-digit', day: '2-digit' })}
                           </p>
@@ -337,7 +375,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#F9F9F7] animate-in fade-in duration-500 pb-24">
-      <header className="bg-white border-b border-stone-200 p-4 sticky top-0 z-10">
+      <header className="bg-white border-b border-stone-200 p-4 sticky top-0 z-50">
         <div className="relative flex items-center justify-center">
           <h1 className="text-base font-black tracking-tight text-stone-900 uppercase">Event coverage</h1>
           {onBack && (
@@ -352,13 +390,53 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
       </header>
 
       {/* Recent Top Performers Carousel */}
-      {recentTopDecks.length > 0 && (
-        <section className="mt-4 relative overflow-hidden">
-          <div className="px-6 text-center mb-4">
-            <h2 className="text-lg font-black tracking-tight text-stone-900">Recent top performers</h2>
+      <section className="mt-8 relative">
+        <div className="px-6 flex items-center gap-4 mb-4">
+          <h2 className="text-[11px] font-bold text-stone-400 uppercase whitespace-nowrap shrink-0 tracking-tight">Recent top performers</h2>
+          <div className="flex-1 h-px bg-stone-100" />
+          <div className="relative">
+            <button 
+              onClick={() => setShowCountryMenu(!showCountryMenu)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-200 rounded-lg shadow-sm text-[10px] font-black text-stone-400 uppercase tracking-widest hover:border-stone-300 transition-all"
+            >
+              {countryFilter.toUpperCase()}
+              <ChevronDown size={14} className={cn("transition-transform", showCountryMenu ? "rotate-180" : "")} />
+            </button>
+            
+            <AnimatePresence>
+              {showCountryMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowCountryMenu(false)} />
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-stone-100 py-1 z-50 overflow-hidden"
+                  >
+                    {['Global', 'Singapore'].map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          setCountryFilter(c as any);
+                          setShowCountryMenu(false);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest transition-colors",
+                          countryFilter === c ? "bg-stone-900 text-white" : "text-stone-500 hover:bg-stone-50"
+                        )}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
+        </div>
 
-          <div className="relative h-[240px] md:h-[280px] flex items-center justify-center">
+        {recentTopDecks.length > 0 ? (
+          <div className="relative h-[310px] md:h-[350px] flex items-center justify-center -mt-2">
             {/* Ghost drag layer - captures drag anywhere in the section */}
             <motion.div 
               className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing touch-none"
@@ -404,6 +482,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
                   const itemsCount = recentTopDecks.length;
                   const index = (activeIndex + offset + itemsCount) % itemsCount;
                   const deck = recentTopDecks[index];
+                  if (!deck) return null;
                   const deckColors = getDeckColors(deck.deckItems);
                   const isCenter = offset === 0;
 
@@ -438,8 +517,8 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
                       }}
                       className="absolute w-[160px] md:w-[200px] transform-gpu will-change-transform"
                     >
-                      <div className="bg-white rounded-[1.5rem] shadow-xl border border-stone-100 overflow-hidden transition-all select-none pointer-events-none">
-                        <div className="relative aspect-[4/5]">
+                      <div className="bg-white rounded-[2rem] shadow-[0_15px_40px_-15px_rgba(0,0,0,0.15)] border border-stone-100 overflow-hidden transition-all select-none pointer-events-none">
+                        <div className="relative aspect-[4/5] overflow-hidden">
                           {deck.coverImageUrl ? (
                             <ProgressiveImage src={deck.coverImageUrl} referrerPolicy="no-referrer" imageClassName="w-full h-full object-cover" />
                           ) : (
@@ -449,27 +528,35 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
                           )}
                           
                           <div className={cn(
-                            "absolute inset-x-0 bottom-0 p-3 pt-6 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity",
+                            "absolute inset-x-0 bottom-0 p-3 pt-6 bg-gradient-to-t from-black/80 via-black/10 to-transparent transition-opacity",
                             isCenter ? "opacity-100" : "opacity-0"
                           )}>
-                            <h3 className="text-white font-black text-xs md:text-sm leading-tight drop-shadow-md line-clamp-2 uppercase tracking-tight">{deck.deckName}</h3>
-                          </div>
-
-                          <div className="absolute bottom-0 inset-x-0 flex h-1 z-10">
-                            {deckColors.map(color => (
-                              <div key={color} className={cn("flex-1", getColorBg(color))} />
-                            ))}
+                            <h3 className="text-white font-black text-[10px] md:text-xs leading-tight drop-shadow-md line-clamp-1 uppercase tracking-tight">{deck.deckName}</h3>
                           </div>
                         </div>
                         
                         <div className={cn(
-                          "p-2.5 bg-white text-center transition-all",
+                          "p-3 bg-white flex items-center transition-all",
                           isCenter ? "opacity-100" : "opacity-40"
                         )}>
-                          <p className="text-[7px] font-black text-stone-400 uppercase tracking-widest mb-0.5 line-clamp-1">
-                            {deck.season} • {deck.playerName}
-                          </p>
-                          <p className="text-[9px] font-bold text-stone-600 line-clamp-1">{cleanPlacement(deck.placement)}</p>
+                          <div className="w-8 h-8 rounded-full border-2 border-stone-50 overflow-hidden shrink-0 shadow-sm bg-stone-100 flex items-center justify-center">
+                            {deck.email ? (
+                              <img 
+                                src={getGravatarUrl(deck.email) || ""} 
+                                alt="" 
+                                className="w-full h-full object-cover" 
+                              />
+                            ) : (
+                              <User size={16} className="text-stone-300" />
+                            )}
+                          </div>
+                          
+                          <div className="flex-1 ml-2.5 min-w-0 text-left">
+                            <p className="text-[8px] font-black text-[#A4B9D2] uppercase tracking-widest leading-none mb-1">Player name:</p>
+                            <h4 className="text-[11px] font-black text-stone-900 uppercase tracking-tight truncate leading-none">
+                              {deck.playerName}
+                            </h4>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -478,8 +565,15 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
               </AnimatePresence>
             </div>
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="px-6 py-12 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 bg-stone-50 rounded-full flex items-center justify-center mb-4">
+              <Globe size={24} className="text-stone-200" />
+            </div>
+            <p className="text-sm font-bold text-stone-400">No decks uploaded for this country yet</p>
+          </div>
+        )}
+      </section>
 
       {/* Main Content Filters */}
       <section className="mt-2 px-6">
@@ -739,8 +833,19 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; onClos
             <span className="w-1 h-1 rounded-full bg-stone-200" />
             <span>{new Date(submission.date).toLocaleDateString()}</span>
           </div>
-          <p className="text-sm font-black text-stone-900 uppercase tracking-tight">
-            Rank {cleanPlacement(submission.placement)} <span className="text-stone-300 font-bold mx-1">/</span> <span className="text-stone-400 lowercase italic">by {submission.playerName}</span>
+          <p className="text-sm font-black text-stone-900 uppercase tracking-tight flex items-center gap-2">
+            <span>Rank {cleanPlacement(submission.placement)}</span>
+            <span className="text-stone-300 font-bold">/</span>
+            <span className="flex items-center gap-1.5 text-stone-400 lowercase italic">
+              {submission.email && (
+                <img 
+                  src={getGravatarUrl(submission.email) || ""} 
+                  alt="" 
+                  className="w-5 h-5 rounded-full border border-stone-100 shrink-0" 
+                />
+              )}
+              by {submission.playerName} {submission.country && <span className="not-italic text-[10px] ml-1">({submission.country})</span>}
+            </span>
           </p>
         </div>
 

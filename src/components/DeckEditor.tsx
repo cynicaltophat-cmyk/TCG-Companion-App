@@ -815,6 +815,36 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
                                 <Printer size={16} />
                                 Print Proxy
                               </button>
+                               <div className="h-px bg-stone-100 my-1 mx-2" />
+                              <div className="px-3 py-1.5">
+                                <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest leading-none mb-2">Play</p>
+                                <button 
+                                  onClick={() => {
+                                    setIsMenuOpen(false);
+                                    const groupedItems = deck.items.reduce((acc, item) => {
+                                      const id = item.card.cardNumber.trim();
+                                      if (!acc[id]) {
+                                        acc[id] = { count: 0, name: item.card.name.trim() };
+                                      }
+                                      acc[id].count += item.count;
+                                      return acc;
+                                    }, {} as Record<string, { count: number; name: string }>);
+
+                                    const list = Object.entries(groupedItems)
+                                      .map(([id, data]) => `${data.count} ${id} ${data.name}`)
+                                      .join('\n');
+
+                                    navigator.clipboard.writeText(list).then(() => {
+                                      showToast("Decklist copied for MobileSuitArena!");
+                                      window.open('https://mobilesuitarena.com/', '_blank');
+                                    });
+                                  }}
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                                >
+                                  <ExternalLink size={16} />
+                                  Play on MobileSuitArena
+                                </button>
+                              </div>
                               <div className="h-px bg-stone-100 my-1 mx-2" />
                               <button 
                                 onClick={() => {

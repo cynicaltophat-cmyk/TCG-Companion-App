@@ -9,19 +9,21 @@ import {
   where
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Deck, TournamentEvent, DeckSubmission, EventType, Placement } from '../types';
+import { Deck, TournamentEvent, DeckSubmission, EventType, Placement, Country } from '../types';
 import { 
   X, 
   ChevronDown, 
   Calendar, 
   Trophy, 
   User, 
+  Mail,
   Layers,
   CheckCircle2,
   AlertCircle,
   Loader2,
   ArrowLeft,
-  Layout
+  Layout,
+  Globe
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
@@ -36,7 +38,8 @@ const SEASONS = [
   { id: "GD04", name: "GD04 - Phantom Aria" }
 ];
 
-const EVENT_TYPES: EventType[] = ["Shop Battle", "Newtype challenge", "Organized Event"];
+const EVENT_TYPES: EventType[] = ["Shop Battle", "Newtype challenge", "Organized Event", "Release event"];
+const COUNTRIES: Country[] = ["Global", "Singapore"];
 // Removed fixed PLACEMENTS constant to allow numeric range 1-32
 
 export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, onClose, onSuccess }) => {
@@ -46,7 +49,9 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
   
   const [formData, setFormData] = useState({
     playerName: auth.currentUser?.displayName || "",
+    email: auth.currentUser?.email || "",
     season: SEASONS[0].id,
+    country: COUNTRIES[0] as Country,
     eventType: EVENT_TYPES[0] as EventType,
     tournamentId: "",
     date: new Date().toISOString().split('T')[0],
@@ -101,7 +106,9 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
       deckName: deck.name,
       deckItems: deck.items,
       playerName: formData.playerName,
+      email: formData.email,
       season: formData.season,
+      country: formData.country,
       eventType: formData.eventType,
       date: formData.date,
       placement: formData.placement,
@@ -173,20 +180,36 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
           </div>
         </section>
 
-        {/* Season */}
-        <section className="space-y-2">
-          <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Season</label>
-          <div className="relative">
-            <select 
-              value={formData.season}
-              onChange={(e) => setFormData(prev => ({ ...prev, season: e.target.value }))}
-              className="w-full pl-4 pr-10 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-stone-200 transition-all"
-            >
-              {SEASONS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
-          </div>
-        </section>
+        {/* Season & Country */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="space-y-2">
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Season</label>
+            <div className="relative">
+              <select 
+                value={formData.season}
+                onChange={(e) => setFormData(prev => ({ ...prev, season: e.target.value }))}
+                className="w-full pl-4 pr-10 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-stone-200 transition-all"
+              >
+                {SEASONS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+            </div>
+          </section>
+
+          <section className="space-y-2">
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Country</label>
+            <div className="relative">
+              <select 
+                value={formData.country}
+                onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value as Country }))}
+                className="w-full pl-4 pr-10 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-stone-200 transition-all"
+              >
+                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+            </div>
+          </section>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Event Type */}
@@ -278,6 +301,24 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
               placeholder="e.g. kaisenesse"
               className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
               required
+            />
+          </div>
+        </section>
+
+        {/* Email */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Email (Optional)</label>
+            <span className="text-[10px] text-stone-400 font-bold italic">For profile picture display</span>
+          </div>
+          <div className="relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+            <input 
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="your@email.com"
+              className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
             />
           </div>
         </section>

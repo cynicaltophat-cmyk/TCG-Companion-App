@@ -55,6 +55,7 @@ import {
   Copy
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import CryptoJS from 'crypto-js';
 import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
 import { AdminCardManager } from './components/AdminCardManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
@@ -314,17 +315,17 @@ const GridItem = React.memo(({
               <ColorTag color={card.color} />
               <span className="text-[8px] font-mono text-stone-400">{card.cardNumber}</span>
             </div>
-            {showPrice && price && (
-              <span className="w-fit text-[10px] font-black text-yellow-700 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200 italic shadow-sm">
-                ¥{Number(price).toLocaleString()}
-              </span>
-            )}
           </div>
         </div>
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 overflow-hidden">
               <RarityTag rarity={card.rarity} />
+              {showPrice && price && (
+                <span className="text-[10px] font-black text-yellow-700 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200 italic shadow-sm">
+                  ¥{Number(price).toLocaleString()}
+                </span>
+              )}
               {isBookmarked && (
                 <Bookmark size={10} className="text-amber-500 fill-amber-500" />
               )}
@@ -943,7 +944,7 @@ function AppContent() {
   const [sortOption, setSortOption] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'default', direction: 'asc' });
   const [showSortModal, setShowSortModal] = useState(false);
   const [prices, setPrices] = useState<Record<string, { price: string, url: string }>>({});
-  const [priceMode, setPriceMode] = useState(true);
+  const [priceMode, setPriceMode] = useState(false);
   const [pricesLoading, setPricesLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
@@ -2861,10 +2862,8 @@ function AppContent() {
       if (sortOption.key === 'color') return a.color.localeCompare(b.color) * direction;
       if (sortOption.key === 'price') {
         const getPrice = (card: GundamCard) => {
-          const setPrices = prices[card.set];
-          if (!setPrices) return 0;
-          const price = setPrices[card.cardNumber];
-          return price ? parseInt(price) : 0;
+          const cardPrice = prices[card.cardNumber.toUpperCase() + "_" + card.rarity.toUpperCase()]?.price || prices[card.cardNumber.toUpperCase()]?.price;
+          return cardPrice ? parseInt(cardPrice) : 0;
         };
         return (getPrice(a) - getPrice(b)) * direction;
       }
@@ -3238,7 +3237,7 @@ function AppContent() {
     <GridItem 
       key={card.id}
       card={card}
-      price={prices[card.cardNumber.toUpperCase()]?.price}
+      price={prices[card.cardNumber.toUpperCase() + "_" + card.rarity.toUpperCase()]?.price || prices[card.cardNumber.toUpperCase()]?.price}
       showPrice={priceMode}
       onSelect={(c) => {
         setSelectedCard(c);
@@ -4607,22 +4606,21 @@ function AppContent() {
                       
                       <div className="flex items-center flex-wrap gap-2">
                         <RarityTag rarity={selectedCard.rarity} />
+                        {priceMode && (prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]) && (
+                          <a 
+                            href={(prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-[10px] font-black italic shadow-sm hover:bg-yellow-100 hover:border-yellow-300 transition-all animate-in fade-in slide-in-from-left-2 duration-300 group"
+                          >
+                            <Zap size={10} className="fill-yellow-500 text-yellow-500" />
+                            <span>YYT Price: ¥{Number((prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).price).toLocaleString()}</span>
+                            <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </a>
+                        )}
                         <ColorTag color={selectedCard.color} />
                       </div>
                     </div>
-
-                    {priceMode && prices[selectedCard.cardNumber.toUpperCase()] && (
-                      <a 
-                        href={prices[selectedCard.cardNumber.toUpperCase()].url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-[10px] font-black italic shadow-sm hover:bg-yellow-100 hover:border-yellow-300 transition-all animate-in fade-in slide-in-from-left-2 duration-300 group"
-                      >
-                        <Zap size={10} className="fill-yellow-500 text-yellow-500" />
-                        <span>YYT Price: ¥{Number(prices[selectedCard.cardNumber.toUpperCase()].price).toLocaleString()}</span>
-                        <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </a>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-6 pt-1">
@@ -4830,7 +4828,14 @@ function AppContent() {
                                     <h5 className="text-[11px] font-black text-stone-900 uppercase tracking-tight truncate group-hover:text-amber-600 transition-colors">
                                       {deck.deckName}
                                     </h5>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      {deck.email && (
+                                        <img 
+                                          src={`https://www.gravatar.com/avatar/${CryptoJS.MD5(deck.email.trim().toLowerCase()).toString()}?d=mp&s=40`} 
+                                          alt="" 
+                                          className="w-3 h-3 rounded-full border border-stone-100 shrink-0" 
+                                        />
+                                      )}
                                       <span className="text-[8px] font-bold text-stone-400 uppercase tracking-widest truncate">{deck.playerName}</span>
                                       {deck.placement && (
                                         <>

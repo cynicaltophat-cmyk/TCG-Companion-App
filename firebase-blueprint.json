@@ -166,15 +166,16 @@
         "coverImageUrl": { "type": "string" },
         "playerName": { "type": "string" },
         "season": { "type": "string" },
-        "eventType": { "type": "string", "enum": ["Shop Battle", "Newtype challenge", "Organized Event"] },
+        "country": { "type": "string", "enum": ["Global", "Singapore"] },
+        "eventType": { "type": "string", "enum": ["Shop Battle", "Newtype challenge", "Organized Event", "Release event"] },
         "tournamentId": { "type": "string" },
         "tournamentName": { "type": "string" },
         "date": { "type": "string" },
-        "placement": { "type": "string", "enum": ["Top 1", "Top 4", "Top 8", "Top 16", "Top 32"] },
+        "placement": { "type": "string" },
         "createdAt": { "type": "integer" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
       },
-      "required": ["id", "uid", "deckId", "deckName", "deckItems", "playerName", "season", "eventType", "date", "placement", "createdAt", "status"]
+      "required": ["id", "uid", "deckId", "deckName", "deckItems", "playerName", "season", "country", "eventType", "date", "placement", "createdAt", "status"]
     },
     "ShortLink": {
       "title": "ShortLink",

@@ -82,7 +82,8 @@ export interface TournamentEvent {
   totalPlayers?: number;
 }
 
-export type EventType = 'Shop Battle' | 'Newtype challenge' | 'Organized Event';
+export type EventType = 'Shop Battle' | 'Newtype challenge' | 'Organized Event' | 'Release event';
+export type Country = 'Global' | 'Singapore';
 export type Placement = string;
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
 
@@ -94,7 +95,9 @@ export interface DeckSubmission {
   deckItems: DeckItem[];
   coverImageUrl?: string;
   playerName: string;
+  email?: string;
   season: string;
+  country: Country;
   eventType: EventType;
   tournamentId?: string; 
   tournamentName?: string;

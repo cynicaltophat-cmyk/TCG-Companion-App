@@ -133,15 +133,17 @@ service cloud.firestore {
     }
 
     function isValidDeckSubmission(data) {
-      return hasOnlyAllowedFields(['id', 'uid', 'deckId', 'deckName', 'deckItems', 'coverImageUrl', 'playerName', 'season', 'eventType', 'tournamentId', 'tournamentName', 'date', 'placement', 'createdAt', 'updatedAt', 'status']) &&
+      return hasOnlyAllowedFields(['id', 'uid', 'deckId', 'deckName', 'deckItems', 'coverImageUrl', 'playerName', 'email', 'season', 'country', 'eventType', 'tournamentId', 'tournamentName', 'date', 'placement', 'createdAt', 'updatedAt', 'status']) &&
              data.id is string &&
              data.uid is string &&
              data.deckId is string &&
              data.deckName is string &&
              data.deckItems is list &&
              data.playerName is string &&
+             (!('email' in data) || (data.email is string || data.email == null)) &&
              data.season is string &&
-             data.eventType in ['Shop Battle', 'Newtype challenge', 'Organized Event'] &&
+             data.country in ['Global', 'Singapore'] &&
+             data.eventType in ['Shop Battle', 'Newtype challenge', 'Organized Event', 'Release event'] &&
              (!('tournamentId' in data) || (data.tournamentId is string || data.tournamentId == null)) &&
              (!('tournamentName' in data) || (data.tournamentName is string || data.tournamentName == null)) &&
              data.date is string &&
