@@ -11,7 +11,7 @@ import {
   writeBatch,
   updateDoc
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
 import { TournamentEvent, DeckSubmission, ALL_SETS, EventType, Placement } from '../types';
 import { 
   Plus, 
@@ -34,7 +34,7 @@ import {
   Layers,
   Loader2
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, handleFirestoreError, OperationType } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
 
 interface TournamentManagerProps {
@@ -110,8 +110,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
       setShowEventForm(false);
       showToast?.("Event saved successfully");
     } catch (err) {
-      console.error("Error saving event:", err);
-      alert("Failed to save event");
+      handleFirestoreError(err, OperationType.WRITE, `tournament_events/${eventId}`, auth);
     }
   };
 
@@ -131,8 +130,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
       await deleteDoc(doc(db, 'tournament_events', id));
       showToast?.("Event deleted");
     } catch (err) {
-      console.error("Error deleting event:", err);
-      alert("Failed to delete event");
+      handleFirestoreError(err, OperationType.DELETE, `tournament_events/${id}`, auth);
     } finally {
       setIsDeleting(null);
     }
@@ -143,8 +141,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
       await updateDoc(doc(db, 'deck_submissions', id), { status });
       showToast?.(`Submission ${status}`);
     } catch (err) {
-      console.error("Error updating submission:", err);
-      alert("Failed to update status");
+      handleFirestoreError(err, OperationType.UPDATE, `deck_submissions/${id}`, auth);
     }
   };
 
@@ -171,9 +168,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
       showToast?.("Submission deleted successfully");
       console.log("Delete successful for ID:", id);
     } catch (err) {
-      console.error("Error deleting submission:", err);
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      alert(`Failed to delete submission: ${errorMsg}`);
+      handleFirestoreError(err, OperationType.DELETE, `deck_submissions/${id}`, auth);
     } finally {
       setIsDeleting(null);
     }
@@ -191,8 +186,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
       });
       setEditingSubmissionData(null);
     } catch (err) {
-      console.error("Error saving submission:", err);
-      alert("Failed to save changes");
+      handleFirestoreError(err, OperationType.UPDATE, `deck_submissions/${editingSubmissionData.id}`, auth);
     }
   };
 

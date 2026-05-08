@@ -30,7 +30,8 @@ import {
   Copy,
   Download,
   Check,
-  Globe
+  Globe,
+  Hash
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
@@ -117,14 +118,17 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
   const [activeIndex, setActiveIndex] = useState(0);
   const [countryFilter, setCountryFilter] = useState<'Global' | 'Singapore'>('Global');
   const [showCountryMenu, setShowCountryMenu] = useState(false);
+  const [showSeasonMenu, setShowSeasonMenu] = useState(false);
   const dragX = useMotionValue(0);
   const isDragging = useRef(false);
   
   const [focusedEvent, setFocusedEvent] = useState<TournamentEvent | null>(null);
+  const [activeFilterId, setActiveFilterId] = useState<string>('all');
   const [subView, setSubView] = useState<'home' | 'event' | 'all'>('home');
   
   useEffect(() => {
     setSubView('home');
+    setActiveFilterId('all');
   }, [selectedSeason]);
 
   useEffect(() => {
@@ -246,8 +250,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
     return rankA - rankB;
   });
 
-  const getRankStyle = (index: number) => {
-    const rank = index + 1;
+  const getRankStyle = (rank: number) => {
     if (rank === 1) return "from-[#F5A623] to-[#F8D800] text-white";
     if (rank === 2) return "from-[#A4B9D2] to-[#BDCEDB] text-white";
     if (rank === 3) return "from-[#D98B4B] to-[#E6A97A] text-white";
@@ -281,7 +284,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
             <div className="flex flex-col gap-2 sm:gap-3">
               {sortedDecks.map((deck, index) => {
                 const deckColors = getDeckColors(deck.deckItems);
-                const rank = index + 1;
+                const rank = getPlacementRank(deck.placement);
                 return (
                   <motion.div 
                     key={deck.id}
@@ -294,7 +297,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
                     {/* Rank Section with Slanted Edge */}
                     <div className={cn(
                       "w-12 sm:w-20 h-full flex items-center justify-center bg-gradient-to-br relative z-10 shrink-0",
-                      getRankStyle(index)
+                      getRankStyle(rank)
                     )}>
                       <span className="text-xl sm:text-4xl font-black italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
                         {rank}
@@ -577,59 +580,202 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
 
       {/* Main Content Filters */}
       <section className="mt-2 px-6">
-        <div className="relative mb-4">
-          <div className="absolute inset-0 flex items-center" aria-hidden="true">
-            <div className="w-full border-t border-stone-200"></div>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="relative flex justify-start pr-3">
+            <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Event list</span>
           </div>
-          <div className="relative flex justify-start">
-            <span className="pr-3 bg-[#F9F9F7] text-[10px] font-black text-stone-400 uppercase tracking-widest">Event list</span>
+          <div className="flex-1 h-px bg-stone-100" />
+          
+          {/* Season Dropdown */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowSeasonMenu(!showSeasonMenu)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-200 rounded-lg shadow-sm text-[10px] font-black text-stone-400 uppercase tracking-widest hover:border-stone-300 transition-all"
+            >
+              {SEASONS.find(s => s.id === selectedSeason)?.name || selectedSeason}
+              <ChevronDown size={14} className={cn("transition-transform", showSeasonMenu ? "rotate-180" : "")} />
+            </button>
+            
+            <AnimatePresence>
+              {showSeasonMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowSeasonMenu(false)} />
+                  <motion.div 
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute right-0 mt-2 min-w-[160px] bg-white rounded-xl shadow-xl border border-stone-100 py-1 z-50 overflow-hidden"
+                  >
+                    {SEASONS.map((season) => (
+                      <button
+                        key={season.id}
+                        onClick={() => {
+                          setSelectedSeason(season.id);
+                          setShowSeasonMenu(false);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest transition-colors",
+                          selectedSeason === season.id ? "bg-stone-900 text-white" : "text-stone-500 hover:bg-stone-50"
+                        )}
+                      >
+                        {season.name}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* Improved Season Tabs with Backgrounds */}
-        <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
-          {SEASONS.map(season => (
-            <button 
-              key={season.id}
-              onClick={() => setSelectedSeason(season.id)}
+        {/* Horizontal Event Filter */}
+        <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
+          <button
+            onClick={() => setActiveFilterId('all')}
+            className={cn(
+              "px-4 py-2 rounded-full whitespace-nowrap text-[10px] font-black uppercase tracking-widest transition-all border",
+              activeFilterId === 'all'
+                ? "bg-stone-900 text-white border-stone-900 shadow-md"
+                : "bg-white text-stone-400 border-stone-200 hover:border-stone-300 shadow-sm"
+            )}
+          >
+            All tournament decklist
+          </button>
+          {events.map((event) => (
+            <button
+              key={event.id}
+              onClick={() => setActiveFilterId(event.id)}
               className={cn(
-                "h-10 px-6 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0 min-w-[120px] font-black text-[10px] uppercase tracking-widest border",
-                selectedSeason === season.id 
-                  ? "bg-stone-900 text-white border-stone-900 shadow-md" 
-                  : "bg-white text-stone-400 border-stone-200 hover:border-stone-300"
+                "px-4 py-2 rounded-full whitespace-nowrap text-[10px] font-black uppercase tracking-widest transition-all border",
+                activeFilterId === event.id
+                  ? "bg-stone-900 text-white border-stone-900 shadow-md"
+                  : "bg-white text-stone-400 border-stone-200 hover:border-stone-300 shadow-sm"
               )}
             >
-              {season.name}
+              {event.name}
             </button>
           ))}
         </div>
 
         <div className="space-y-3">
-          {/* All tournament decklist container */}
-          <div 
-            onClick={() => setSubView('all')}
-            className="bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group active:scale-[0.98] py-5 px-6 flex items-center justify-between"
-          >
-            <h3 className="text-sm sm:text-base font-black text-stone-900 group-hover:text-stone-700 transition-colors uppercase tracking-tight">All tournament decklist</h3>
-            <ArrowRight size={18} className="text-stone-300 group-hover:text-stone-500 transition-colors" />
-          </div>
+          {(() => {
+            const currentFilterEvent = events.find(e => e.id === activeFilterId);
+            const filteredSubmissions = activeFilterId === 'all' 
+              ? submissions 
+              : submissions.filter(s => s.tournamentName === currentFilterEvent?.name);
+            
+            const tournamentDateMap = new Map<string, number>();
+            events.forEach(e => tournamentDateMap.set(e.name, new Date(e.date).getTime()));
 
-          {/* Individual Organized Events */}
-          {events.map(event => (
-            <div 
-              key={event.id}
-              onClick={() => {
-                setFocusedEvent(event);
-                setSubView('event');
-              }}
-              className="bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden group active:scale-[0.98] py-5 px-6 flex items-center justify-between"
-            >
-              <div className="flex-1 min-w-0 pr-4">
-                <h3 className="text-sm sm:text-base font-black text-stone-900 group-hover:text-stone-700 transition-colors uppercase tracking-tight truncate">{event.name}</h3>
-              </div>
-              <ArrowRight size={18} className="text-stone-300 group-hover:text-stone-500 transition-colors shrink-0" />
-            </div>
-          ))}
+            const sortedDecks = [...filteredSubmissions].sort((a, b) => {
+              // Group by tournament first
+              if (a.tournamentName === b.tournamentName) {
+                return getPlacementRank(a.placement) - getPlacementRank(b.placement);
+              }
+
+              // Different tournaments: Sort by tournament date
+              const dateA = (a.tournamentName ? tournamentDateMap.get(a.tournamentName) : null) || 
+                            (a.date ? new Date(a.date).getTime() : 0);
+              const dateB = (b.tournamentName ? tournamentDateMap.get(b.tournamentName) : null) || 
+                            (b.date ? new Date(b.date).getTime() : 0);
+
+              if (dateB !== dateA) return dateB - dateA;
+
+              // Fallback to upload time if dates are same
+              const createdA = a.createdAt || 0;
+              const createdB = b.createdAt || 0;
+              if (createdB !== createdA) return createdB - createdA;
+
+              return (a.tournamentName || '').localeCompare(b.tournamentName || '');
+            });
+
+            if (sortedDecks.length === 0 && !loading) {
+              return (
+                <div className="py-12 flex flex-col items-center justify-center text-center bg-white rounded-2xl border border-dashed border-stone-200">
+                  <Layout size={32} className="text-stone-100 mb-3" />
+                  <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">No decks found for this filter</p>
+                </div>
+              );
+            }
+
+            return sortedDecks.map((deck, index) => {
+              const deckColors = getDeckColors(deck.deckItems);
+              const rank = getPlacementRank(deck.placement);
+              return (
+                <motion.div 
+                  key={deck.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                  onClick={() => onSelectSubmission?.(deck)}
+                  className="relative flex items-center bg-white rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-stone-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group h-16 sm:h-20"
+                >
+                  {/* Rank Section */}
+                  <div className={cn(
+                    "w-12 sm:w-20 h-full flex items-center justify-center bg-gradient-to-br relative z-10 shrink-0",
+                    getRankStyle(rank)
+                  )}>
+                    <span className="text-xl sm:text-4xl font-black italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+                      {rank}
+                    </span>
+                    <div className="absolute top-0 -right-2 sm:-right-3 bottom-0 w-4 sm:w-6 bg-inherit z-[-1]" style={{ clipPath: 'polygon(0 0, 40% 0, 100% 100%, 0 100%)' }} />
+                  </div>
+
+                  <div className="flex-1 flex items-center gap-2 sm:gap-5 px-3 sm:px-6 overflow-hidden">
+                    <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden shadow-sm flex-shrink-0 border border-stone-50">
+                      {deck.coverImageUrl ? (
+                        <ProgressiveImage 
+                          src={deck.coverImageUrl} 
+                          referrerPolicy="no-referrer"
+                          imageClassName="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-stone-50 flex items-center justify-center text-stone-200">
+                          <Layout size={16} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[11px] sm:text-base font-black text-stone-900 leading-tight uppercase tracking-tight truncate">
+                        {deck.deckName}
+                      </h3>
+                      <div className="flex flex-col gap-0.5 min-w-0 mt-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-[9px] sm:text-xs font-bold text-stone-500 capitalize">
+                            {deck.playerName} {deck.country && <span className="opacity-70">({deck.country})</span>}
+                          </p>
+                          <span className="hidden sm:inline text-stone-300">•</span>
+                          <span className="text-[8px] sm:text-[10px] font-medium text-stone-400">
+                            {new Date(deck.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {deck.tournamentName && (
+                          <div className="flex items-center group/event">
+                            <p className="text-[8px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-wider truncate">
+                              {deck.tournamentName}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-0.5 sm:gap-1.5 ml-auto shrink-0 pr-2">
+                      {deckColors.map(color => (
+                        <div 
+                          key={color} 
+                          className={cn(
+                            "w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-[2px] sm:rounded shadow-inner border border-white/10 shrink-0",
+                            getColorBg(color)
+                          )} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            });
+          })()}
         </div>
 
           {loading && (

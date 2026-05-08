@@ -60,7 +60,7 @@ import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, Feedback, Feedbac
 import { AdminCardManager } from './components/AdminCardManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
 import { identifyCard, IdentifiedCard } from './services/geminiService';
-import { cn, getColorBg } from './lib/utils';
+import { cn, getColorBg, getLevenshteinDistance } from './lib/utils';
 import { DeckEditor, DeckEditorHandle } from './components/DeckEditor';
 import { QuickSetup } from './components/QuickSetup';
 import { DeckList } from './components/DeckList';
@@ -2883,6 +2883,71 @@ function AppContent() {
     });
   }, [combinedCards, debouncedSearchQuery, activeFilters, sortOption]);
 
+  const querySuggestions = useMemo(() => {
+    if (filteredCards.length > 0 || !debouncedSearchQuery.trim()) return [];
+
+    const query = debouncedSearchQuery.toLowerCase().trim();
+    if (query.length < 3) return [];
+    
+    const queryNorm = query.replace(/[^a-z0-9]/g, '');
+
+    // Use unique card names to find closest matches
+    const uniqueCards = combinedCards.reduce((acc, card) => {
+      if (!acc.find(c => c.name === card.name)) {
+        acc.push(card);
+      }
+      return acc;
+    }, [] as GundamCard[]);
+
+    const suggestions = uniqueCards
+      .map(card => {
+        const searchTerms = [
+          card.name,
+          card.link || '',
+          ...(card.traits || []),
+        ].filter(Boolean).map(s => s.toLowerCase());
+
+        // Also add ability but split into parts or handle carefully
+        const abilityParts = (card.ability || '').toLowerCase().split(/[.,!?;]|\n/).map(s => s.trim()).filter(s => s.length > 3);
+        searchTerms.push(...abilityParts);
+
+        let minDistance = 999;
+        
+        searchTerms.forEach(term => {
+          // 1. Direct distance
+          const d = getLevenshteinDistance(query, term);
+          minDistance = Math.min(minDistance, d);
+          
+          // 2. Normalized distance (e.g. mulaflaga -> mu la flaga)
+          const termNorm = term.replace(/[^a-z0-9]/g, '');
+          if (termNorm) {
+            const dNorm = getLevenshteinDistance(queryNorm, termNorm);
+            minDistance = Math.min(minDistance, dNorm);
+          }
+
+          // 3. Word-based distance
+          const words = term.split(/[^a-z0-9]/).filter(w => w.length > 2);
+          words.forEach(word => {
+            const dWord = getLevenshteinDistance(query, word);
+            minDistance = Math.min(minDistance, dWord);
+          });
+        });
+
+        return { card, distance: minDistance };
+      })
+      .filter(item => {
+        // More lenient threshold for suggestions
+        // If distance is low enough compared to query length or target length
+        const threshold = Math.max(2, Math.floor(query.length * 0.4));
+        return item.distance <= threshold;
+      })
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3)
+      .map(item => item.card);
+
+    return suggestions;
+  }, [filteredCards.length, debouncedSearchQuery, combinedCards]);
+
   const gridData = useMemo(() => {
     const result: (GundamCard & { isVariant?: boolean; parentId?: string; variantType?: ArtVariantType })[] = [];
     filteredCards.forEach(card => {
@@ -3673,8 +3738,8 @@ function AppContent() {
             </p>
           </div>
         ) : filteredCards.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-20 px-6 text-center">
-            <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mb-6 text-stone-300">
+          <div className="flex-1 flex flex-col items-center pt-2 pb-20 px-6 text-center">
+            <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mb-4 text-stone-300">
               <Search size={40} />
             </div>
             <h3 className="text-xl font-bold text-stone-800 mb-2">No cards found</h3>
@@ -3683,36 +3748,67 @@ function AppContent() {
             </p>
 
             {(activeFilterList.length > 0 || debouncedSearchQuery) && (
-              <div className="space-y-6 w-full max-w-xs">
+              <div className="space-y-6 w-full max-w-[280px]">
                 {/* Active Filters List */}
-                <div className="flex flex-wrap justify-center gap-2">
-                  {debouncedSearchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full text-[10px] font-bold transition-colors border border-stone-200"
-                    >
-                      Search: {debouncedSearchQuery}
-                      <X size={12} />
-                    </button>
-                  )}
-                  {activeFilterList.map(({ category, value }) => (
-                    <button
-                      key={`${category}-${value}`}
-                      onClick={() => toggleFilter(category, value)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold transition-colors border border-amber-200"
-                    >
-                      {value}
-                      <X size={12} />
-                    </button>
-                  ))}
+                <div className="space-y-4">
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {debouncedSearchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full text-[10px] font-bold transition-colors border border-stone-200 max-w-full"
+                      >
+                        <span className="truncate max-w-[180px]">Search: {debouncedSearchQuery}</span>
+                        <X size={12} className="shrink-0" />
+                      </button>
+                    )}
+                    {activeFilterList.map(({ category, value }) => (
+                      <button
+                        key={`${category}-${value}`}
+                        onClick={() => toggleFilter(category, value)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold transition-colors border border-amber-200"
+                      >
+                        {value}
+                        <X size={12} />
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <button
-                  onClick={resetFilters}
-                  className="w-full py-3 rounded-2xl bg-[#141414] text-white font-bold text-sm shadow-lg shadow-black/10 active:scale-95 transition-all"
-                >
-                  Clear all filters
-                </button>
+                {/* Query Suggestions */}
+                {querySuggestions.length > 0 && (
+                  <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100 flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-amber-800">
+                      <Sparkles size={14} className="fill-amber-400" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Did you mean these cards?</p>
+                    </div>
+                    <div className="grid gap-2">
+                      {querySuggestions.map((card) => (
+                        <button
+                          key={card.id}
+                          onClick={() => {
+                            setSearchQuery(card.name);
+                            setSelectedCard(card);
+                          }}
+                          className="flex items-center gap-3 p-2 bg-white rounded-xl border border-amber-200 hover:border-amber-400 hover:bg-amber-50 transition-all text-left"
+                        >
+                          <div className="w-10 aspect-[2/3] rounded bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
+                            <img 
+                              src={card.imageUrl} 
+                              alt={card.name} 
+                              className="w-full h-full object-cover"
+                              crossOrigin="anonymous"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black text-stone-800 truncate">{card.name}</p>
+                            <p className="text-[8px] font-mono text-stone-400">{card.cardNumber}</p>
+                          </div>
+                          <ArrowRight size={14} className="text-amber-500" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
