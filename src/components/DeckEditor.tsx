@@ -49,13 +49,16 @@ import { ProgressiveImage } from './ProgressiveImage';
 import { db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
+import { ProductsList } from './ProductsList';
+import { DeckProductsBreakdown } from './DeckProductsBreakdown';
+
 interface DeckEditorProps {
   deck: Deck;
   onUpdateCount: (deckId: string, cardId: string, artType: ArtVariantType, delta: number) => void;
   onRemove: (deckId: string, cardId: string, artType: ArtVariantType) => void;
   onPreviewCard: (card: GundamCard) => void;
   onClose: () => void;
-  onEnterBuilderMode: (types?: string[]) => void;
+  onEnterBuilderMode: (types?: string[], setName?: string) => void;
   onPlayModeChange?: (isPlay: boolean) => void;
   onDuplicateDeck?: (deck: Deck) => void;
   onImportDeck?: (text: string) => void;
@@ -63,14 +66,16 @@ interface DeckEditorProps {
   onRenameDeck?: (deckId: string, newName: string) => void;
   onSetCover?: (deckId: string, imageUrl: string) => void;
   onSubmitDeck?: (deck: Deck) => void;
+  onSetBuilderMode?: (isBuilder: boolean) => void;
   allCards: GundamCard[];
   visible?: boolean;
-  initialTab?: 'cards' | 'stats' | 'play';
+  initialTab?: 'cards' | 'stats' | 'play' | 'products';
   isDeckBuilderMode?: boolean;
   userName?: string;
   userPhotoUrl?: string;
   isPreviewMode?: boolean;
   onTogglePreviewMode?: () => void;
+  prices?: Record<string, { price: string, url: string }>;
 }
 
 export interface DeckEditorHandle {
@@ -197,6 +202,7 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   onRenameDeck,
   onSetCover,
   onSubmitDeck,
+  onSetBuilderMode,
   allCards,
   visible = true,
   initialTab,
@@ -204,9 +210,17 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   userName,
   userPhotoUrl,
   isPreviewMode = false,
-  onTogglePreviewMode
+  onTogglePreviewMode,
+  prices
 }, ref) => {
-  const [activeTab, setActiveTab] = React.useState<'cards' | 'stats' | 'play'>(initialTab as any || 'cards');
+  const [activeTab, setActiveTab] = React.useState<'cards' | 'stats' | 'play' | 'products'>(initialTab as any || 'cards');
+  
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab as any);
+    }
+  }, [initialTab]);
+
   const [showCoverPicker, setShowCoverPicker] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isEditingName, setIsEditingName] = React.useState(false);
@@ -881,7 +895,10 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
           {activeTab !== 'play' && !isPreviewMode && (
             <div className="bg-black/20 backdrop-blur-md rounded-2xl p-1 flex items-center h-9">
               <button 
-                onClick={() => setActiveTab('cards')}
+                onClick={() => {
+                  setActiveTab('cards');
+                  onSetBuilderMode?.(true);
+                }}
                 className={cn(
                   "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center",
                   activeTab === 'cards' ? "bg-white text-stone-900 shadow-lg ring-1 ring-black/5" : "text-white/60 hover:text-white"
@@ -890,13 +907,28 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
                 CURRENT DECK
               </button>
               <button 
-                onClick={() => setActiveTab('stats')}
+                onClick={() => {
+                  setActiveTab('stats');
+                  onSetBuilderMode?.(false);
+                }}
                 className={cn(
                   "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center",
                   activeTab === 'stats' ? "bg-white text-stone-900 shadow-lg ring-1 ring-black/5" : "text-white/60 hover:text-white"
                 )}
               >
                 DECK INFO
+              </button>
+              <button 
+                onClick={() => {
+                  setActiveTab('products');
+                  onSetBuilderMode?.(false);
+                }}
+                className={cn(
+                  "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center",
+                  activeTab === 'products' ? "bg-white text-stone-900 shadow-lg ring-1 ring-black/5" : "text-white/60 hover:text-white"
+                )}
+              >
+                PRODUCT
               </button>
             </div>
           )}
@@ -917,7 +949,20 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
         </div>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'stats' ? (
+          {activeTab === 'products' ? (
+            <motion.section 
+              key="products"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="w-full flex-1"
+            >
+              <DeckProductsBreakdown 
+                items={deck.items}
+                prices={prices || {}} 
+              />
+            </motion.section>
+          ) : activeTab === 'stats' ? (
             <motion.section 
               key="stats"
               initial={{ opacity: 0, x: 20 }}
@@ -2028,7 +2073,7 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
               {/* Others Group */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3 px-1">
-                  <h3 className="text-[11px] font-black text-stone-400 uppercase tracking-[0.2em]">Pilots, Command, Base</h3>
+                  <h3 className="text-[11px] font-black text-stone-400 uppercase tracking-[0.2em]">Pilots, Command, Base & Tokens</h3>
                   <div className="h-px flex-1 bg-stone-200/50" />
                   <span className="text-[11px] font-black text-stone-300 tracking-wider">
                     {deck.items.filter(i => !i.card.type.includes('Unit')).reduce((s, i) => s + i.count, 0)}
@@ -2066,7 +2111,7 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
                       <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
                         <Plus size={16} />
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-tighter leading-tight">+ Add pilot, command, base</span>
+                      <span className="text-[9px] font-black uppercase tracking-tighter leading-tight">+ Add pilot, command, base or token</span>
                     </button>
                   )}
                 </div>

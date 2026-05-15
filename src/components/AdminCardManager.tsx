@@ -22,7 +22,6 @@ import {
   Upload, 
   Loader2, 
   Info,
-  CheckCircle2,
   AlertCircle,
   Search,
   ChevronRight,
@@ -31,12 +30,11 @@ import {
   Palette,
   Sparkles,
   Trophy,
-  FileJson,
-  Download,
   Link2,
   Flag,
   Tag,
-  MessageSquare
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -67,7 +65,8 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
   const [showTraitSuggestions, setShowTraitSuggestions] = useState(false);
   const [linkSuggestions, setLinkSuggestions] = useState<string[]>([]);
   const [showLinkSuggestions, setShowLinkSuggestions] = useState(false);
-  const [isBulkImporting, setIsBulkImporting] = useState(false);
+  const [relatedCardsSearch, setRelatedCardsSearch] = useState("");
+  const [showRelatedCardSuggestions, setShowRelatedCardSuggestions] = useState(false);
   const [showOnlyFlagged, setShowOnlyFlagged] = useState(false);
   const [activeArtTab, setActiveArtTab] = useState<string | number>('Base art');
 
@@ -132,439 +131,6 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
       setLastEditingId(null);
     }
   }, [editingCard?.id, lastEditingId]);
-
-  const importST02Cards = async () => {
-    const st02Cards: GundamCard[] = [
-      {
-        id: "st02-003",
-        name: "Gundam Heavyarms",
-        set: "ST02",
-        cardNumber: "ST02-003",
-        type: ["Unit"],
-        color: "Green",
-        rarity: "C",
-        cost: 3,
-        level: 5,
-        ap: 3,
-        hp: 4,
-        ability: "【During Pair】 During your turn, when this Unit destroys an enemy Unit with battle damage, deal 1 damage to all enemy Units that are Lv.3 or lower.",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-003.png",
-        traits: ["Operation Meteor"],
-        link: "[Trowa Barton]"
-      },
-      {
-        id: "st02-004",
-        name: "Gundam Sandrock",
-        set: "ST02",
-        cardNumber: "ST02-004",
-        type: ["Unit"],
-        color: "Green",
-        rarity: "C",
-        cost: 2,
-        level: 4,
-        ap: 4,
-        hp: 3,
-        ability: "",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-004.png",
-        traits: ["Operation Meteor"],
-        link: "[Quatre Raberba Winner]"
-      },
-      {
-        id: "st02-005",
-        name: "Maganac",
-        set: "ST02",
-        cardNumber: "ST02-005",
-        type: ["Unit"],
-        color: "Green",
-        rarity: "C",
-        cost: 2,
-        level: 2,
-        ap: 3,
-        hp: 2,
-        ability: "",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-005.png",
-        traits: ["Maganac Corps"]
-      },
-      {
-        id: "st02-006",
-        name: "Tallgeese",
-        set: "ST02",
-        cardNumber: "ST02-006",
-        type: ["Unit"],
-        color: "Blue",
-        rarity: "LR",
-        cost: 4,
-        level: 5,
-        ap: 4,
-        hp: 4,
-        ability: "【Activate・Main】 【Once per Turn】 4: Set this Unit as active.",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-006.png",
-        traits: ["OZ"],
-        link: "[Zechs Merquise]"
-      },
-      {
-        id: "st02-007",
-        name: "Leo",
-        set: "ST02",
-        cardNumber: "ST02-007",
-        type: ["Unit"],
-        color: "Blue",
-        rarity: "C",
-        cost: 2,
-        level: 2,
-        ap: 2,
-        hp: 2,
-        ability: "",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-007.png",
-        traits: ["OZ"],
-        link: "(OZ) Trait"
-      },
-      {
-        id: "st02-008",
-        name: "Aries",
-        set: "ST02",
-        cardNumber: "ST02-008",
-        type: ["Unit"],
-        color: "Blue",
-        rarity: "C",
-        cost: 2,
-        level: 2,
-        ap: 2,
-        hp: 1,
-        ability: "【Blocker】 (Rest this Unit to change the attack target to it.)",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-008.png",
-        traits: ["OZ"],
-        link: "(OZ)"
-      },
-      {
-        id: "st02-009",
-        name: "Tragos",
-        set: "ST02",
-        cardNumber: "ST02-009",
-        type: ["Unit"],
-        color: "Blue",
-        rarity: "C",
-        cost: 1,
-        level: 1,
-        ap: 1,
-        hp: 1,
-        ability: "【Blocker】 (Rest this Unit to change the attack target to it.)",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-009.png",
-        traits: ["OZ"],
-        link: "(OZ)"
-      },
-      {
-        id: "st02-011",
-        name: "Zechs Merquise",
-        set: "ST02",
-        cardNumber: "ST02-011",
-        type: ["Pilot"],
-        color: "Blue",
-        rarity: "C",
-        cost: 1,
-        level: 5,
-        ap: "+2",
-        hp: "+1",
-        ability: "【Burst】 Add this card to your hand. 【During Link】 During your turn, when this Unit destroys an enemy Unit with battle damage, draw 1.",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-011.png",
-        traits: ["OZ"]
-      },
-      {
-        id: "st02-012",
-        name: "Simultaneous Fire",
-        set: "ST02",
-        cardNumber: "ST02-012",
-        type: ["Command"],
-        color: "Green",
-        rarity: "C",
-        cost: 1,
-        level: 4,
-        ap: "+1",
-        hp: "+1",
-        ability: "【Main】 Choose 1 of your Units. It gains 【Breach 3】 during this turn. (When this Unit's attack destroys an enemy Unit, deal the specified amount of damage to the first card in that opponent's shield area.)",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-012.png",
-        link: "Trowa Barton (Operation Meteor)"
-      },
-      {
-        id: "st02-013",
-        name: "Peaceful Timbre",
-        set: "ST02",
-        cardNumber: "ST02-013",
-        type: ["Command"],
-        color: "Green",
-        rarity: "C",
-        cost: 1,
-        level: 4,
-        ap: "+1",
-        hp: "+1",
-        ability: "【Action】 During this battle, your shield area cards can't receive damage from enemy Units that are Lv.4 or lower.",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-013.png",
-        link: "Quatre Raberba Winner (Operation Meteor)"
-      },
-      {
-        id: "st02-014",
-        name: "Siege Ploy",
-        set: "ST02",
-        cardNumber: "ST02-014",
-        type: ["Command"],
-        color: "Blue",
-        rarity: "C",
-        cost: 1,
-        level: 3,
-        ability: "【Burst】 Activate this card's 【Main】. 【Main / Action】 Choose 1 enemy Unit with 5 or less HP. Rest it.",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-014.png"
-      },
-      {
-        id: "st02-015",
-        name: "Saint Gabriel Institute",
-        set: "ST02",
-        cardNumber: "ST02-015",
-        type: ["Base"],
-        color: "Green",
-        rarity: "C",
-        cost: 2,
-        level: 2,
-        hp: 5,
-        ability: "【Burst】 【Deploy】 this card. 【Deploy】 Add 1 of your Shields to your hand. Then, look at the top 2 cards of your deck and return 1 to the top and 1 to the bottom.",
-        imageUrl: "https://images.gundam-tcg.com/cards/ST02-015.png",
-        traits: ["Academy", "Stronghold"]
-      }
-    ];
-
-    if (!window.confirm(`Import 12 cards for ST02 set? Existing cards with same IDs will be overwritten.`)) return;
-
-    setIsBulkImporting(true);
-    setStatusMessage("Importing ST02 cards...");
-
-    try {
-      const batch = writeBatch(db);
-      st02Cards.forEach(card => {
-        const cardRef = doc(db, 'cards', card.id);
-        batch.set(cardRef, card);
-      });
-      await batch.commit();
-      setStatusMessage("Successfully imported 12 ST02 cards!");
-      setTimeout(() => setStatusMessage(null), 5000);
-    } catch (error: any) {
-      console.error("Import error:", error);
-      setStatusMessage(`Import failed: ${error.message}`);
-    } finally {
-      setIsBulkImporting(false);
-    }
-  };
-
-  const handleBulkImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsBulkImporting(true);
-    setStatusMessage("Parsing bulk data...");
-
-    try {
-      const text = await file.text();
-      const rawData = JSON.parse(text);
-      
-      const cardsToImport: GundamCard[] = Array.isArray(rawData) ? rawData : [rawData];
-      
-      if (cardsToImport.length === 0) {
-        throw new Error("No cards found in the file.");
-      }
-
-      setStatusMessage(`Importing ${cardsToImport.length} cards in batches...`);
-      
-      // Process in batches of 500 (Firestore limit)
-      const batchSize = 500;
-      for (let i = 0; i < cardsToImport.length; i += batchSize) {
-        const batch = writeBatch(db);
-        const chunk = cardsToImport.slice(i, i + batchSize);
-        
-        chunk.forEach(card => {
-          // Ensure ID exists, if not use cardNumber
-          const id = card.id || card.cardNumber?.toLowerCase() || Math.random().toString(36).substring(7);
-          const cardRef = doc(db, 'cards', id);
-          batch.set(cardRef, { ...card, id });
-        });
-        
-        await batch.commit();
-        setStatusMessage(`Imported ${Math.min(i + batchSize, cardsToImport.length)} / ${cardsToImport.length} cards...`);
-      }
-
-      setStatusMessage(`Successfully imported ${cardsToImport.length} cards!`);
-      setTimeout(() => setStatusMessage(null), 5000);
-    } catch (error: any) {
-      console.error("Bulk import error:", error);
-      setStatusMessage(`Import failed: ${error.message}`);
-    } finally {
-      setIsBulkImporting(false);
-      // Reset the input so the same file can be selected again
-      e.target.value = '';
-    }
-  };
-
-  const fixGD01Sets = async () => {
-    const gd01Cards = cards.filter(c => c.cardNumber.toUpperCase().startsWith("GD01") && c.set !== "GD01");
-    
-    if (gd01Cards.length === 0) {
-      setStatusMessage("All GD01 cards are already correctly paired!");
-      setTimeout(() => setStatusMessage(null), 3000);
-      return;
-    }
-
-    if (!window.confirm(`Found ${gd01Cards.length} cards with cardNumber GD01 but incorrect set. Update them all to set "GD01"?`)) return;
-
-    setIsBulkImporting(true);
-    setStatusMessage("Fixing GD01 set pairings...");
-
-    try {
-      const batchSize = 500;
-      for (let i = 0; i < gd01Cards.length; i += batchSize) {
-        const batch = writeBatch(db);
-        const chunk = gd01Cards.slice(i, i + batchSize);
-        
-        chunk.forEach(card => {
-          const cardRef = doc(db, 'cards', card.id);
-          batch.update(cardRef, { set: "GD01" });
-        });
-        
-        await batch.commit();
-      }
-
-      setStatusMessage(`Fixed ${gd01Cards.length} cards!`);
-      setTimeout(() => setStatusMessage(null), 5000);
-    } catch (error: any) {
-      console.error("Fix error:", error);
-      setStatusMessage(`Fix failed: ${error.message}`);
-    } finally {
-      setIsBulkImporting(false);
-    }
-  };
-
-  const normalizeKeywords = async () => {
-    if (!window.confirm(`This will scan all ${cards.length} cards and add brackets to keywords like Attack, Deploy, Main, etc. where missing. Continue?`)) return;
-
-    setIsBulkImporting(true);
-    setStatusMessage("Normalizing keywords...");
-
-    try {
-      const keywords = [
-        "Attack", "Deploy", "During Link", "When Link", "Once per Turn", 
-        "Activate・Main", "Main", "Repair", "Breach", "Destroyed", "When Paired", "During Pair",
-        "Burst", "First Strike", "High-Maneuver", "Support", "Blocker", "Suppression"
-      ];
-      
-      // Regex to match keywords NOT already in brackets 【】 or []
-      // We look for the keyword preceded by something that isn't a bracket and followed by something that isn't a bracket
-      // Or at the start/end of string
-      
-      const batchSize = 500;
-      let updatedCount = 0;
-
-      for (let i = 0; i < cards.length; i += batchSize) {
-        const batch = writeBatch(db);
-        const chunk = cards.slice(i, i + batchSize);
-        let batchHasChanges = false;
-
-        chunk.forEach(card => {
-          let newAbility = card.ability || "";
-          let changed = false;
-
-          keywords.forEach(kw => {
-            // Escape dots for regex
-            const escapedKw = kw.replace(/・/g, '・');
-            
-            // This regex finds the keyword if it's NOT inside 【】 or []
-            // It uses negative lookbehind and lookahead
-            // Since JS support for lookbehind varies, we'll use a simpler approach:
-            // Replace all instances, then fix double brackets if they occur, 
-            // but better yet, use a regex that matches the keyword only if it's not already bracketed.
-            
-            // Match keyword that is NOT preceded by 【 or [ AND NOT followed by 】 or ]
-            // We'll use a global replace with a function to check context
-            const regex = new RegExp(`(?<![【\\[])${escapedKw}(?![】\\]])`, 'gi');
-            
-            if (regex.test(newAbility)) {
-              // We use the original casing from the keyword list for the replacement
-              newAbility = newAbility.replace(regex, `【${kw}】`);
-              changed = true;
-            }
-            
-            // Special case for Repair, Breach, and Support which often have numbers
-            if (kw === "Repair" || kw === "Breach" || kw === "Support") {
-              const numRegex = new RegExp(`(?<![【\\[])${kw}\\s*(\\d+)(?![】\\]])`, 'gi');
-              if (numRegex.test(newAbility)) {
-                newAbility = newAbility.replace(numRegex, (match, p1) => `【${kw} ${p1}】`);
-                changed = true;
-              }
-            }
-          });
-
-          if (changed) {
-            const cardRef = doc(db, 'cards', card.id);
-            batch.update(cardRef, { ability: newAbility });
-            batchHasChanges = true;
-            updatedCount++;
-          }
-        });
-
-        if (batchHasChanges) {
-          await batch.commit();
-        }
-      }
-
-      setStatusMessage(`Successfully normalized keywords in ${updatedCount} cards!`);
-      setTimeout(() => setStatusMessage(null), 5000);
-    } catch (error: any) {
-      console.error("Normalization error:", error);
-      setStatusMessage(`Normalization failed: ${error.message}`);
-    } finally {
-      setIsBulkImporting(false);
-    }
-  };
-
-  const downloadTemplate = () => {
-    const template: GundamCard[] = [{
-      id: "st01-001",
-      name: "Gundam Exia",
-      set: "ST 01",
-      cardNumber: "ST01-001",
-      type: ["Unit"],
-      color: "Blue",
-      rarity: "R",
-      cost: "4",
-      level: "4",
-      ap: "5000",
-      hp: "5000",
-      ability: "【Deploy】 Draw 1 card.",
-      imageUrl: "https://example.com/image.png",
-      traits: ["Celestial Being", "Gundam"],
-      zones: ["Space", "Earth"],
-      faq: [
-        { question: "Sample Question?", answer: "Sample Answer." }
-      ]
-    }];
-
-    const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'gundam_cards_template.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const exportAllCards = () => {
-    const blob = new Blob([JSON.stringify(cards, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `gundam_cards_export_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   const handleAIIdentify = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -677,7 +243,48 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
     if (!editingCard || !editingCard.id) return;
 
     try {
-      await setDoc(doc(db, 'cards', editingCard.id), editingCard);
+      const batch = writeBatch(db);
+      
+      // 1. Save the main card
+      batch.set(doc(db, 'cards', editingCard.id), editingCard);
+
+      // 2. Handle bidirectional links
+      // Compare current editingCard.relatedCards with what was in the database (stored in `cards` state)
+      const originalCard = cards.find(c => c.id === editingCard.id);
+      const oldRelated = originalCard?.relatedCards || [];
+      const newRelated = editingCard.relatedCards || [];
+
+      // Cards to add this card to
+      const added = newRelated.filter(id => !oldRelated.includes(id));
+      // Cards to remove this card from
+      const removed = oldRelated.filter(id => !newRelated.includes(id));
+
+      for (const targetId of added) {
+        const targetCard = cards.find(c => c.id === targetId);
+        if (targetCard) {
+          const currentRelated = targetCard.relatedCards || [];
+          if (!currentRelated.includes(editingCard.id)) {
+            batch.update(doc(db, 'cards', targetId), { 
+              relatedCards: [...currentRelated, editingCard.id] 
+            });
+          }
+        }
+      }
+
+      for (const targetId of removed) {
+        const targetCard = cards.find(c => c.id === targetId);
+        if (targetCard) {
+          const currentRelated = targetCard.relatedCards || [];
+          if (currentRelated.includes(editingCard.id)) {
+            batch.update(doc(db, 'cards', targetId), { 
+              relatedCards: currentRelated.filter(id => id !== editingCard.id) 
+            });
+          }
+        }
+      }
+
+      await batch.commit();
+      
       setEditingCard(null);
       setShowForm(false);
       setHasUnsavedChanges(false);
@@ -717,7 +324,21 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
     
     setIsDeleting(true);
     try {
-      await deleteDoc(doc(db, 'cards', cardToDelete.id));
+      const batch = writeBatch(db);
+      
+      // 1. Delete the card itself
+      batch.delete(doc(db, 'cards', cardToDelete.id));
+
+      // 2. Remove this card's ID from all other cards' relatedCards lists
+      const cardsToCleanup = cards.filter(c => c.relatedCards?.includes(cardToDelete.id));
+      
+      for (const card of cardsToCleanup) {
+        const updatedRelated = card.relatedCards!.filter(id => id !== cardToDelete.id);
+        batch.update(doc(db, 'cards', card.id), { relatedCards: updatedRelated });
+      }
+
+      await batch.commit();
+      
       setCardToDelete(null);
       setStatusMessage("Card deleted successfully");
       setTimeout(() => setStatusMessage(null), 3000);
@@ -792,7 +413,7 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
               {statusMessage}
             </div>
           )}
-
+          
           {showForm && (
             <button 
               onClick={() => handleSaveCard()}
@@ -1072,7 +693,8 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                           { name: "Blue", bg: "bg-blue-500" },
                           { name: "Green", bg: "bg-green-500" },
                           { name: "White", bg: "bg-white", border: "border-stone-200" },
-                          { name: "Purple", bg: "bg-purple-600" }
+                          { name: "Purple", bg: "bg-purple-600" },
+                          { name: "Colorless", bg: "bg-stone-300", border: "border-stone-400" }
                         ].map(c => (
                           <button
                             key={c.name}
@@ -1083,14 +705,18 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                               setHasUnsavedChanges(true);
                             }}
                             className={cn(
-                              "w-6 h-6 rounded-md transition-all border-2",
+                              "w-6 h-6 rounded-md transition-all border-2 relative overflow-hidden",
                               c.bg,
                               c.border || "border-transparent",
                               editingCard.color === c.name 
                                 ? "ring-2 ring-amber-500 ring-offset-1 scale-110 shadow-sm" 
                                 : "opacity-60 hover:opacity-100"
                             )}
-                          />
+                          >
+                            {c.name === 'Colorless' && (
+                              <div className="absolute top-1/2 left-1/2 w-[140%] h-0.5 bg-stone-400 -translate-x-1/2 -translate-y-1/2 rotate-45" />
+                            )}
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -1120,7 +746,7 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase text-stone-400 leading-tight">Type</label>
                       <div className="flex flex-wrap gap-1">
-                        {["Unit", "Pilot", "Command", "Base"].map(t => (
+                        {["Unit", "Pilot", "Command", "Base", "Unit Token"].map(t => (
                           <button
                             key={t}
                             type="button"
@@ -1169,8 +795,8 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                     </div>
                   </div>
 
-                  {/* Line 3: Traits, Linked Card Name */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Line 3: Traits, Linked Card Name, Related Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1 relative p-4 bg-amber-50/20 border border-amber-100/50 rounded-2xl transition-all hover:bg-amber-50/40 group/traits">
                       <label className="text-[10px] font-black uppercase text-amber-600/60 leading-tight flex items-center gap-1.5">
                         <Tag size={10} />
@@ -1306,6 +932,89 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                               <Plus size={10} className="text-stone-400" />
                             </button>
                           ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1 relative p-4 bg-stone-50/20 border border-stone-100/50 rounded-2xl transition-all hover:bg-stone-50/40 group/related">
+                      <label className="text-[10px] font-black uppercase text-stone-400 leading-tight flex items-center gap-1.5 group-hover/related:text-stone-500 transition-colors">
+                        <Zap size={10} />
+                        Related Cards
+                      </label>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {editingCard.relatedCards?.map(cardId => {
+                          const linkedCard = cards.find(c => c.id === cardId);
+                          return (
+                            <div key={cardId} className="flex items-center gap-1 bg-white border border-stone-200 pl-0.5 pr-1.5 py-0.5 rounded shadow-sm">
+                              <img src={linkedCard?.imageUrl} alt="" className="w-4 h-6 object-fill rounded-sm" />
+                              <span className="text-[8px] font-bold truncate max-w-[60px]">{linkedCard?.name || cardId}</span>
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setEditingCard({
+                                    ...editingCard,
+                                    relatedCards: editingCard.relatedCards?.filter(id => id !== cardId)
+                                  });
+                                  setHasUnsavedChanges(true);
+                                }}
+                                className="text-stone-300 hover:text-red-500 transition-colors"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <input 
+                        type="text" 
+                        value={relatedCardsSearch} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setRelatedCardsSearch(val);
+                          setShowRelatedCardSuggestions(val.length >= 2);
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setShowRelatedCardSuggestions(false), 200);
+                        }}
+                        placeholder="Search card by name..."
+                        className="w-full bg-white/50 border border-stone-200/50 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-stone-400 focus:bg-white transition-all placeholder:text-stone-300"
+                      />
+                      {showRelatedCardSuggestions && (
+                        <div className="absolute z-50 bottom-full left-4 right-4 mb-2 bg-white border border-stone-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 max-h-64 overflow-y-auto">
+                          <div className="px-3 py-2 bg-stone-50 border-b border-stone-100">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-stone-400">Card Results</span>
+                          </div>
+                          {cards
+                            .filter(c => 
+                              (c.name.toLowerCase().includes(relatedCardsSearch.toLowerCase()) || 
+                               c.cardNumber.toLowerCase().includes(relatedCardsSearch.toLowerCase())) &&
+                              !editingCard.relatedCards?.includes(c.id) &&
+                              c.id !== editingCard.id
+                            )
+                            .slice(0, 10)
+                            .map(c => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                  setEditingCard({
+                                    ...editingCard,
+                                    relatedCards: [...(editingCard.relatedCards || []), c.id]
+                                  });
+                                  setRelatedCardsSearch("");
+                                  setShowRelatedCardSuggestions(false);
+                                  setHasUnsavedChanges(true);
+                                }}
+                                className="w-full px-4 py-2 text-left text-[10px] font-bold text-stone-600 hover:bg-stone-50 transition-colors flex items-center gap-3 border-b border-stone-50 last:border-none"
+                              >
+                                <img src={c.imageUrl} alt="" className="w-6 h-9 object-fill rounded shadow-sm" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="truncate">{c.name}</p>
+                                  <p className="text-[8px] text-stone-400">{c.cardNumber}</p>
+                                </div>
+                                <Plus size={12} className="text-stone-300 shrink-0" />
+                              </button>
+                            ))
+                          }
                         </div>
                       )}
                     </div>

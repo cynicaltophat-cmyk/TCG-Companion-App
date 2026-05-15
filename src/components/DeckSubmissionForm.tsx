@@ -9,7 +9,7 @@ import {
   where
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Deck, TournamentEvent, DeckSubmission, EventType, Placement, Country } from '../types';
+import { Deck, TournamentEvent, DeckSubmission, EventType, Placement, Country, GundamCard } from '../types';
 import { 
   X, 
   ChevronDown, 
@@ -23,13 +23,17 @@ import {
   Loader2,
   ArrowLeft,
   Layout,
-  Globe
+  Globe,
+  FileText,
+  ImageIcon,
+  Plus
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
 
 interface DeckSubmissionFormProps {
   deck: Deck;
+  allCards: GundamCard[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -42,12 +46,15 @@ const EVENT_TYPES: EventType[] = ["Shop Battle", "Newtype challenge", "Organized
 const COUNTRIES: Country[] = ["Global", "Singapore"];
 // Removed fixed PLACEMENTS constant to allow numeric range 1-32
 
-export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, onClose, onSuccess }) => {
+export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, allCards, onClose, onSuccess }) => {
   const [events, setEvents] = useState<TournamentEvent[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showCardSuggestions, setShowCardSuggestions] = useState(false);
+  const [cardSuggestions, setCardSuggestions] = useState<GundamCard[]>([]);
   
   const [formData, setFormData] = useState({
+    deckName: deck.name || "",
     playerName: auth.currentUser?.displayName || "",
     email: auth.currentUser?.email || "",
     season: SEASONS[0].id,
@@ -55,7 +62,12 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
     eventType: EVENT_TYPES[0] as EventType,
     tournamentId: "",
     date: new Date().toISOString().split('T')[0],
-    placement: "Top 1"
+    placement: "Top 1",
+    decklistText: deck.items
+      .map(item => `${item.count} ${item.card.cardNumber} ${item.card.name}${item.card.traits?.[0] ? ` (${item.card.traits[0]})` : ''}`)
+      .join('\n'),
+    coverCardName: "",
+    coverImageUrl: deck.coverImageUrl || ""
   });
 
   useEffect(() => {
@@ -88,7 +100,7 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
     }
 
     const totalCards = deck.items.reduce((acc, item) => acc + item.count, 0);
-    if (totalCards !== 50) {
+    if (totalCards > 0 && totalCards !== 50) {
       alert("Please submit a 50 card decklist");
       return;
     }
@@ -103,7 +115,7 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
       id: submissionId,
       uid: auth.currentUser.uid,
       deckId: deck.id,
-      deckName: deck.name,
+      deckName: formData.deckName || "Untitled Deck",
       deckItems: deck.items,
       playerName: formData.playerName,
       email: formData.email,
@@ -112,11 +124,13 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
       eventType: formData.eventType,
       date: formData.date,
       placement: formData.placement,
+      decklistText: formData.decklistText,
+      coverCardName: formData.coverCardName,
       createdAt: Date.now(),
       status: 'pending'
     };
 
-    if (deck.coverImageUrl) submission.coverImageUrl = deck.coverImageUrl;
+    if (formData.coverImageUrl) submission.coverImageUrl = formData.coverImageUrl;
 
     if (formData.eventType === 'Organized Event') {
       if (formData.tournamentId) submission.tournamentId = formData.tournamentId;
@@ -131,6 +145,18 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
       }, 1500);
     } catch (err) {
       console.error("Error submitting deck:", err);
+      // Enhanced error reporting
+      const errInfo = {
+        error: err instanceof Error ? err.message : String(err),
+        operationType: 'write',
+        path: `deck_submissions/${submissionId}`,
+        authInfo: {
+          userId: auth.currentUser?.uid,
+          email: auth.currentUser?.email,
+          emailVerified: auth.currentUser?.emailVerified
+        }
+      };
+      console.error('Firestore Error details:', JSON.stringify(errInfo));
       alert("Failed to submit deck. Please try again.");
     } finally {
       setSubmitting(false);
@@ -164,20 +190,35 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
         <section className="space-y-4">
           <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck list</label>
           <div className="relative h-40 bg-stone-100 rounded-[2rem] overflow-hidden border border-stone-100 shadow-lg">
-            {deck.coverImageUrl ? (
-              <ProgressiveImage src={deck.coverImageUrl} imageClassName="w-full h-full object-cover" />
+            {formData.coverImageUrl ? (
+              <ProgressiveImage src={formData.coverImageUrl} imageClassName="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-stone-300">
                 <Layout size={48} />
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between">
-              <h3 className="text-white font-black text-2xl drop-shadow-md">{deck.name}</h3>
+              <h3 className="text-white font-black text-2xl drop-shadow-md truncate max-w-[70%]">
+                {formData.deckName || "New Deck"}
+              </h3>
               <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/30 text-white text-[10px] font-black uppercase tracking-widest">
                 {deck.items.reduce((acc, i) => acc + i.count, 0)} cards
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Deck Name */}
+        <section className="space-y-2">
+          <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck Name</label>
+          <input 
+            type="text"
+            value={formData.deckName}
+            onChange={(e) => setFormData(prev => ({ ...prev, deckName: e.target.value }))}
+            placeholder="e.g. Red Unit Aggro"
+            className="w-full px-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+            required
+          />
         </section>
 
         {/* Season & Country */}
@@ -320,6 +361,101 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, on
               placeholder="your@email.com"
               className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
             />
+          </div>
+        </section>
+
+        {/* Decklist Text Format */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Decklist (Text Format)</label>
+            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-tight">Copy-pasteable</span>
+          </div>
+          <div className="relative">
+            <FileText className="absolute left-4 top-6 text-stone-400 pointer-events-none" size={18} />
+            <textarea 
+              value={formData.decklistText}
+              onChange={(e) => setFormData(prev => ({ ...prev, decklistText: e.target.value }))}
+              rows={8}
+              className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-stone-200 transition-all outline-none font-mono leading-relaxed"
+              placeholder="4 GD04-016 Zoloat (League Militaire)..."
+              required
+            />
+          </div>
+        </section>
+
+        {/* Cover Card */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Cover Image Card</label>
+            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-tight italic">Which card represents this deck?</span>
+          </div>
+          <div className="relative">
+            <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+            <input 
+              type="text"
+              value={formData.coverCardName}
+              onFocus={() => {
+                if (formData.coverCardName.length >= 2) {
+                  const filtered = allCards.filter(c => 
+                    c.name.toLowerCase().includes(formData.coverCardName.toLowerCase())
+                  ).slice(0, 5);
+                  setCardSuggestions(filtered);
+                  setShowCardSuggestions(filtered.length > 0);
+                }
+              }}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData(prev => ({ ...prev, coverCardName: val }));
+                if (val.length >= 2) {
+                  const filtered = allCards.filter(c => 
+                    c.name.toLowerCase().includes(val.toLowerCase()) ||
+                    c.cardNumber.toLowerCase().includes(val.toLowerCase())
+                  ).slice(0, 5);
+                  setCardSuggestions(filtered);
+                  setShowCardSuggestions(filtered.length > 0);
+                } else {
+                  setShowCardSuggestions(false);
+                }
+              }}
+              onBlur={() => {
+                // Small delay to allow click on suggestion
+                setTimeout(() => setShowCardSuggestions(false), 200);
+              }}
+              placeholder="e.g. Zoloat"
+              className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+              required
+            />
+            {showCardSuggestions && (
+              <div className="absolute z-50 bottom-full left-0 right-0 mb-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 max-h-64 overflow-y-auto">
+                <div className="px-4 py-2 bg-stone-50 border-b border-stone-100">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Card Results</span>
+                </div>
+                {cardSuggestions.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        coverCardName: c.name,
+                        coverImageUrl: c.imageUrl
+                      }));
+                      setShowCardSuggestions(false);
+                    }}
+                    className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center gap-3 border-b border-stone-50 last:border-none"
+                  >
+                    <div className="w-8 h-12 bg-stone-100 rounded overflow-hidden flex-shrink-0">
+                      <ProgressiveImage src={c.imageUrl} imageClassName="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-stone-900 truncate">{c.name}</p>
+                      <p className="text-[10px] text-stone-400 font-bold">{c.cardNumber}</p>
+                    </div>
+                    <Plus size={16} className="text-stone-300" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

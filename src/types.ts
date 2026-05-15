@@ -7,7 +7,7 @@ export interface ArtVariant {
   artistLink?: string;
 }
 
-export type CardType = "Unit" | "Pilot" | "Command" | "Base";
+export type CardType = "Unit" | "Pilot" | "Command" | "Base" | "Unit Token";
 
 export interface GundamCard {
   id: string;
@@ -15,7 +15,7 @@ export interface GundamCard {
   set: string;
   cardNumber: string;
   type: CardType[];
-  color: "Red" | "Blue" | "Green" | "White" | "Purple";
+  color: "Red" | "Blue" | "Green" | "White" | "Purple" | "Colorless";
   rarity: "C" | "U" | "R" | "LR";
   cost: string | number;
   level?: string | number;
@@ -32,13 +32,18 @@ export interface GundamCard {
   variants?: ArtVariant[];
   traits?: string[];
   zones?: string[];
+  relatedCards?: string[];
   doublePlus?: boolean;
   championshipParticipation?: boolean;
   faq?: { question: string; answer: string }[];
 }
 
 export const ALL_SETS = [
+  "TOKEN",
   "GD04",
+  "GD03",
+  "GD02",
+  "GD01-Newtype rising",
   "ST09",
   "ST08",
   "ST07",
@@ -103,6 +108,8 @@ export interface DeckSubmission {
   tournamentName?: string;
   date: string;
   placement: Placement;
+  decklistText?: string;
+  coverCardName?: string;
   createdAt: number;
   status: SubmissionStatus;
 }
@@ -133,4 +140,21 @@ export interface Feedback {
   createdAt: number;
   status: FeedbackStatus;
   _collection?: 'feedback' | 'card_feedback';
+}
+
+export interface ProductFeaturedCard {
+  cardId: string;
+  count: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  releaseDate: string;
+  msrp: string;
+  whereToBuy: string[];
+  featuredCards: ProductFeaturedCard[];
+  contents: string[];
+  imageUrl: string;
+  category: "Starter Deck" | "Booster box" | "Other";
 }

@@ -12,6 +12,7 @@ export function getColorBg(color: string) {
     case 'Green': return 'bg-emerald-500';
     case 'White': return 'bg-stone-200';
     case 'Purple': return 'bg-purple-500';
+    case 'Colorless': return 'bg-stone-300';
     default: return 'bg-stone-200';
   }
 }
@@ -80,4 +81,37 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   const errorJson = JSON.stringify(errInfo);
   console.error('Firestore Error: ', errorJson);
   throw new Error(errorJson);
+}
+
+export function getYYTLink(cardNumber: string): string {
+  // Pattern based on user provided correct links: https://yuyu-tei.jp/sell/gcg/s/search
+  // The previously used /game/gundam/ was likely causing 404s.
+  return `https://yuyu-tei.jp/sell/gcg/s/search?search_word=${encodeURIComponent(cardNumber)}`;
+}
+
+export function parseDecklistText(text: string, allCards: any[]): any[] {
+  if (!text) return [];
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const items: any[] = [];
+
+  for (const line of lines) {
+    // Expected format: "4 GD04-016 Zoloat (League Militaire)"
+    // or just "4 GD04-016"
+    // Regex matches: [count] [card number] [rest]
+    const match = line.match(/^(\d+)\s+([A-Z0-9-]{4,15})(.*)$/i);
+    if (match) {
+      const count = parseInt(match[1]);
+      const cardIdOrNumber = match[2].trim();
+      
+      // Try to find the card by card number (most common in text lists)
+      const card = allCards.find(c => 
+        c.cardNumber.toLowerCase() === cardIdOrNumber.toLowerCase()
+      );
+      
+      if (card) {
+        items.push({ count, card });
+      }
+    }
+  }
+  return items;
 }

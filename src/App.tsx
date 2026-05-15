@@ -52,15 +52,17 @@ import {
   Bookmark,
   Upload,
   Share2,
-  Copy
+  Copy,
+  Package
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import CryptoJS from 'crypto-js';
 import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
 import { AdminCardManager } from './components/AdminCardManager';
+import { AdminProductManager } from './components/AdminProductManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
 import { identifyCard, IdentifiedCard } from './services/geminiService';
-import { cn, getColorBg, getLevenshteinDistance } from './lib/utils';
+import { cn, getColorBg, getLevenshteinDistance, getYYTLink } from './lib/utils';
 import { DeckEditor, DeckEditorHandle } from './components/DeckEditor';
 import { QuickSetup } from './components/QuickSetup';
 import { DeckList } from './components/DeckList';
@@ -68,6 +70,8 @@ import { ProxyPrinter } from './components/ProxyPrinter';
 import { EventCoverage, TournamentDeckDetail } from './components/EventCoverage';
 import { TournamentManager } from './components/TournamentManager';
 import { DeckSubmissionForm } from './components/DeckSubmissionForm';
+import { ProductsList } from './components/ProductsList';
+import { QuickStartScreen } from './components/QuickStartScreen';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
 import { 
@@ -136,8 +140,8 @@ import { ProgressiveImage } from './components/ProgressiveImage';
 
 const COMMON_VARIANTS: ArtVariantType[] = ["Parallel", "Beta", "Beta Parallel", "Premium", "Championship", "Double Plus (++)", "Championship Participation"];
 const RARITIES = ["C", "U", "R", "LR"];
-const COLORS = ["Red", "Blue", "Green", "White", "Purple"];
-const TYPES = ["Base", "Unit", "Pilot", "Command"];
+const COLORS = ["Red", "Blue", "Green", "White", "Purple", "Colorless"];
+const TYPES = ["Base", "Unit", "Pilot", "Command", "Unit Token"];
 
 // --- Components ---
 
@@ -154,8 +158,18 @@ const ColorTag = ({ color }: { color: GundamCard['color'] }) => {
     Green: "bg-green-500 text-white",
     White: "bg-stone-100 text-stone-800 border border-stone-300",
     Purple: "bg-purple-600 text-white",
+    Colorless: "bg-stone-300 text-stone-700 border border-stone-400 relative overflow-hidden",
   };
-  return <CardBadge className={colors[color]}>{color}</CardBadge>;
+  return (
+    <CardBadge className={cn(colors[color], color === 'Colorless' && "flex items-center gap-1")}>
+      {color === 'Colorless' && (
+        <div className="w-1.5 h-1.5 bg-stone-500 rounded-full relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 w-[140%] h-0.5 bg-stone-300 -translate-x-1/2 -translate-y-1/2 rotate-45" />
+        </div>
+      )}
+      {color}
+    </CardBadge>
+  );
 };
 
 const RarityTag = ({ rarity }: { rarity: GundamCard['rarity'] }) => {
@@ -853,6 +867,12 @@ function AppContent() {
       index === self.findIndex((t) => t.id === card.id)
     );
   }, [selectedCard, combinedCards]);
+
+  const relatedCardsData = useMemo(() => {
+    if (!selectedCard || !selectedCard.relatedCards || selectedCard.relatedCards.length === 0) return [];
+    return allCards.filter(c => selectedCard.relatedCards?.includes(c.id));
+  }, [selectedCard, allCards]);
+
   const [selectedArtType, setSelectedArtType] = useState<ArtVariantType>("Base art");
   const [isCardMaximized, setIsCardMaximized] = useState(false);
   const [showAnatomy, setShowAnatomy] = useState(false);
@@ -933,14 +953,16 @@ function AppContent() {
   }, []);
 
   const [deckBuilderView, setDeckBuilderView] = useState<'list' | 'editor'>('list');
+  const [editorInitialTab, setEditorInitialTab] = useState<'cards' | 'stats' | 'play' | 'products'>('cards');
   const [isDeckInPlayMode, setIsDeckInPlayMode] = useState(false);
   const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false);
   const [isQuickStartDeckPickerOpen, setIsQuickStartDeckPickerOpen] = useState(false);
   const [quickStartMode, setQuickStartMode] = useState<'play' | 'stats' | null>(null);
-  const [currentTab, setCurrentTab] = useState<'cards' | 'decks' | 'scan' | 'quick-start' | 'profile' | 'coverage' | 'submit-deck'>('cards');
+  const [currentTab, setCurrentTab] = useState<'cards' | 'decks' | 'scan' | 'quick-start' | 'profile' | 'coverage' | 'submit-deck' | 'products'>('cards');
   const [submissionDeck, setSubmissionDeck] = useState<Deck | null>(null);
   const [selectedTournamentDeck, setSelectedTournamentDeck] = useState<DeckSubmission | null>(null);
   const [showTournamentManager, setShowTournamentManager] = useState(false);
+  const [showProductManager, setShowProductManager] = useState(false);
   const [sortOption, setSortOption] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'default', direction: 'asc' });
   const [showSortModal, setShowSortModal] = useState(false);
   const [prices, setPrices] = useState<Record<string, { price: string, url: string }>>({});
@@ -950,26 +972,26 @@ function AppContent() {
 
   // Price fetching logic
   useEffect(() => {
-    const fetchPrices = async () => {
-      if (pricesLoading) return;
-      setPricesLoading(true);
-      try {
-        const response = await fetch('/api/prices');
-        if (response.ok) {
-          const data = await response.json();
-          setPrices(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch market prices:", error);
-      } finally {
-        setPricesLoading(false);
-      }
-    };
+    // const fetchPrices = async () => {
+    //   if (pricesLoading) return;
+    //   setPricesLoading(true);
+    //   try {
+    //     const response = await fetch('/api/prices');
+    //     if (response.ok) {
+    //       const data = await response.json();
+    //       setPrices(data);
+    //     }
+    //   } catch (error) {
+    //     console.error("Failed to fetch market prices:", error);
+    //   } finally {
+    //     setPricesLoading(false);
+    //   }
+    // };
 
-    fetchPrices();
+    // fetchPrices();
     // Refresh prices every 30 minutes
-    const interval = setInterval(fetchPrices, 1000 * 60 * 30);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchPrices, 1000 * 60 * 30);
+    // return () => clearInterval(interval);
   }, []);
 
   const [showLoginGate, setShowLoginGate] = useState(false);
@@ -1649,6 +1671,8 @@ function AppContent() {
       }
     }
   }, [isAdmin, cardsLoading, allCards.length]);
+
+
 
 
 
@@ -2798,7 +2822,11 @@ function AppContent() {
       // New multi-select filters
       const normalize = (s: string) => s.replace(/\s+/g, '').toUpperCase();
       const matchesSets = activeFilters.sets.length === 0 || 
-                         activeFilters.sets.some(s => normalize(s) === normalize(card.set));
+                         activeFilters.sets.some(s => {
+                           const ns = s === 'GD01' || s === 'GD01-Newtype rising' ? 'GD01-NEWTYPERISING' : normalize(s);
+                           const ncs = card.set === 'GD01' || card.set === 'GD01-Newtype rising' ? 'GD01-NEWTYPERISING' : normalize(card.set);
+                           return ns === ncs;
+                         });
       const matchesRarities = activeFilters.rarities.length === 0 || activeFilters.rarities.includes(card.rarity);
       const matchesColors = activeFilters.colors.length === 0 || activeFilters.colors.includes(card.color);
       const matchesTypes = activeFilters.types.length === 0 || activeFilters.types.some(t => card.type.includes(t as any));
@@ -3014,13 +3042,14 @@ function AppContent() {
       const type = Array.isArray(item.card.type) ? item.card.type[0] : item.card.type;
       if (item.card.color) colors.add(item.card.color);
       
-      if (type.includes('Unit')) acc.units += item.count;
-      else if (type.includes('Pilot')) acc.pilots += item.count;
-      else if (type.includes('Command')) acc.commands += item.count;
-      else if (type.includes('Base')) acc.bases += item.count;
+      if (type === 'Unit') acc.units += item.count;
+      else if (type === 'Pilot') acc.pilots += item.count;
+      else if (type === 'Command') acc.commands += item.count;
+      else if (type === 'Base') acc.bases += item.count;
+      else if (type === 'Unit Token') acc.tokens = (acc.tokens || 0) + item.count;
       acc.total += item.count;
       return acc;
-    }, { units: 0, pilots: 0, commands: 0, bases: 0, total: 0 });
+    }, { units: 0, pilots: 0, commands: 0, bases: 0, total: 0, tokens: 0 });
 
     return { ...stats, colors: Array.from(colors).sort() };
   }, [activeDeck]);
@@ -3378,12 +3407,6 @@ function AppContent() {
               </form>
               <div className="flex items-center gap-0.5">
                 <button 
-                  onClick={() => setShowSortModal(true)}
-                  className="p-2 rounded-lg text-stone-500 hover:bg-stone-100 transition-colors active:scale-95"
-                >
-                  <ArrowUpDown size={18} />
-                </button>
-                <button 
                   onClick={() => setIsFilterOpen(true)}
                   className={cn(
                     "p-2 rounded-lg transition-colors active:scale-95 relative",
@@ -3411,12 +3434,16 @@ function AppContent() {
                         key={color}
                         onClick={() => toggleFilter('colors', color)}
                         className={cn(
-                          "w-5 h-5 rounded-md transition-all active:scale-90 shadow-sm",
+                          "w-5 h-5 rounded-md transition-all active:scale-90 shadow-sm relative overflow-hidden",
                           getColorBg(color),
-                          color === 'White' && "border border-stone-300",
+                          (color === 'White' || color === 'Colorless') && "border border-stone-300",
                           isActive ? "ring-2 ring-offset-1 ring-amber-500" : "opacity-80 hover:opacity-100"
                         )}
-                      />
+                      >
+                        {color === 'Colorless' && (
+                          <div className="absolute top-1/2 left-1/2 w-[140%] h-0.5 bg-stone-400 -translate-x-1/2 -translate-y-1/2 rotate-45" />
+                        )}
+                      </button>
                     );
                   })}
                 </div>
@@ -3429,55 +3456,18 @@ function AppContent() {
 
       {/* Quick Start Screen */}
       {currentTab === 'quick-start' && (
-        <div className="flex-1 flex flex-col bg-[#F5F5F0] min-h-screen">
-          <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-[#141414]/10 px-4 py-4">
-            <div className="max-w-md mx-auto flex items-center justify-between">
-              <h1 className="text-xl font-black text-[#141414] tracking-tight uppercase">Quick Start</h1>
-            </div>
-          </header>
-
-          <div className="max-w-md mx-auto w-full p-6 pb-32 flex flex-col gap-6">
-            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
-                  <Sparkles size={24} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-black text-[#141414]">Ready to play?</h2>
-                  <p className="text-xs text-stone-500 font-medium">Quickly access game modes and tools.</p>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <button 
-                  onClick={() => {
-                    setIsQuickSetupOpen(true);
-                  }}
-                  className="w-full p-4 bg-[#141414] text-white rounded-2xl flex items-center justify-between group active:scale-95 transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
-                      <Zap size={20} />
-                    </div>
-                    <div className="text-left">
-                      <span className="block font-bold text-sm">Quick set up</span>
-                      <span className="block text-[10px] text-white/50 font-medium">Generic game setup guide</span>
-                    </div>
-                  </div>
-                  <ChevronRight size={20} className="text-white/30" />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-amber-50 rounded-3xl p-6 border border-amber-100 space-y-2">
-              <h3 className="text-sm font-black text-amber-800 uppercase tracking-wider">Pro Tip</h3>
-              <p className="text-xs text-amber-700 leading-relaxed font-medium">
-                Tap the Scan icon in the footer to quickly identify cards and add them to your deck.
-              </p>
-            </div>
-          </div>
-        </div>
+        <QuickStartScreen 
+          onStartPlayMode={() => {
+            setIsQuickSetupOpen(true);
+          }}
+          onViewProducts={() => {
+            setIsDeckBuilderMode(false);
+            setCurrentTab('products');
+          }}
+        />
       )}
+
+
 
       {/* Profile Screen */}
       {currentTab === 'profile' && user && (
@@ -3628,6 +3618,24 @@ function AppContent() {
                         <div className="text-left">
                           <p className="text-sm font-black text-[#141414]">Tournament Decks Manager</p>
                           <p className="text-[10px] text-stone-500 font-medium">Manage events and submissions</p>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-stone-400" />
+                    </button>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+                    <button 
+                      onClick={() => setShowProductManager(true)}
+                      className="w-full p-4 flex items-center justify-between hover:bg-stone-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[#141414] text-white rounded-lg flex items-center justify-center">
+                          <Package size={18} />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-black text-[#141414]">Product Management</p>
+                          <p className="text-[10px] text-stone-500 font-medium">Manage starter decks and booster boxes</p>
                         </div>
                       </div>
                       <ChevronRight size={16} className="text-stone-400" />
@@ -3860,6 +3868,12 @@ function AppContent() {
                     <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Base</span>
                     <span className="text-[10px] font-black text-[#141414]">{deckStats.bases}</span>
                   </div>
+                  {(deckStats as any).tokens > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest text-amber-600">Tokens</span>
+                      <span className="text-[10px] font-black text-[#141414]">{(deckStats as any).tokens}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full border border-stone-200">
                   <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Total</span>
@@ -3877,7 +3891,11 @@ function AppContent() {
                 <div className="px-4 py-2 bg-[#F5F5F0]/50">
                   <div className="flex items-center relative">
                     <button 
-                      onClick={() => setDeckBuilderView('list')}
+                      onClick={() => {
+                        setDeckBuilderView('list');
+                        setIsDeckBuilderMode(true);
+                        setIsDeckEditorOpen(false);
+                      }}
                       className="flex-1 py-1.5 relative z-10"
                     >
                       <div className={cn(
@@ -3891,6 +3909,10 @@ function AppContent() {
                       onClick={() => {
                         setDeckBuilderView('editor');
                         setIsDeckEditorOpen(true);
+                        setIsDeckBuilderMode(true);
+                        setEditorInitialTab('cards');
+                        // Reset tab to cards
+                        setOpenedEditorFromList(true); // This might trigger initialTab reset if we set it up
                       }}
                       className="flex-1 py-1.5 relative z-10"
                     >
@@ -4092,7 +4114,6 @@ function AppContent() {
                 currentTab === 'quick-start' ? "text-[#141414]" : "text-stone-400 group-hover:text-[#141414]"
               )}>Quick start</span>
             </button>
-
             <button 
               onClick={() => {
                 if (selectedCard) {
@@ -4133,6 +4154,7 @@ function AppContent() {
                 currentTab === 'coverage' ? "text-[#141414]" : "text-stone-400 group-hover:text-[#141414]"
               )}>Coverage</span>
             </button>
+
 
             <button 
               onClick={() => {
@@ -4697,24 +4719,36 @@ function AppContent() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <div className="flex items-center flex-wrap gap-x-4 gap-y-2">
-                      <p className="text-stone-400 font-mono text-xs font-bold uppercase tracking-widest">{selectedCard.cardNumber} • {selectedCard.set}</p>
-                      
-                      <div className="flex items-center flex-wrap gap-2">
-                        <RarityTag rarity={selectedCard.rarity} />
-                        {priceMode && (prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]) && (
-                          <a 
-                            href={(prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-[10px] font-black italic shadow-sm hover:bg-yellow-100 hover:border-yellow-300 transition-all animate-in fade-in slide-in-from-left-2 duration-300 group"
-                          >
-                            <Zap size={10} className="fill-yellow-500 text-yellow-500" />
-                            <span>YYT Price: ¥{Number((prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).price).toLocaleString()}</span>
-                            <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </a>
-                        )}
-                        <ColorTag color={selectedCard.color} />
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                          <p className="text-stone-400 font-mono text-xs font-bold uppercase tracking-widest">{selectedCard.cardNumber} • {selectedCard.set}</p>
+                          <div className="flex items-center gap-2">
+                            <RarityTag rarity={selectedCard.rarity} />
+                            <ColorTag color={selectedCard.color} />
+                            {priceMode && (prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]) && (
+                              <a 
+                                href={(prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-[10px] font-black italic shadow-sm hover:bg-yellow-100 hover:border-yellow-300 transition-all animate-in fade-in slide-in-from-left-2 duration-300 group"
+                              >
+                                <Zap size={10} className="fill-yellow-500 text-yellow-500" />
+                                <span>YYT Price: ¥{Number((prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).price).toLocaleString()}</span>
+                                <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                        <a 
+                          href={(prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()])?.url || getYYTLink(selectedCard.cardNumber)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-[#C86891] hover:bg-[#C86891]/5 hover:border-[#C86891]/30 transition-all shadow-sm group w-fit"
+                        >
+                          <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          <span>View on Yu-Yu-Tei</span>
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -4963,6 +4997,40 @@ function AppContent() {
                     </h4>
                     <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-show">
                       {linkedCards.map(card => (
+                        <div 
+                          key={card.id}
+                          onClick={() => {
+                            setSelectedCard(card);
+                            setSelectedArtType("Base art");
+                            setIsCardMaximized(false);
+                            setShowAnatomy(false);
+                          }}
+                          className="group cursor-pointer space-y-2 w-28 shrink-0"
+                        >
+                          <div className="aspect-[5/7] rounded-lg overflow-hidden ring-1 ring-black/5 shadow-sm group-hover:shadow-md group-hover:ring-amber-500/50 transition-all">
+                            <img 
+                              src={card.imageUrl} 
+                              alt={card.name}
+                              className="w-full h-full object-fill"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                          <p className="text-[10px] font-bold text-stone-600 leading-tight text-center group-hover:text-amber-600 transition-colors line-clamp-2">
+                            {card.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {relatedCardsData.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest flex items-center gap-2">
+                      <Zap size={14} /> Related Cards
+                    </h4>
+                    <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-show">
+                      {relatedCardsData.map(card => (
                         <div 
                           key={card.id}
                           onClick={() => {
@@ -5423,7 +5491,7 @@ function AppContent() {
             ref={deckEditorRef}
             deck={activeDeck}
             visible={isDeckBuilderMode ? deckBuilderView === 'editor' : currentTab === 'decks'}
-            initialTab={isDeckInPlayMode ? 'play' : 'cards'}
+            initialTab={isDeckInPlayMode ? 'play' : editorInitialTab}
             allCards={combinedCards}
             onUpdateCount={updateDeckCount}
             onRemove={removeFromDeck}
@@ -5465,17 +5533,20 @@ function AppContent() {
             onImportDeck={importDeckFromText}
             isPreviewMode={isPreviewMode}
             onTogglePreviewMode={() => setIsPreviewMode(!isPreviewMode)}
-            onEnterBuilderMode={(types) => {
+            onSetBuilderMode={(active) => setIsDeckBuilderMode(active)}
+            prices={prices}
+            onEnterBuilderMode={(types, setName) => {
               setIsDeckBuilderMode(true);
               setIsDeckEditorOpen(true); // Keep open but hidden
               setShowDeckList(false);
               setIsFilterOpen(false);
               setCurrentTab('cards');
               setDeckBuilderView('list');
-              if (types) {
+              if (types || setName) {
                 setActiveFilters(prev => ({
                   ...prev,
-                  types: types
+                  types: types || prev.types,
+                  sets: setName ? [setName] : prev.sets
                 }));
               }
             }}
@@ -5608,18 +5679,22 @@ function AppContent() {
                         key={color}
                         onClick={() => toggleFilter('colors', color)}
                         className={cn(
-                          "w-10 h-10 rounded-xl transition-all border flex items-center justify-center relative",
+                          "w-10 h-10 rounded-xl transition-all border flex items-center justify-center relative overflow-hidden",
                           activeFilters.colors.includes(color)
                             ? "border-amber-400 ring-2 ring-amber-400 ripple shadow-lg scale-110"
                             : "border-stone-100 hover:border-stone-300"
                         )}
                         title={color}
                       >
-                        <div className={cn("w-full h-full rounded-[10px]", getColorBg(color))} />
+                        <div className={cn("w-full h-full rounded-[10px] relative overflow-hidden", getColorBg(color))}>
+                          {color === 'Colorless' && (
+                            <div className="absolute top-1/2 left-1/2 w-[140%] h-0.5 bg-stone-400 -translate-x-1/2 -translate-y-1/2 rotate-45" />
+                          )}
+                        </div>
                         {activeFilters.colors.includes(color) && (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="bg-white/20 backdrop-blur-sm rounded-full p-0.5">
-                              <Check size={14} className={color === 'White' ? "text-stone-900" : "text-white"} />
+                              <Check size={14} className={(color === 'White' || color === 'Colorless') ? "text-stone-900" : "text-white"} />
                             </div>
                           </div>
                         )}
@@ -5752,9 +5827,35 @@ function AppContent() {
       {/* Tournament Decks Manager */}
       {showTournamentManager && isAdmin && (
         <TournamentManager 
+          allCards={combinedCards}
           onClose={() => setShowTournamentManager(false)} 
+          onSubmitDeck={(deck) => {
+            setSubmissionDeck(deck);
+            setCurrentTab('submit-deck');
+            setShowTournamentManager(false);
+          }}
           showToast={showToast}
         />
+      )}
+
+      {/* Product Manager */}
+      {showProductManager && isAdmin && (
+        <div className="fixed inset-0 z-[70] bg-[#F5F5F0] flex flex-col overflow-y-auto p-4 sm:p-8">
+          <div className="max-w-4xl mx-auto w-full">
+            <header className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setShowProductManager(false)}
+                  className="p-3 bg-white rounded-2xl border border-stone-200 text-stone-400 hover:text-stone-900 transition-all shadow-sm"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <h1 className="text-2xl font-black text-[#141414] uppercase tracking-tight">Product Manager</h1>
+              </div>
+            </header>
+            <AdminProductManager cards={allCards} />
+          </div>
+        </div>
       )}
 
       {/* Share Modal */}
@@ -5815,21 +5916,45 @@ function AppContent() {
         {currentTab === 'coverage' && (
           <motion.div
             key="coverage"
+            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto"
           >
             <EventCoverage 
+              allCards={combinedCards}
               onBack={() => setCurrentTab('cards')} 
               onSelectSubmission={(deck) => setSelectedTournamentDeck(deck)}
             />
             {selectedTournamentDeck && (
               <TournamentDeckDetail 
+                allCards={combinedCards}
                 submission={selectedTournamentDeck} 
                 onClose={() => setSelectedTournamentDeck(null)} 
                 onDuplicateDeck={duplicateDeck}
               />
             )}
+          </motion.div>
+        )}
+
+        {currentTab === 'products' && (
+          <motion.div
+            key="products"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto"
+          >
+            <ProductsList 
+              prices={prices}
+              onSelectSet={(setName) => {
+                resetFilters();
+                setActiveFilters(prev => ({ ...prev, sets: [setName] }));
+                setCurrentTab('cards');
+                setIsDeckBuilderMode(true);
+              }}
+              onClose={() => setCurrentTab('quick-start')}
+            />
           </motion.div>
         )}
 
@@ -5842,6 +5967,7 @@ function AppContent() {
           >
             <DeckSubmissionForm 
               deck={submissionDeck} 
+              allCards={allCards}
               onClose={() => {
                 setCurrentTab('cards');
                 setSubmissionDeck(null);

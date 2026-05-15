@@ -87,8 +87,8 @@
         "name": { "type": "string" },
         "set": { "type": "string" },
         "cardNumber": { "type": "string" },
-        "type": { "type": "string", "enum": ["Unit", "Pilot", "Command", "Base"] },
-        "color": { "type": "string", "enum": ["Red", "Blue", "Green", "White", "Black", "Yellow", "Purple"] },
+        "type": { "type": "string", "enum": ["Unit", "Pilot", "Command", "Base", "Unit Token"] },
+        "color": { "type": "string", "enum": ["Red", "Blue", "Green", "White", "Purple", "Colorless"] },
         "rarity": { "type": "string", "enum": ["C", "U", "R", "SR", "UR", "LR"] },
         "cost": { "type": "integer" },
         "level": { "type": "integer" },
@@ -115,6 +115,7 @@
         },
         "traits": { "type": "array", "items": { "type": "string" } },
         "link": { "type": "string" },
+        "relatedCards": { "type": "array", "items": { "type": "string" }, "description": "IDs of cards related to this one" },
         "faq": {
           "type": "array",
           "items": {
@@ -166,6 +167,7 @@
         "deckItems": { "type": "array" },
         "coverImageUrl": { "type": "string" },
         "playerName": { "type": "string" },
+        "email": { "type": "string" },
         "season": { "type": "string" },
         "country": { "type": "string", "enum": ["Global", "Singapore"] },
         "eventType": { "type": "string", "enum": ["Shop Battle", "Newtype challenge", "Organized Event", "Release event"] },
@@ -173,7 +175,10 @@
         "tournamentName": { "type": "string" },
         "date": { "type": "string" },
         "placement": { "type": "string" },
+        "decklistText": { "type": "string" },
+        "coverCardName": { "type": "string" },
         "createdAt": { "type": "integer" },
+        "updatedAt": { "type": "integer" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
       },
       "required": ["id", "uid", "deckId", "deckName", "deckItems", "playerName", "season", "country", "eventType", "date", "placement", "createdAt", "status"]
@@ -188,6 +193,32 @@
         "createdAt": { "type": "integer" }
       },
       "required": ["id", "deckData", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A purchasable product like a starter deck or booster box.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "releaseDate": { "type": "string" },
+        "msrp": { "type": "string" },
+        "whereToBuy": { "type": "array", "items": { "type": "string" } },
+        "featuredCards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "cardId": { "type": "string" },
+              "count": { "type": "integer" }
+            }
+          }
+        },
+        "contents": { "type": "array", "items": { "type": "string" } },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string", "enum": ["Starter Deck", "Booster box", "Other"] }
+      },
+      "required": ["id", "name", "releaseDate", "msrp", "whereToBuy", "featuredCards", "contents", "imageUrl", "category"]
     }
   },
   "firestore": {
@@ -230,6 +261,10 @@
     "short_links/{shortId}": {
       "schema": "ShortLink",
       "description": "Shortened sharing links"
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Purchasable TCG products"
     }
   }
 }

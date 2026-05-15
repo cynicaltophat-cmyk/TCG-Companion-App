@@ -68,7 +68,7 @@ export async function analyzeCardImage(base64Image: string): Promise<Partial<Gun
         Fields to extract:
         - name: The card's name.
         - cardNumber: The card's number (e.g., ST01-001, GD01-045).
-        - type: An array of strings. Choose from: "Unit", "Pilot", "Command", "Base".
+        - type: An array of strings. Choose from: "Unit", "Pilot", "Command", "Base", "Unit Token".
         - color: One of "Red", "Blue", "Green", "White", "Black", "Yellow", "Purple". 
           CRITICAL: Always determine color by the BAR/BORDER color (left side and corners). 
           Gundam TCG uses a specific magenta/dark pink tone for "Red" in many sets (especially Neo Zeon). 

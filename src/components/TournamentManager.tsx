@@ -12,7 +12,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { TournamentEvent, DeckSubmission, ALL_SETS, EventType, Placement } from '../types';
+import { TournamentEvent, DeckSubmission, ALL_SETS, EventType, Placement, Deck, GundamCard } from '../types';
 import { 
   Plus, 
   Trash2, 
@@ -34,15 +34,17 @@ import {
   Layers,
   Loader2
 } from 'lucide-react';
-import { cn, handleFirestoreError, OperationType } from '../lib/utils';
+import { cn, handleFirestoreError, OperationType, parseDecklistText } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
 
 interface TournamentManagerProps {
+  allCards?: GundamCard[];
   onClose: () => void;
+  onSubmitDeck?: (deck: Deck) => void;
   showToast?: (message: string) => void;
 }
 
-export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, showToast }) => {
+export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards = [], onClose, onSubmitDeck, showToast }) => {
   const [events, setEvents] = useState<TournamentEvent[]>([]);
   const [submissions, setSubmissions] = useState<DeckSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -224,16 +226,32 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
           </h2>
         </div>
         {!focusedEvent && (
-          <button 
-            onClick={() => {
-              setEditingEvent({ type: 'Organized Event', season: 'GD04', date: new Date().toISOString().split('T')[0] });
-              setShowEventForm(true);
-            }}
-            className="flex items-center gap-2 bg-[#E5E5E0] hover:bg-[#DEDECB] text-stone-900 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
-          >
-            <Plus size={16} />
-            Create new event
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => {
+                onSubmitDeck?.({
+                  id: `submission-new-${Date.now()}`,
+                  name: "",
+                  items: [],
+                  lastModified: Date.now()
+                });
+              }}
+              className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+            >
+              <Plus size={16} />
+              Submit a deck
+            </button>
+            <button 
+              onClick={() => {
+                setEditingEvent({ type: 'Organized Event', season: 'GD04', date: new Date().toISOString().split('T')[0] });
+                setShowEventForm(true);
+              }}
+              className="flex items-center gap-2 bg-[#E5E5E0] hover:bg-[#DEDECB] text-stone-900 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+            >
+              <Plus size={16} />
+              Create new event
+            </button>
+          </div>
         )}
       </header>
 
@@ -766,10 +784,14 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
                   Decklist
                 </h2>
 
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                  {(() => {
-                    const typeOrder: Record<string, number> = { 'Unit': 0, 'Pilot': 1, 'Command': 2, 'Base': 3 };
-                    const sortedItems = [...selectedSubmission.deckItems].sort((a, b) => {
+                {(() => {
+                  const deckItems = (selectedSubmission.deckItems && selectedSubmission.deckItems.length > 0)
+                    ? selectedSubmission.deckItems
+                    : (selectedSubmission.decklistText ? parseDecklistText(selectedSubmission.decklistText, allCards) : []);
+
+                  if (deckItems.length > 0) {
+                    const typeOrder: Record<string, number> = { 'Unit': 0, 'Pilot': 1, 'Command': 2, 'Base': 3, 'Unit Token': 4 };
+                    const sortedItems = [...deckItems].sort((a, b) => {
                       const aType = a.card.type[0] || 'Unit';
                       const bType = b.card.type[0] || 'Unit';
                       
@@ -783,25 +805,46 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onClose, s
                       return aLevel - bLevel;
                     });
 
-                    return sortedItems.map((item, idx) => (
-                      <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 flex flex-col group">
-                        <div className="relative aspect-[2/3] bg-stone-50 overflow-hidden">
-                          <ProgressiveImage 
-                            src={item.card.imageUrl} 
-                            imageClassName="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                          />
-                          <div className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg bg-[#141414]/90 backdrop-blur-sm text-white flex items-center justify-center text-[10px] font-black shadow-lg">
-                            x{item.count}
+                    return (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                        {sortedItems.map((item, idx) => (
+                          <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-stone-100 flex flex-col group">
+                            <div className="relative aspect-[2/3] bg-stone-50 overflow-hidden">
+                              <ProgressiveImage 
+                                src={item.card.imageUrl} 
+                                imageClassName="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                              />
+                              <div className="absolute top-1.5 right-1.5 w-7 h-7 rounded-lg bg-[#141414]/90 backdrop-blur-sm text-white flex items-center justify-center text-[10px] font-black shadow-lg">
+                                x{item.count}
+                              </div>
+                            </div>
+                            <div className="p-2">
+                              <p className="text-[8px] font-bold text-stone-400 mb-0.5 leading-none">{item.card.cardNumber}</p>
+                              <h4 className="text-[10px] font-black text-stone-900 truncate leading-tight uppercase tracking-tight">{item.card.name}</h4>
+                            </div>
                           </div>
-                        </div>
-                        <div className="p-2">
-                          <p className="text-[8px] font-bold text-stone-400 mb-0.5 leading-none">{item.card.cardNumber}</p>
-                          <h4 className="text-[10px] font-black text-stone-900 truncate leading-tight uppercase tracking-tight">{item.card.name}</h4>
-                        </div>
+                        ))}
                       </div>
-                    ));
-                  })()}
-                </div>
+                    );
+                  } else if (selectedSubmission.decklistText) {
+                    return (
+                      <div className="bg-stone-50 border border-stone-100 rounded-3xl p-6">
+                        <pre className="text-xs font-mono text-stone-600 whitespace-pre-wrap leading-relaxed">
+                          {selectedSubmission.decklistText}
+                        </pre>
+                        <p className="mt-4 text-[10px] font-bold text-stone-400 italic">
+                          Note: Could not automatically convert this decklist to images.
+                        </p>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center py-12 bg-stone-50 rounded-3xl border border-dashed border-stone-200">
+                        <p className="text-sm font-bold text-stone-400 uppercase tracking-widest">No decklist recorded</p>
+                      </div>
+                    );
+                  }
+                })()}
               </div>
             </div>
           </div>

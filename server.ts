@@ -64,6 +64,7 @@ async function fetchSetPrices(set: string) {
   const slugsToTry = [];
   if (s === "GD04") {
     slugsToTry.push("special/8");
+    slugsToTry.push("gd04");
   } else if (s.startsWith("GD")) {
     const num = s.slice(2);
     slugsToTry.push(`bt${num}`);
@@ -160,13 +161,26 @@ async function fetchSetPrices(set: string) {
         }
 
         if (idMatch && priceMatch) {
-           const price = priceMatch[1].replace(/[^\d]/g, "");
-           const rarity = rarityMatch;
+          const price = priceMatch[1].replace(/[^\d]/g, "");
+          const rarity = rarityMatch;
 
-           // Store both specific and generic (for fallback)
-           if (rarity) results[`${id}_${rarity}`] = { price, url };
-           if (!results[id]) results[id] = { price, url };
-           foundOnPage++;
+          // Extract individual card URL
+          const cardAnchor = $(el).find("a").first();
+          const cardHref = cardAnchor.attr("href");
+          let finalCardUrl = url; // Fallback to set URL
+          
+          if (cardHref) {
+            if (cardHref.startsWith("http")) {
+              finalCardUrl = cardHref;
+            } else {
+              finalCardUrl = `${YYT_BASE_URL}${cardHref}`;
+            }
+          }
+
+          // Store both specific and generic (for fallback)
+          if (rarity) results[`${id}_${rarity}`] = { price, url: finalCardUrl };
+          if (!results[id]) results[id] = { price, url: finalCardUrl };
+          foundOnPage++;
         }
       });
 
@@ -216,14 +230,50 @@ async function fetchSetPrices(set: string) {
 let triggerSync: () => Promise<void>;
 
 async function startBackgroundSync() {
-  console.log("[Scraper] Price sync is currently disabled.");
   const sync = async () => {
-    console.log("[Scraper] Price sync skipped (disabled).");
-    return;
+    try {
+      console.log("[Scraper] Background sync is currently disabled to prevent 403 errors.");
+      return;
+      // Original logic preserved below but bypassed
+      console.log("[Scraper] Starting background sync...");
+      await fs.mkdir(DATA_DIR, { recursive: true });
+      
+      const sets = ["GD01", "GD02", "GD03", "GD04", "ST01", "ST02", "ST03", "ST04"];
+      let allPrices: Record<string, any> = {};
+      
+      try {
+        const existingData = await fs.readFile(MARKET_FILE, "utf-8");
+        allPrices = JSON.parse(existingData);
+      } catch (e) {
+        console.log("[Scraper] No existing market file found.");
+      }
+
+      for (const set of sets) {
+        const setPrices = await fetchSetPrices(set);
+        if (setPrices) {
+          allPrices = { ...allPrices, ...setPrices };
+          await fs.writeFile(MARKET_FILE, JSON.stringify(allPrices, null, 2));
+          console.log(`[Scraper] Updated prices for ${set}`);
+        }
+        // Random delay between sets to avoid detection
+        await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 5000));
+      }
+      console.log("[Scraper] Sync completed successfully.");
+    } catch (error) {
+      console.error("[Scraper] Sync failed:", error);
+    }
   };
 
   triggerSync = sync;
-  // No automatic run or interval
+  
+  // Trigger once on startup if file is missing
+  try {
+    await fs.access(MARKET_FILE);
+    console.log("[Scraper] Market file exists, skipping initial sync.");
+  } catch (e) {
+    console.log("[Scraper] Market file missing, starting initial sync in 5 seconds...");
+    setTimeout(sync, 5000);
+  }
 }
 
 import fsSync from "fs";

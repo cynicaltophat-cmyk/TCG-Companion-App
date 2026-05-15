@@ -33,7 +33,7 @@ import {
   Globe,
   Hash
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, parseDecklistText } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
 import CryptoJS from 'crypto-js';
 
@@ -44,6 +44,7 @@ const getGravatarUrl = (email?: string) => {
 };
 
 interface EventCoverageProps {
+  allCards?: GundamCard[];
   onSelectSubmission?: (submission: DeckSubmission) => void;
   onBack?: () => void;
 }
@@ -109,7 +110,7 @@ const getPlacementRank = (placement: string): number => {
   return 100; // Fallback
 };
 
-export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission, onBack }) => {
+export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onSelectSubmission, onBack }) => {
   const [events, setEvents] = useState<TournamentEvent[]>([]);
   const [submissions, setSubmissions] = useState<DeckSubmission[]>([]);
   const [recentTopDecks, setRecentTopDecks] = useState<DeckSubmission[]>([]);
@@ -227,7 +228,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
   };
 
   const getDeckColors = (items: DeckSubmission['deckItems']) => {
-    return Array.from(new Set(items.map(i => i.card.color)));
+    return Array.from(new Set((items || []).map(i => i.card.color)));
   };
 
   const handleNext = () => {
@@ -797,7 +798,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ onSelectSubmission
   );
 };
 
-export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; onClose: () => void; onDuplicateDeck?: (deck: any) => void }> = ({ submission, onClose, onDuplicateDeck }) => {
+export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; allCards?: GundamCard[]; onClose: () => void; onDuplicateDeck?: (deck: any) => void }> = ({ submission, allCards = [], onClose, onDuplicateDeck }) => {
   const [selectedCard, setSelectedCard] = useState<GundamCard | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
@@ -805,7 +806,11 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; onClos
   const [exportText, setExportText] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const deckItems = submission.deckItems;
+  // Parse text format if items are missing
+  const deckItems = (submission.deckItems && submission.deckItems.length > 0)
+    ? submission.deckItems
+    : (submission.decklistText ? parseDecklistText(submission.decklistText, allCards) : []);
+
   const units = deckItems.filter(i => i.card.type.includes('Unit'));
   const pilots = deckItems.filter(i => i.card.type.includes('Pilot'));
   const commands = deckItems.filter(i => i.card.type.includes('Command'));
@@ -996,10 +1001,32 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; onClos
         </div>
 
         <main className="max-w-4xl mx-auto w-full px-4 py-8 pb-32">
-          {renderSection('Units', units)}
-          {renderSection('Pilots', pilots)}
-          {renderSection('Commands', commands)}
-          {renderSection('Bases', bases)}
+          {deckItems.length > 0 ? (
+            <>
+              {renderSection('Units', units)}
+              {renderSection('Pilots', pilots)}
+              {renderSection('Commands', commands)}
+              {renderSection('Bases', bases)}
+            </>
+          ) : submission.decklistText ? (
+            <div className="bg-stone-50 border border-stone-100 rounded-3xl p-8 mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Layers size={16} className="text-stone-400" />
+                <h3 className="text-xs font-black text-stone-900 uppercase tracking-widest">Decklist Text (Unrecognized)</h3>
+              </div>
+              <pre className="text-sm font-mono text-stone-600 whitespace-pre-wrap leading-relaxed">
+                {submission.decklistText}
+              </pre>
+              <p className="mt-4 text-[10px] font-bold text-stone-400 italic">
+                Note: Could not automatically convert this decklist to images. Please check the format: "Count CardNumber Name"
+              </p>
+            </div>
+          ) : (
+            <div className="text-center py-24 bg-stone-50 rounded-[2.5rem] border border-dashed border-stone-200">
+              <Layout size={48} className="mx-auto text-stone-100 mb-4" />
+              <p className="text-sm font-black text-stone-400 uppercase tracking-widest">No decklist recorded</p>
+            </div>
+          )}
         </main>
       </div>
 
