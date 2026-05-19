@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue } from 'motion/react';
 import { 
   collection, 
@@ -8,7 +8,9 @@ import {
   orderBy,
   limit,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { TournamentEvent, DeckSubmission, ALL_SETS, GundamCard } from '../types';
@@ -21,17 +23,21 @@ import {
   User, 
   Layout, 
   ArrowRight,
-  Filter,
   Layers,
   MapPin,
   Clock,
   X,
+  Filter,
   MoreHorizontal,
   Copy,
   Download,
   Check,
   Globe,
-  Hash
+  PieChart,
+  List,
+  Hash,
+  Search,
+  CheckCircle2
 } from 'lucide-react';
 import { cn, parseDecklistText } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
@@ -110,23 +116,196 @@ const getPlacementRank = (placement: string): number => {
   return 100; // Fallback
 };
 
+const getColorBg = (color: string) => {
+  switch (color) {
+    case 'Red': return 'bg-red-500';
+    case 'Blue': return 'bg-blue-500';
+    case 'Green': return 'bg-emerald-500';
+    case 'White': return 'bg-white border-stone-200';
+    case 'Purple': return 'bg-purple-500';
+    case 'Yellow': return 'bg-amber-400';
+    default: return 'bg-stone-500';
+  }
+};
+
+const getSubmissionColors = (sub: DeckSubmission, allCards: GundamCard[]) => {
+  let items = sub.deckItems || [];
+  if (items.length === 0 && sub.decklistText && allCards.length > 0) {
+    items = parseDecklistText(sub.decklistText, allCards);
+  }
+  const colors = Array.from(new Set(items.map(i => i.card.color))) as string[];
+  
+  // Manual override for Okie Parker's Destiny Blocker deck which should be green and white
+  if (sub.playerName === 'Okie Parker' && (sub.deckName?.toLowerCase().includes('destiny blocker') || sub.archetype?.toLowerCase().includes('destiny blocker'))) {
+    return ['Green', 'White'];
+  }
+  
+  // Manual override for Brian S.'s Felix C. wing zero deck which should be white and green only
+  if (sub.playerName === 'Brian S.' && sub.deckName?.toLowerCase().includes('wing zero')) {
+    return colors.filter(c => c !== 'Blue');
+  }
+  
+  return colors;
+};
+
+const getDeckColors = (items: DeckSubmission['deckItems']) => {
+  return Array.from(new Set((items || []).map(i => i.card.color)));
+};
+
+const getRankStyle = (rank: number) => {
+  if (rank === 1) return "from-[#F5A623] to-[#F8D800] text-white";
+  if (rank === 2) return "from-[#A4B9D2] to-[#BDCEDB] text-white";
+  if (rank === 3) return "from-[#D98B4B] to-[#E6A97A] text-white";
+  return "from-[#C4C4C4] to-[#D8D8D8] text-white";
+};
+
 export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onSelectSubmission, onBack }) => {
   const [events, setEvents] = useState<TournamentEvent[]>([]);
   const [submissions, setSubmissions] = useState<DeckSubmission[]>([]);
-  const [recentTopDecks, setRecentTopDecks] = useState<DeckSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSeason, setSelectedSeason] = useState(SEASONS[0].id);
   const [activeIndex, setActiveIndex] = useState(0);
   const [countryFilter, setCountryFilter] = useState<'Global' | 'Singapore'>('Global');
   const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [showSeasonMenu, setShowSeasonMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [exactColorMatch, setExactColorMatch] = useState(false);
+  const [metaView, setMetaView] = useState<'chart' | 'text'>('chart');
+  const [metaCategory, setMetaCategory] = useState<'archetypes' | 'colors'>('archetypes');
+  const [showMetaMenu, setShowMetaMenu] = useState(false);
+  const [maxPlacement, setMaxPlacement] = useState<number>(32);
+  const [tempMaxPlacement, setTempMaxPlacement] = useState<number>(32);
+  const [showPlacementMenu, setShowPlacementMenu] = useState(false);
+  const [selectedMainCardId, setSelectedMainCardId] = useState<string | null>(null);
+  const [selectedArchetypes, setSelectedArchetypes] = useState<string[]>([]);
+  const [archetypeSearch, setArchetypeSearch] = useState("");
+  
   const dragX = useMotionValue(0);
   const isDragging = useRef(false);
   
   const [focusedEvent, setFocusedEvent] = useState<TournamentEvent | null>(null);
   const [activeFilterId, setActiveFilterId] = useState<string>('all');
   const [subView, setSubView] = useState<'home' | 'event' | 'all'>('home');
-  
+
+  const selectedCard = useMemo(() => {
+    if (!selectedMainCardId || !allCards) return null;
+    return allCards.find(c => c.cardNumber === selectedMainCardId);
+  }, [selectedMainCardId, allCards]);
+
+  const hasActiveFilters = !!(searchQuery || selectedColors.length > 0 || maxPlacement < 32 || selectedMainCardId || selectedArchetypes.length > 0);
+
+  const filteredByControls = useMemo(() => {
+    return submissions.filter(sub => {
+      // Search filter
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        sub.deckName.toLowerCase().includes(searchLower) ||
+        (sub.archetype && sub.archetype.toLowerCase().includes(searchLower)) ||
+        sub.deckItems?.some(item => item.card.name.toLowerCase().includes(searchLower));
+      
+      if (!matchesSearch) return false;
+
+      // Color filter
+      const deckColors = getSubmissionColors(sub, allCards);
+      const matchesColors = selectedColors.length === 0 || (
+        exactColorMatch 
+          ? selectedColors.length === deckColors.length && selectedColors.every(color => deckColors.includes(color))
+          : selectedColors.some(color => deckColors.includes(color))
+      );
+      
+      if (!matchesColors) return false;
+      
+      // Placement filter
+      const rank = getPlacementRank(sub.placement);
+      if (rank > maxPlacement) return false;
+      
+      // Main Card filter
+      if (selectedMainCardId && !sub.deckItems?.some(item => item.card.cardNumber === selectedMainCardId)) {
+        return false;
+      }
+
+      // Archetype filter
+      if (selectedArchetypes.length > 0) {
+        const archetype = sub.archetype || "Unknown Archetype";
+        if (!selectedArchetypes.includes(archetype)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [submissions, searchQuery, selectedColors, exactColorMatch, maxPlacement, selectedMainCardId, selectedArchetypes, allCards]);
+
+  // Decoupled submissions for Meta Analysis (ignores Search and Main Card filters)
+  const metaSubmissions = useMemo(() => {
+    const activeEvent = events.find(e => e.id === activeFilterId);
+    const activeEventName = activeEvent?.name?.toLowerCase().trim();
+    
+    return submissions.filter(sub => {
+      // Event Selection
+      const subEventName = sub.tournamentName?.toLowerCase().trim();
+      const matchesEvent = activeFilterId === 'all' || 
+        sub.tournamentId === activeFilterId || 
+        (activeEventName && subEventName === activeEventName);
+      
+      if (!matchesEvent) return false;
+
+      // Color filter (categorical drill-down)
+      const deckColors = getSubmissionColors(sub, allCards);
+      const matchesColors = selectedColors.length === 0 || (
+        exactColorMatch 
+          ? selectedColors.length === deckColors.length && selectedColors.every(color => deckColors.includes(color))
+          : selectedColors.some(color => deckColors.includes(color))
+      );
+      
+      return matchesColors;
+    });
+  }, [submissions, activeFilterId, events, selectedColors, exactColorMatch, allCards]);
+
+  const activeEventSubmissions = useMemo(() => {
+    const currentFilterEvent = events.find(e => e.id === activeFilterId);
+    return activeFilterId === 'all' 
+      ? filteredByControls 
+      : filteredByControls.filter(s => s.tournamentId === activeFilterId || (s.tournamentName && s.tournamentName === currentFilterEvent?.name));
+  }, [filteredByControls, activeFilterId, events]);
+
+  const metaTopRange = useMemo(() => {
+    if (activeFilterId === 'all') return 16;
+    const activeEvent = events.find(e => e.id === activeFilterId);
+    if (!activeEvent) return 16;
+    
+    const playerCount = Number(activeEvent.totalPlayers) || 0;
+    if (playerCount >= 65) return 16;
+    if (playerCount >= 25) return 8;
+    if (playerCount >= 2) return 4;
+    return 16; // Default
+  }, [activeFilterId, events]);
+
+  const recentTopDecks = useMemo(() => {
+    // Filter for Top 4 performers from the already filtered list
+    const topPerformers = filteredByControls.filter(s => {
+      const rank = getPlacementRank(s.placement);
+      return rank <= 4;
+    });
+    
+    if (topPerformers.length === 0) return [];
+    
+    let result = [...topPerformers];
+    // Duplicate for smooth infinite scroll if needed
+    if (result.length < 10) {
+      const base = [...result];
+      while (result.length < 10) {
+        const currentSet = base.map((item) => ({
+          ...item,
+          id: `${item.id}-v${Math.floor(result.length / base.length)}`
+        }));
+        result = [...result, ...currentSet];
+      }
+    }
+    return result;
+  }, [filteredByControls]);
+
   useEffect(() => {
     setSubView('home');
     setActiveFilterId('all');
@@ -137,6 +316,48 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
       setActiveIndex(0);
     }
   }, [recentTopDecks.length, activeIndex]);
+
+  const handleResetFilters = () => {
+    setTempMaxPlacement(32);
+    setMaxPlacement(32);
+    setSelectedArchetypes([]);
+    setArchetypeSearch("");
+    setShowPlacementMenu(false);
+  };
+
+  const handleMetaClick = (item: any) => {
+    if (metaCategory === 'archetypes') {
+      setSelectedArchetypes([item.name]);
+    } else {
+      setSelectedColors(item.colors);
+      setExactColorMatch(true);
+    }
+    
+    // Scroll to the decklist section
+    const decklistHeader = document.querySelector('section.mt-8');
+    if (decklistHeader) {
+      decklistHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const archetypeOptions = useMemo(() => {
+    const archetypes = new Set<string>();
+    submissions.forEach(sub => {
+      archetypes.add(sub.archetype || "Unknown Archetype");
+    });
+    return Array.from(archetypes).sort();
+  }, [submissions]);
+
+  const filteredArchetypeOptions = useMemo(() => {
+    return archetypeOptions.filter(opt => 
+      opt.toLowerCase().includes(archetypeSearch.toLowerCase())
+    );
+  }, [archetypeOptions, archetypeSearch]);
+
+  const handleApplyFilters = () => {
+    setMaxPlacement(tempMaxPlacement);
+    setShowPlacementMenu(false);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -169,67 +390,106 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
       setLoading(false);
     });
 
-    // Fetch top 5 recent approved submissions across all seasons for the carousel
-    // Filtered by country if Singapore is selected. Global shows all.
-    const recentQueryConstraints = [
-      where('status', '==', 'approved'),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    ];
-
-    if (countryFilter === 'Singapore') {
-      recentQueryConstraints.splice(1, 0, where('country', '==', 'Singapore'));
-    }
-
-    const qRecent = query(
-      collection(db, 'deck_submissions'), 
-      ...recentQueryConstraints
-    );
-    const unsubscribeRecent = onSnapshot(qRecent, (snapshot) => {
-      let recentData: DeckSubmission[] = [];
-      snapshot.forEach((doc) => {
-        recentData.push(doc.data() as DeckSubmission);
-      });
-      
-      // If we have items but not enough to fill the carousel slots smoothly, duplicate them
-      // We want at least 10 items for a very smooth infinite scroll without key collisions in the 3-5 rendered slots
-      if (recentData.length > 0 && recentData.length < 10) {
-        let duplicated: DeckSubmission[] = [];
-        // Keep doubling until we have at least 10 or a reasonable amount
-        while (duplicated.length < 10) {
-          const currentSet = recentData.map((item, idx) => ({
-            ...item,
-            id: `${item.id}-v${Math.floor(duplicated.length / recentData.length)}`
-          }));
-          duplicated = [...duplicated, ...currentSet];
-        }
-        recentData = duplicated;
-      }
-      
-      setRecentTopDecks(recentData);
-    }, (err) => console.error(err));
-
     return () => {
       unsubscribeEvents();
       unsubscribeSubmissions();
-      unsubscribeRecent();
     };
   }, [selectedSeason, countryFilter]);
 
-  const getColorBg = (color: string) => {
-    switch (color) {
-      case 'Red': return 'bg-red-500';
-      case 'Blue': return 'bg-blue-500';
-      case 'Green': return 'bg-green-500';
-      case 'White': return 'bg-slate-300';
-      case 'Purple': return 'bg-purple-500';
-      default: return 'bg-stone-500';
-    }
-  };
+  const popularMainCards = useMemo(() => {
+    const counts: Record<string, { card: GundamCard; count: number }> = {};
+    submissions.forEach(sub => {
+      sub.deckItems?.forEach(item => {
+        // Look for Unit LRs or Rs that might be "main" cards
+        if (item.card.type.includes('Unit') && (item.card.rarity === 'LR' || item.card.rarity === 'R')) {
+          const id = item.card.cardNumber;
+          if (!counts[id]) {
+            counts[id] = { card: item.card, count: 0 };
+          }
+          counts[id].count += item.count;
+        }
+      });
+    });
+    return Object.values(counts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+  }, [submissions]);
 
-  const getDeckColors = (items: DeckSubmission['deckItems']) => {
-    return Array.from(new Set((items || []).map(i => i.card.color)));
-  };
+  const topArchetypes = useMemo(() => {
+    const counts: Record<string, { name: string; count: number; coverImageUrl: string; colors: string[]; bestRank: number }> = {};
+    
+    // Use submissions specifically for meta analysis
+    metaSubmissions.forEach(sub => {
+      const rank = getPlacementRank(sub.placement);
+      if (rank <= metaTopRange) {
+        // Strictly use the archetype field from the submission
+        const name = sub.archetype || "Unknown Archetype";
+        if (!counts[name]) {
+          counts[name] = { 
+            name, 
+            count: 0, 
+            coverImageUrl: sub.coverImageUrl || "", 
+            colors: getSubmissionColors(sub, allCards),
+            bestRank: rank
+          };
+        }
+        counts[name].count += 1;
+        if (rank < counts[name].bestRank) {
+          counts[name].bestRank = rank;
+        }
+        // Update cover image if current one is missing
+        if (!counts[name].coverImageUrl && sub.coverImageUrl) {
+          counts[name].coverImageUrl = sub.coverImageUrl;
+        }
+      }
+    });
+
+    return Object.values(counts)
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.bestRank - b.bestRank; // Tie-break with best rank (lower is better)
+      })
+      .slice(0, 12); // Increased slice to 12 archetypes for more coverage
+  }, [metaSubmissions, allCards, metaTopRange]);
+
+  const topColors = useMemo(() => {
+    const counts: Record<string, { name: string; count: number; colors: string[]; coverImageUrl: string; bestRank: number }> = {};
+    
+    metaSubmissions.forEach(sub => {
+      const rank = getPlacementRank(sub.placement);
+      if (rank <= metaTopRange) {
+        const colors = getSubmissionColors(sub, allCards).sort();
+        const name = colors.join(' / ');
+        if (!counts[name]) {
+          counts[name] = { 
+            name, 
+            count: 0, 
+            colors,
+            coverImageUrl: sub.coverImageUrl || "",
+            bestRank: rank
+          };
+        }
+        counts[name].count += 1;
+        if (rank < counts[name].bestRank) {
+          counts[name].bestRank = rank;
+        }
+        if (!counts[name].coverImageUrl && sub.coverImageUrl) {
+          counts[name].coverImageUrl = sub.coverImageUrl;
+        }
+      }
+    });
+
+    return Object.values(counts)
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.bestRank - b.bestRank; // Tie-break with best rank
+      })
+      .slice(0, 12);
+  }, [metaSubmissions, allCards, metaTopRange]);
+
+  const metaData = useMemo(() => {
+    return metaCategory === 'archetypes' ? topArchetypes : topColors;
+  }, [metaCategory, topArchetypes, topColors]);
 
   const handleNext = () => {
     setActiveIndex((prev) => (prev + 1) % recentTopDecks.length);
@@ -239,10 +499,10 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
     setActiveIndex((prev) => (prev - 1 + recentTopDecks.length) % recentTopDecks.length);
   };
 
-  const filteredDecks = subView === 'all' 
-    ? submissions 
+  const filteredDecks = (subView === 'all' || subView === 'home')
+    ? filteredByControls 
     : subView === 'event' && focusedEvent 
-      ? submissions.filter(s => s.tournamentName === focusedEvent.name)
+      ? filteredByControls.filter(s => s.tournamentName === focusedEvent.name)
       : [];
 
   const sortedDecks = [...filteredDecks].sort((a, b) => {
@@ -250,13 +510,6 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
     const rankB = getPlacementRank(b.placement);
     return rankA - rankB;
   });
-
-  const getRankStyle = (rank: number) => {
-    if (rank === 1) return "from-[#F5A623] to-[#F8D800] text-white";
-    if (rank === 2) return "from-[#A4B9D2] to-[#BDCEDB] text-white";
-    if (rank === 3) return "from-[#D98B4B] to-[#E6A97A] text-white";
-    return "from-[#C4C4C4] to-[#D8D8D8] text-white";
-  };
 
   if (subView !== 'home') {
     return (
@@ -284,7 +537,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
           {sortedDecks.length > 0 ? (
             <div className="flex flex-col gap-2 sm:gap-3">
               {sortedDecks.map((deck, index) => {
-                const deckColors = getDeckColors(deck.deckItems);
+                const deckColors = getSubmissionColors(deck, allCards);
                 const rank = getPlacementRank(deck.placement);
                 return (
                   <motion.div 
@@ -379,23 +632,594 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#F9F9F7] animate-in fade-in duration-500 pb-24">
-      <header className="bg-white border-b border-stone-200 p-4 sticky top-0 z-50">
-        <div className="relative flex items-center justify-center">
-          <h1 className="text-base font-black tracking-tight text-stone-900 uppercase">Event coverage</h1>
-          {onBack && (
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200 transition-all duration-300">
+        <div className="w-full px-4 flex flex-col">
+          <div className="flex items-center gap-2 w-full py-2">
+            <div className="relative flex-1">
+              <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search main cards or deck name..."
+                className="w-full pl-9 pr-10 py-2 bg-stone-100 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-sm"
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-stone-200 rounded-full text-stone-400"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setTempMaxPlacement(maxPlacement);
+                  setShowPlacementMenu(true);
+                }}
+                className={cn(
+                  "p-2 rounded-lg transition-colors",
+                  maxPlacement < 32 ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                )}
+              >
+                <Filter size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 overflow-x-auto no-scrollbar pt-1 pb-3 px-1">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest whitespace-nowrap">Quick filter</span>
+              <div className="flex gap-1.5">
+                {['Red', 'Blue', 'Green', 'White', 'Purple'].map(color => {
+                  const isActive = selectedColors.includes(color);
+                  return (
+                    <button
+                      key={color}
+                      onClick={() => {
+                        setSelectedColors(prev => 
+                          prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]
+                        );
+                      }}
+                      className={cn(
+                        "w-5 h-5 rounded-md transition-all active:scale-90 shadow-sm relative overflow-hidden",
+                        getColorBg(color),
+                        color === 'White' && "border border-stone-300",
+                        isActive ? "ring-2 ring-offset-1 ring-amber-500" : "opacity-80 hover:opacity-100"
+                      )}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
             <button 
-              onClick={onBack}
-              className="absolute right-0 w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 hover:bg-stone-200 transition-colors"
+              onClick={() => setExactColorMatch(!exactColorMatch)}
+              className="flex items-center gap-2 group shrink-0"
             >
-              <X size={18} />
+              <div className={cn(
+                "w-4 h-4 rounded-md border flex items-center justify-center transition-all",
+                exactColorMatch ? "bg-[#141414] border-[#141414]" : "bg-white border-stone-300 group-hover:border-stone-400"
+              )}>
+                {exactColorMatch && <Check size={10} className="text-white stroke-[3]" />}
+              </div>
+              <span className={cn(
+                "text-[8px] font-bold transition-colors uppercase tracking-tight",
+                exactColorMatch ? "text-stone-900" : "text-stone-400 group-hover:text-stone-600"
+              )}>
+                Exact color match
+              </span>
             </button>
-          )}
+          </div>
         </div>
       </header>
 
-      {/* Recent Top Performers Carousel */}
-      <section className="mt-8 relative">
-        <div className="px-6 flex items-center gap-4 mb-4">
+      <AnimatePresence>
+        {showPlacementMenu && (
+          <div className="fixed inset-0 z-[100] overflow-hidden">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPlacementMenu(false)}
+              className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute top-0 right-0 bottom-0 w-full max-w-[280px] bg-white shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+                <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest">Filters</h3>
+                <button onClick={() => setShowPlacementMenu(false)} className="p-2 hover:bg-stone-50 rounded-full text-stone-400">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Placement Range</span>
+                    <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded">Top {tempMaxPlacement}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2">
+                    {[1, 4, 8, 16, 32].map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setTempMaxPlacement(p)}
+                        className={cn(
+                          "w-full px-4 py-3 rounded-xl text-left text-xs font-bold uppercase tracking-tight transition-all flex items-center justify-between border-2",
+                          tempMaxPlacement === p 
+                            ? "bg-stone-900 text-white border-stone-900 shadow-md translate-x-1" 
+                            : "bg-white text-stone-500 border-stone-100 hover:border-stone-200"
+                        )}
+                      >
+                        Top {p === 1 ? '1 (Winner)' : p}
+                        {tempMaxPlacement === p && <Check size={14} className="text-white" strokeWidth={3} />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Deck Archetypes</span>
+                    <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded">
+                      {selectedArchetypes.length} selected
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="Search archetypes..."
+                      value={archetypeSearch}
+                      onChange={(e) => setArchetypeSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-xs"
+                    />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={12} />
+                  </div>
+
+                  <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+                    {filteredArchetypeOptions.length > 0 ? (
+                      <>
+                        <button
+                          onClick={() => setSelectedArchetypes(prev => prev.length === archetypeOptions.length ? [] : [...archetypeOptions])}
+                          className="text-left py-2 text-[10px] font-black text-stone-400 uppercase tracking-widest hover:text-stone-900 transition-colors border-b border-stone-50 mb-1"
+                        >
+                          {selectedArchetypes.length === archetypeOptions.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                        {filteredArchetypeOptions.map((archetype) => {
+                          const isSelected = selectedArchetypes.includes(archetype);
+                          return (
+                            <button
+                              key={archetype}
+                              onClick={() => {
+                                setSelectedArchetypes(prev => 
+                                  prev.includes(archetype) 
+                                    ? prev.filter(a => a !== archetype) 
+                                    : [...prev, archetype]
+                                );
+                              }}
+                              className={cn(
+                                "w-full px-3 py-2.5 rounded-lg text-left text-[11px] font-bold uppercase tracking-tight transition-all flex items-center justify-between",
+                                isSelected 
+                                  ? "bg-stone-900 text-white shadow-sm" 
+                                  : "bg-white text-stone-500 hover:bg-stone-50"
+                              )}
+                            >
+                              <span className="truncate pr-4">{archetype}</span>
+                              {isSelected && <Check size={12} className="text-white shrink-0" strokeWidth={3} />}
+                            </button>
+                          );
+                        })}
+                      </>
+                    ) : (
+                      <div className="py-8 text-center text-[10px] font-bold text-stone-300 uppercase tracking-widest">
+                        No archetypes found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 pb-24 border-t border-stone-100 bg-stone-50/50 flex gap-3">
+                <button 
+                  onClick={handleResetFilters}
+                  className="flex-1 py-3 text-xs font-black text-stone-400 hover:text-stone-600 uppercase tracking-widest transition-colors"
+                >
+                  Reset
+                </button>
+                <button 
+                  onClick={handleApplyFilters}
+                  className={cn(
+                    "flex-1 py-3 bg-stone-900 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                    tempMaxPlacement !== maxPlacement ? "shadow-xl shadow-stone-200" : "opacity-80"
+                  )}
+                >
+                  Apply
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Filter Tags */}
+      {hasActiveFilters && (
+        <div className="mt-6 px-6 flex flex-wrap gap-2">
+          {searchQuery && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full text-[10px] font-bold text-stone-600 uppercase tracking-tight">
+              <span>Search: "{searchQuery}"</span>
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="hover:text-amber-600 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+
+          {selectedCard && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 rounded-full text-[10px] font-bold text-amber-700 uppercase tracking-tight border border-amber-200/50">
+              <span>Main: {selectedCard.name}</span>
+              <button 
+                onClick={() => setSelectedMainCardId(null)}
+                className="hover:text-amber-900 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+
+          {selectedColors.map(color => (
+            <div 
+              key={color}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight text-white",
+                color === 'Red' && 'bg-red-500',
+                color === 'Blue' && 'bg-blue-500',
+                color === 'Green' && 'bg-emerald-500',
+                color === 'White' && 'bg-slate-400',
+                color === 'Yellow' && 'bg-amber-400',
+                color === 'Purple' && 'bg-purple-500'
+              )}
+            >
+              <span>{color}</span>
+              <button 
+                onClick={() => setSelectedColors(prev => prev.filter(c => c !== color))}
+                className="hover:scale-110 transition-transform"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+
+          {selectedArchetypes.map(archetype => (
+            <div 
+              key={archetype}
+              className="flex items-center gap-2 px-3 py-1.5 bg-stone-900 rounded-full text-[10px] font-bold text-white uppercase tracking-tight"
+            >
+              <span>{archetype}</span>
+              <button 
+                onClick={() => setSelectedArchetypes(prev => prev.filter(a => a !== archetype))}
+                className="hover:text-amber-400 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+
+          {maxPlacement < 32 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-full text-[10px] font-bold text-amber-900 uppercase tracking-tight border border-amber-200">
+              <span>Top {maxPlacement}</span>
+              <button 
+                onClick={() => setMaxPlacement(32)}
+                className="hover:text-amber-600 transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+
+          {(searchQuery || selectedColors.length > 0 || selectedMainCardId || selectedArchetypes.length > 0 || maxPlacement < 32) && (
+            <button 
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedColors([]);
+                setExactColorMatch(true);
+                setSelectedMainCardId(null);
+                setSelectedArchetypes([]);
+                setMaxPlacement(32);
+              }}
+              className="px-3 py-1.5 text-[10px] font-black text-stone-400 hover:text-stone-900 uppercase tracking-widest transition-colors flex items-center gap-1"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Meta Analysis Section */}
+      <section className="mt-4 px-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4 flex-1">
+            <h2 className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Meta analysis</h2>
+            <div className="flex-1 h-px bg-stone-100" />
+          </div>
+          <div className="flex items-center gap-2 ml-4">
+            <button 
+              onClick={() => setMetaView('chart')}
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                metaView === 'chart' ? "bg-stone-900 text-white shadow-md shadow-stone-200" : "bg-stone-100 text-stone-400 hover:bg-stone-200"
+              )}
+            >
+              <PieChart size={14} />
+            </button>
+            <button 
+              onClick={() => setMetaView('text')}
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                metaView === 'text' ? "bg-stone-900 text-white shadow-md shadow-stone-200" : "bg-stone-100 text-stone-400 hover:bg-stone-200"
+              )}
+            >
+              <List size={14} />
+            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowMetaMenu(!showMetaMenu)}
+                className="flex items-center gap-2 px-4 py-1.5 bg-stone-200 text-stone-900 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-stone-300 transition-colors"
+              >
+                {metaCategory === 'archetypes' ? `Top ${metaTopRange} archetypes` : `Top ${metaTopRange} colors`}
+                <ChevronDown size={14} className={cn("transition-transform", showMetaMenu ? "rotate-180" : "")} />
+              </button>
+
+              <AnimatePresence>
+                {showMetaMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowMetaMenu(false)} />
+                    <motion.div 
+                      initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-100 py-1.5 z-50 overflow-hidden"
+                    >
+                      <div className="px-3 py-1.5 mb-1 border-b border-stone-50">
+                        <span className="text-[10px] font-black text-stone-300 uppercase tracking-widest">Analysis Mode</span>
+                      </div>
+                      {[
+                        { id: 'archetypes', label: `Top ${metaTopRange} archetypes` },
+                        { id: 'colors', label: `Top ${metaTopRange} colors` }
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setMetaCategory(item.id as any);
+                            setShowMetaMenu(false);
+                          }}
+                          className={cn(
+                            "w-full px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-tight transition-colors flex items-center justify-between",
+                            metaCategory === item.id ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-50"
+                          )}
+                        >
+                          {item.label}
+                          {metaCategory === item.id && <Check size={12} />}
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative py-4">
+          {metaData.length > 0 ? (
+            <div className="flex items-center justify-center min-h-[300px]">
+              {metaView === 'chart' ? (
+                <div className="relative">
+                  {/* Outer stroke decoration */}
+                  <div className="absolute inset-0 -m-1 border-[6px] border-stone-900 rounded-full z-10 pointer-events-none" />
+                  
+                  <svg width="280" height="280" viewBox="0 0 280 280" className="overflow-visible rounded-full">
+                    {(() => {
+                      const total = metaData.reduce((sum, item) => sum + item.count, 0);
+                      const size = 280;
+                      const center = size / 2;
+                      const radius = size / 2;
+                      let currentAngle = 0;
+
+                      return metaData.map((item, i) => {
+                        const sliceAngle = (item.count / total) * 360;
+                        const startAngle = currentAngle;
+                        const endAngle = currentAngle + sliceAngle;
+                        currentAngle += sliceAngle;
+
+                        const x1 = center + radius * Math.cos((startAngle - 90) * (Math.PI / 180));
+                        const y1 = center + radius * Math.sin((startAngle - 90) * (Math.PI / 180));
+                        const x2 = center + radius * Math.cos((endAngle - 90) * (Math.PI / 180));
+                        const y2 = center + radius * Math.sin((endAngle - 90) * (Math.PI / 180));
+
+                        const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+                        const pathData = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+
+                        // Mid-angle for dot placement
+                        const midAngle = startAngle + sliceAngle / 2;
+                        const dotRadius = radius * 0.88;
+                        const dx = center + dotRadius * Math.cos((midAngle - 90) * (Math.PI / 180));
+                        const dy = center + dotRadius * Math.sin((midAngle - 90) * (Math.PI / 180));
+
+                        return (
+                          <g 
+                            key={item.name} 
+                            className="group cursor-pointer"
+                            onClick={() => handleMetaClick(item)}
+                          >
+                            <defs>
+                              <clipPath id={`clip-${i}`}>
+                                <path d={pathData} />
+                              </clipPath>
+                            </defs>
+                            <image
+                              href={item.coverImageUrl}
+                              x={dx - center}
+                              y={Math.max(0, dy - center) * 0.8}
+                              width={size}
+                              height={size}
+                              preserveAspectRatio="xMidYMin slice"
+                              clipPath={`url(#clip-${i})`}
+                              className="transition-all duration-500 group-hover:scale-105 origin-center"
+                            />
+                            <path 
+                              d={pathData} 
+                              fill="none" 
+                              stroke="black" 
+                              strokeWidth="2"
+                              className="pointer-events-none"
+                            />
+
+                            {/* Status dots on slice */}
+                            <g transform={`translate(${dx}, ${dy})`}>
+                              {item.colors.slice(0, 3).map((color, ci) => (
+                                <circle 
+                                  key={ci}
+                                  cx={(ci - (Math.min(item.colors.length, 3) - 1) / 2) * 12}
+                                  cy={0}
+                                  r={5}
+                                  fill={
+                                    color === 'Red' ? '#ef4444' :
+                                    color === 'Blue' ? '#3b82f6' :
+                                    color === 'Green' ? '#22c55e' :
+                                    color === 'White' ? '#ffffff' :
+                                    color === 'Purple' ? '#a855f7' : '#78716c'
+                                  }
+                                  stroke="black"
+                                  strokeWidth="2"
+                                />
+                              ))}
+                            </g>
+                          </g>
+                        );
+                      });
+                    })()}
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-full space-y-2">
+                  {(() => {
+                    const total = metaData.reduce((sum, item) => sum + item.count, 0);
+                    return metaData.map((item, i) => (
+                      <motion.div 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        key={item.name} 
+                        onClick={() => handleMetaClick(item)}
+                        className="flex items-center gap-4 bg-stone-50 p-3 rounded-2xl hover:bg-stone-100 transition-colors cursor-pointer group"
+                      >
+                        <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm shrink-0">
+                          <img src={item.coverImageUrl} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className="text-[11px] font-black text-stone-900 uppercase tracking-tight truncate">{item.name}</h4>
+                            <span className="text-[10px] font-black text-stone-400 whitespace-nowrap">{Math.round(item.count / total * 100)}% — {item.count} {item.count === 1 ? 'Deck' : 'Decks'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {item.colors.map((color, ci) => (
+                              <div 
+                                key={ci} 
+                                className={cn(
+                                  "w-2.5 h-2.5 rounded-full border border-stone-200",
+                                  color === 'Red' ? 'bg-red-500' :
+                                  color === 'Blue' ? 'bg-blue-500' :
+                                  color === 'Green' ? 'bg-green-500' :
+                                  color === 'White' ? 'bg-white' :
+                                  color === 'Purple' ? 'bg-purple-500' : 'bg-stone-400'
+                                )}
+                              />
+                            ))}
+                            <div className="flex-1 h-1.5 bg-stone-200 rounded-full ml-1 overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(item.count / metaData[0].count) * 100}%` }}
+                                className="h-full bg-stone-900"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="py-24 w-full text-center text-stone-300 font-bold uppercase text-[10px] tracking-widest bg-stone-50 rounded-3xl border border-dashed border-stone-100">
+              Generating insights...
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Popular main cards Horizontal Scroll */}
+      <section className="mt-2 mb-1">
+        <div className="px-6 flex items-center gap-4 mb-1.5">
+          <h2 className="text-[11px] font-bold text-stone-400 uppercase tracking-tight">Filter by popular main cards</h2>
+          <div className="flex-1 h-px bg-stone-100" />
+        </div>
+        
+        <div className="flex gap-2 overflow-x-auto no-scrollbar px-6 pb-3">
+          {popularMainCards.map(({ card }) => (
+            <button
+              key={card.cardNumber}
+              onClick={() => setSelectedMainCardId(prev => prev === card.cardNumber ? null : card.cardNumber)}
+              className={cn(
+                "flex-shrink-0 relative w-[100px] h-[50px] rounded-xl overflow-hidden group transition-all duration-300 ring-2",
+                selectedMainCardId === card.cardNumber ? "ring-stone-900 scale-105 shadow-xl" : "ring-transparent hover:ring-stone-200"
+              )}
+            >
+              <ProgressiveImage 
+                src={card.imageUrl} 
+                referrerPolicy="no-referrer"
+                imageClassName="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+              <div className={cn(
+                "absolute inset-0 bg-gradient-to-t transition-opacity",
+                selectedMainCardId === card.cardNumber ? "from-stone-900/95 via-stone-900/40" : "from-black/80 via-black/30 opacity-90 group-hover:opacity-100"
+              )} />
+              
+              <div className="absolute inset-0 flex items-center justify-center p-1.5">
+                <p className="text-white text-[8px] font-black uppercase tracking-tight text-center leading-[1.1] drop-shadow-md">
+                  {card.name}
+                </p>
+              </div>
+              
+              {selectedMainCardId === card.cardNumber && (
+                <div className="absolute top-1 right-1 text-white">
+                  <CheckCircle2 size={12} fill="currentColor" stroke="none" className="text-stone-900 bg-white rounded-full p-0" />
+                </div>
+              )}
+            </button>
+          ))}
+          {popularMainCards.length === 0 && (
+            <div className="py-4 w-full text-center text-stone-300 font-bold uppercase text-[10px] tracking-widest bg-stone-50 rounded-2xl border border-dashed border-stone-100">
+              No main cards detected
+            </div>
+          )}
+        </div>
+      </section>
+
+      {false && (
+      <section className="mt-2 relative">
+        <div className="px-6 flex items-center gap-4 mb-1">
           <h2 className="text-[11px] font-bold text-stone-400 uppercase whitespace-nowrap shrink-0 tracking-tight">Recent top performers</h2>
           <div className="flex-1 h-px bg-stone-100" />
           <div className="relative">
@@ -440,8 +1264,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
         </div>
 
         {recentTopDecks.length > 0 ? (
-          <div className="relative h-[310px] md:h-[350px] flex items-center justify-center -mt-2">
-            {/* Ghost drag layer - captures drag anywhere in the section */}
+          <div className="relative h-[310px] md:h-[350px] flex items-center justify-center -mt-6">
             <motion.div 
               className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing touch-none"
               drag="x"
@@ -468,13 +1291,11 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                 const width = window.innerWidth;
                 const tapX = info.point.x;
                 
-                // If it's a tap, check position
                 if (tapX < width * 0.25) {
                   handlePrev();
                 } else if (tapX > width * 0.75) {
                   handleNext();
                 } else {
-                  // Only select if they definitely meant to click the center
                   onSelectSubmission?.(recentTopDecks[activeIndex]);
                 }
               }}
@@ -487,7 +1308,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                   const index = (activeIndex + offset + itemsCount) % itemsCount;
                   const deck = recentTopDecks[index];
                   if (!deck) return null;
-                  const deckColors = getDeckColors(deck.deckItems);
+                  const deckColors = getSubmissionColors(deck, allCards);
                   const isCenter = offset === 0;
 
                   return (
@@ -578,6 +1399,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
           </div>
         )}
       </section>
+      )}
 
       {/* Main Content Filters */}
       <section className="mt-2 px-6">
@@ -662,8 +1484,8 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
           {(() => {
             const currentFilterEvent = events.find(e => e.id === activeFilterId);
             const filteredSubmissions = activeFilterId === 'all' 
-              ? submissions 
-              : submissions.filter(s => s.tournamentName === currentFilterEvent?.name);
+              ? filteredDecks 
+              : filteredDecks.filter(s => s.tournamentId === activeFilterId || (s.tournamentName && s.tournamentName === currentFilterEvent?.name));
             
             const tournamentDateMap = new Map<string, number>();
             events.forEach(e => tournamentDateMap.set(e.name, new Date(e.date).getTime()));
@@ -700,7 +1522,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
             }
 
             return sortedDecks.map((deck, index) => {
-              const deckColors = getDeckColors(deck.deckItems);
+              const deckColors = getSubmissionColors(deck, allCards);
               const rank = getPlacementRank(deck.placement);
               return (
                 <motion.div 
@@ -805,6 +1627,24 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; allCar
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [copied, setCopied] = useState(false);
+  const [eventDetails, setEventDetails] = useState<TournamentEvent | null>(null);
+
+  useEffect(() => {
+    if (submission.tournamentId && !submission.totalPlayers) {
+      const fetchEvent = async () => {
+        try {
+          const docRef = doc(db, 'tournament_events', submission.tournamentId!);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setEventDetails(docSnap.data() as TournamentEvent);
+          }
+        } catch (err) {
+          console.error("Error fetching tournament event:", err);
+        }
+      };
+      fetchEvent();
+    }
+  }, [submission.tournamentId, submission.totalPlayers]);
 
   // Parse text format if items are missing
   const deckItems = (submission.deckItems && submission.deckItems.length > 0)
@@ -977,10 +1817,22 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; allCar
       <div className="flex-1 overflow-y-auto bg-white">
         {/* Simplified Metadata */}
         <div className="px-6 py-6 border-b border-stone-50">
-          <div className="flex items-center gap-2 text-[11px] font-black text-stone-400 uppercase tracking-widest mb-1.5">
+          <div className="flex items-center gap-2 text-[11px] font-black text-stone-400 uppercase tracking-widest mb-1.5 flex-wrap">
             <span>{submission.season}</span>
             <span className="w-1 h-1 rounded-full bg-stone-200" />
             <span className="text-stone-500">{submission.eventType}</span>
+            {submission.tournamentName && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-stone-200" />
+                <span className="text-stone-500">{submission.tournamentName}</span>
+              </>
+            )}
+            {(submission.totalPlayers || eventDetails?.totalPlayers) && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-stone-200" />
+                <span className="text-stone-500">{submission.totalPlayers || eventDetails?.totalPlayers} Players</span>
+              </>
+            )}
             <span className="w-1 h-1 rounded-full bg-stone-200" />
             <span>{new Date(submission.date).toLocaleDateString()}</span>
           </div>

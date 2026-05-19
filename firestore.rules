@@ -134,7 +134,7 @@ service cloud.firestore {
     }
 
     function isValidDeckSubmission(data) {
-      return hasOnlyAllowedFields(['id', 'uid', 'deckId', 'deckName', 'deckItems', 'coverImageUrl', 'playerName', 'email', 'season', 'country', 'eventType', 'tournamentId', 'tournamentName', 'date', 'placement', 'decklistText', 'coverCardName', 'createdAt', 'updatedAt', 'status']) &&
+      return hasOnlyAllowedFields(['id', 'uid', 'deckId', 'deckName', 'deckItems', 'coverImageUrl', 'playerName', 'email', 'season', 'country', 'eventType', 'tournamentId', 'tournamentName', 'totalPlayers', 'date', 'placement', 'decklistText', 'coverCardName', 'archetype', 'createdAt', 'updatedAt', 'status']) &&
              data.id is string &&
              data.uid is string &&
              data.deckId is string &&
@@ -147,13 +147,22 @@ service cloud.firestore {
              data.eventType in ['Shop Battle', 'Newtype challenge', 'Organized Event', 'Release event'] &&
              (!('tournamentId' in data) || (data.tournamentId is string || data.tournamentId == null)) &&
              (!('tournamentName' in data) || (data.tournamentName is string || data.tournamentName == null)) &&
+             (!('totalPlayers' in data) || (data.totalPlayers is int || data.totalPlayers == null)) &&
              data.date is string &&
              data.placement.matches('^Top ([1-9]|[12][0-9]|3[0-2])$') &&
              (!('decklistText' in data) || (data.decklistText is string && data.decklistText.size() <= 10000)) &&
              (!('coverCardName' in data) || (data.coverCardName is string && data.coverCardName.size() <= 200)) &&
+             (!('archetype' in data) || (data.archetype is string || data.archetype == null)) &&
              data.createdAt is int &&
              (!('updatedAt' in data) || (data.updatedAt is string || data.updatedAt is int)) &&
              data.status in ['pending', 'approved', 'rejected'];
+    }
+
+    function isValidArchetype(data) {
+      return hasOnlyAllowedFields(['id', 'name', 'createdAt']) &&
+             data.id is string &&
+             data.name is string && data.name.size() > 0 &&
+             data.createdAt is int;
     }
 
     function isValidShortLink(data) {
@@ -266,6 +275,11 @@ service cloud.firestore {
     match /products/{productId} {
       allow read: if true;
       allow write: if isAdmin() && isValidProduct(request.resource.data);
+    }
+
+    match /archetypes/{archetypeId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidArchetype(request.resource.data);
     }
   }
 }

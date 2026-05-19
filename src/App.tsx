@@ -13,6 +13,7 @@ import {
   Info, 
   Scan, 
   Grid, 
+  Home,
   List as ListIcon,
   Sparkles,
   Palette,
@@ -137,6 +138,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 import { ProgressiveImage } from './components/ProgressiveImage';
+import { CameraScanner } from './components/CameraScanner';
 
 const COMMON_VARIANTS: ArtVariantType[] = ["Parallel", "Beta", "Beta Parallel", "Premium", "Championship", "Double Plus (++)", "Championship Participation"];
 const RARITIES = ["C", "U", "R", "LR"];
@@ -668,6 +670,23 @@ function AppContent() {
     }
   }, [selectedCard?.cardNumber]); // Use cardNumber as it's more stable across variants for the same card
 
+  const cardPopularityMap = useMemo(() => {
+    const CURRENT_SEASON = "GD04";
+    const map: Record<string, number> = {};
+    
+    approvedSubmissions.forEach(submission => {
+      if (submission.season === CURRENT_SEASON) {
+        submission.deckItems.forEach(item => {
+          // Track popularity by cardNumber so variants of the same card share popularity
+          const cardNumber = item.card.cardNumber;
+          map[cardNumber] = (map[cardNumber] || 0) + item.count;
+        });
+      }
+    });
+    
+    return map;
+  }, [approvedSubmissions]);
+
   const metaStats = useMemo(() => {
     if (!selectedCard || approvedSubmissions.length === 0) return null;
     
@@ -878,6 +897,7 @@ function AppContent() {
   const [showAnatomy, setShowAnatomy] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
+  const [scannerResults, setScannerResults] = useState<IdentifiedCard[]>([]);
   const [isBatchScanning, setIsBatchScanning] = useState(false);
   const [capturedBatchFiles, setCapturedBatchFiles] = useState<File[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -960,6 +980,8 @@ function AppContent() {
   const [quickStartMode, setQuickStartMode] = useState<'play' | 'stats' | null>(null);
   const [currentTab, setCurrentTab] = useState<'cards' | 'decks' | 'scan' | 'quick-start' | 'profile' | 'coverage' | 'submit-deck' | 'products'>('cards');
   const [submissionDeck, setSubmissionDeck] = useState<Deck | null>(null);
+  const [editingTournamentSubmission, setEditingTournamentSubmission] = useState<DeckSubmission | null>(null);
+  const [tournamentManagerContext, setTournamentManagerContext] = useState<{ tab: 'events' | 'submissions' | 'archetypes', eventId: string | null }>({ tab: 'events', eventId: null });
   const [selectedTournamentDeck, setSelectedTournamentDeck] = useState<DeckSubmission | null>(null);
   const [showTournamentManager, setShowTournamentManager] = useState(false);
   const [showProductManager, setShowProductManager] = useState(false);
@@ -968,6 +990,7 @@ function AppContent() {
   const [prices, setPrices] = useState<Record<string, { price: string, url: string }>>({});
   const [priceMode, setPriceMode] = useState(false);
   const [pricesLoading, setPricesLoading] = useState(false);
+  const [fetchingPriceFor, setFetchingPriceFor] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   // Price fetching logic
@@ -993,6 +1016,46 @@ function AppContent() {
     // const interval = setInterval(fetchPrices, 1000 * 60 * 30);
     // return () => clearInterval(interval);
   }, []);
+
+  const fetchCardPrice = async (card: GundamCard) => {
+    if (!card.cardNumber || fetchingPriceFor) return;
+    
+    setFetchingPriceFor(card.cardNumber);
+    try {
+      const response = await fetch('/api/fetch-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cardNumber: card.cardNumber,
+          cardName: card.name,
+          rarity: card.rarity
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.status === 429) {
+        showToast("AI limit reached. Tap 'View on Yu-Yu-Tei' below.");
+        return;
+      }
+
+      if (data.price) {
+        const priceKey = `${card.cardNumber.toUpperCase()}_${card.rarity.toUpperCase()}`;
+        setPrices(prev => ({
+          ...prev,
+          [priceKey]: { price: data.price.toString(), url: data.url }
+        }));
+        showToast(`Updated price: ¥${data.price.toLocaleString()}`);
+      } else {
+        showToast("Price not found for this card.");
+      }
+    } catch (error) {
+      console.error("Error fetching price:", error);
+      showToast("Failed to fetch price via Gemini.");
+    } finally {
+      setFetchingPriceFor(null);
+    }
+  };
 
   const [showLoginGate, setShowLoginGate] = useState(false);
   const [loginGatePassword, setLoginGatePassword] = useState('');
@@ -2077,8 +2140,6 @@ function AppContent() {
     }
   }, [decks, activeDeckId]);
   
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
   // --- Navigation History Management ---
   const isPoppingState = useRef(false);
   
@@ -2888,6 +2949,12 @@ function AppContent() {
       if (sortOption.key === 'name') return a.name.localeCompare(b.name) * direction;
       if (sortOption.key === 'id') return a.cardNumber.localeCompare(b.cardNumber, undefined, { numeric: true }) * direction;
       if (sortOption.key === 'color') return a.color.localeCompare(b.color) * direction;
+      if (sortOption.key === 'popularity') {
+        const popA = cardPopularityMap[a.cardNumber] || 0;
+        const popB = cardPopularityMap[b.cardNumber] || 0;
+        if (popA !== popB) return (popA - popB) * direction;
+        return a.cardNumber.localeCompare(b.cardNumber, undefined, { numeric: true }) * direction;
+      }
       if (sortOption.key === 'price') {
         const getPrice = (card: GundamCard) => {
           const cardPrice = prices[card.cardNumber.toUpperCase() + "_" + card.rarity.toUpperCase()]?.price || prices[card.cardNumber.toUpperCase()]?.price;
@@ -3212,6 +3279,11 @@ function AppContent() {
     );
   };
 
+  const handleCameraCapture = async (blob: Blob) => {
+    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+    await captureAndIdentify(file);
+  };
+
   const captureAndIdentify = async (file: File) => {
     if (isAnalyzing) return;
     setIsAnalyzing(true);
@@ -3268,30 +3340,14 @@ function AppContent() {
         setTimeout(() => reject(new Error("Identification timed out")), 180000)
       );
       
-      const identified = await Promise.race([
+      const identifiedBatch = await Promise.race([
         identifyCard(base64, combinedCards),
         identificationTimeout
-      ]) as IdentifiedCard | null;
+      ]) as IdentifiedCard[] | null;
 
-      if (identified) {
-        showToast(`Identified: ${identified.card.name}`);
-        setIsScanning(false);
-        
-        // If we are currently on the scan tab, we want to transition to cards tab 
-        // in a way that creates a history entry for the database landing page
-        if (currentTab === 'scan') {
-          setCurrentTab('cards');
-          // Delay the selection slightly so the history effect sees the tab change as a separate event
-          setTimeout(() => {
-            setSelectedCard(identified.card);
-            setSelectedArtType("Base art");
-          }, 100);
-        } else {
-          // If already on another tab (like cards), just show the details
-          setSelectedCard(identified.card);
-          setSelectedArtType("Base art");
-          setCurrentTab('cards');
-        }
+      if (identifiedBatch && identifiedBatch.length > 0) {
+        setScannerResults(identifiedBatch);
+        setAnalysisProgress(""); // Ready for user selection
       } else {
         showToast(`Could not identify card. Make sure the photo is clear.`);
       }
@@ -3406,6 +3462,20 @@ function AppContent() {
                 )}
               </form>
               <div className="flex items-center gap-0.5">
+                <button 
+                  onClick={() => setShowSortModal(true)}
+                  className={cn(
+                    "p-2 rounded-lg transition-colors active:scale-95 relative",
+                    sortOption.key !== 'default'
+                      ? "text-amber-600 bg-amber-50"
+                      : "text-stone-500 hover:bg-stone-100"
+                  )}
+                >
+                  <ArrowUpDown size={18} />
+                  {sortOption.key !== 'default' && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white" />
+                  )}
+                </button>
                 <button 
                   onClick={() => setIsFilterOpen(true)}
                   className={cn(
@@ -3973,6 +4043,47 @@ function AppContent() {
                   setSelectedArtType("Base art");
                   setShowAnatomy(false);
                 }
+                if (isDeckEditorOpen && deckEditorRef.current && !isDeckInPlayMode && !isDeckBuilderMode) {
+                  setOpenedEditorFromList(false);
+                  setIsDeckEditorOpen(false);
+                }
+                if (isDeckBuilderMode) {
+                  setIsDeckBuilderMode(false);
+                  setIsDeckEditorOpen(false);
+                  setDeckBuilderView('list');
+                }
+                if (currentTab === 'scan') setIsScanning(false);
+                setCurrentTab('quick-start');
+                setShowFeedback(false);
+                setShowAdminPanel(false);
+                setShowTournamentManager(false);
+                setShowDeckList(false);
+                setIsScanning(false);
+              }}
+              className="flex flex-col items-center gap-0 group transition-all active:scale-95 relative"
+            >
+              <div className={cn(
+                "p-1 rounded-lg transition-colors",
+                currentTab === 'quick-start' ? "bg-stone-200/80" : "group-hover:bg-stone-200/50"
+              )}>
+                <Home size={16} className={cn(
+                  "transition-colors",
+                  currentTab === 'quick-start' ? "text-[#141414]" : "text-stone-500 group-hover:text-[#141414]"
+                )} strokeWidth={currentTab === 'quick-start' ? 2 : 1.5} />
+              </div>
+              <span className={cn(
+                "text-[8px] font-bold uppercase tracking-tighter transition-colors",
+                currentTab === 'quick-start' ? "text-[#141414]" : "text-stone-400 group-hover:text-[#141414]"
+              )}>Home</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                if (selectedCard) {
+                  setSelectedCard(null);
+                  setSelectedArtType("Base art");
+                  setShowAnatomy(false);
+                }
                 if (isDeckBuilderMode) {
                   setIsDeckBuilderMode(false);
                   setIsDeckEditorOpen(false);
@@ -4074,46 +4185,7 @@ function AppContent() {
               )}
             </button>
 
-            <button 
-              onClick={() => {
-                if (selectedCard) {
-                  setSelectedCard(null);
-                  setSelectedArtType("Base art");
-                  setShowAnatomy(false);
-                }
-                if (isDeckEditorOpen && deckEditorRef.current && !isDeckInPlayMode && !isDeckBuilderMode) {
-                  setOpenedEditorFromList(false);
-                  setIsDeckEditorOpen(false);
-                }
-                if (isDeckBuilderMode) {
-                  setIsDeckBuilderMode(false);
-                  setIsDeckEditorOpen(false);
-                  setDeckBuilderView('list');
-                }
-                if (currentTab === 'scan') setIsScanning(false);
-                setCurrentTab('quick-start');
-                setShowFeedback(false);
-                setShowAdminPanel(false);
-                setShowTournamentManager(false);
-                setShowDeckList(false);
-                setIsScanning(false);
-              }}
-              className="flex flex-col items-center gap-0 group transition-all active:scale-95 relative"
-            >
-              <div className={cn(
-                "p-1 rounded-lg transition-colors",
-                currentTab === 'quick-start' ? "bg-stone-200/80" : "group-hover:bg-stone-200/50"
-              )}>
-                <Sparkles size={16} className={cn(
-                  "transition-colors",
-                  currentTab === 'quick-start' ? "text-[#141414]" : "text-stone-500 group-hover:text-[#141414]"
-                )} strokeWidth={currentTab === 'quick-start' ? 2 : 1.5} />
-              </div>
-              <span className={cn(
-                "text-[8px] font-bold uppercase tracking-tighter transition-colors",
-                currentTab === 'quick-start' ? "text-[#141414]" : "text-stone-400 group-hover:text-[#141414]"
-              )}>Quick start</span>
-            </button>
+
             <button 
               onClick={() => {
                 if (selectedCard) {
@@ -4182,6 +4254,7 @@ function AppContent() {
                 setShowAdminPanel(false);
                 setShowTournamentManager(false);
                 setIsScanning(true);
+                setScannerResults([]);
                 setShowDeckList(false);
               }}
               className={cn(
@@ -4271,188 +4344,40 @@ function AppContent() {
       {/* Scanner Overlay */}
       <AnimatePresence>
         {isScanning && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col font-sans"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-stone-200 bg-white shadow-sm">
-              <button 
-                onClick={() => {
-                  setIsScanning(false);
-                  setIsBatchScanning(false);
-                  setCapturedBatchFiles([]);
-                }}
-                className="p-2 -ml-2 text-stone-400 hover:text-[#141414] transition-colors"
-              >
-                <ChevronLeft size={28} />
-              </button>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-stone-400">Scanner</h2>
-              <div className="w-10" />
-            </div>
+          <CameraScanner 
+            onCapture={handleCameraCapture}
+            onCancel={() => {
+              setIsScanning(false);
+              setIsBatchScanning(false);
+              setCapturedBatchFiles([]);
+              setScannerResults([]);
+            }}
+            onSelectCard={(result) => {
+              setIsScanning(false);
+              setScannerResults([]);
+              
+              const card = result.card;
+              const artType = result.isAlt ? "Parallel" : "Base art";
 
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto w-full">
-              {isBatchScanning && !isAnalyzing ? (
-                <div className="w-full space-y-6">
-                   <div className="space-y-4">
-                      <h3 className="text-[#141414] font-black uppercase tracking-widest text-lg">Batch Capture</h3>
-                      <p className="text-stone-400 text-xs uppercase tracking-widest">
-                        {capturedBatchFiles.length} photos ready
-                      </p>
-                   </div>
-
-                   <div className="grid grid-cols-3 gap-2 overflow-y-auto max-h-[300px] p-2 bg-white rounded-2xl border border-stone-200 shadow-inner">
-                      {capturedBatchFiles.map((file, i) => (
-                        <div key={i} className="aspect-[5/7] rounded-lg overflow-hidden bg-stone-100 relative group border border-stone-200">
-                           <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
-                           <button 
-                             onClick={() => setCapturedBatchFiles(prev => prev.filter((_, idx) => idx !== i))}
-                             className="absolute top-1 right-1 p-1 bg-[#141414]/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                           >
-                             <X size={12} />
-                           </button>
-                        </div>
-                      ))}
-                      {capturedBatchFiles.length === 0 && (
-                        <div className="col-span-3 py-12 flex flex-col items-center gap-3 text-stone-300">
-                           <Camera size={32} />
-                           <span className="text-[10px] font-black uppercase tracking-[0.2em]">Snapping spree mode</span>
-                        </div>
-                      )}
-                   </div>
-
-                   <div className="space-y-3">
-                      <button 
-                        onClick={() => batchCaptureInputRef.current?.click()}
-                        className="w-full py-6 bg-amber-500 hover:bg-amber-400 text-black rounded-2xl font-black uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-xl shadow-amber-500/10"
-                      >
-                        <Camera size={20} fill="currentColor" />
-                        Next Photo
-                      </button>
-
-                      <button 
-                        onClick={() => processMultiPhotos(capturedBatchFiles)}
-                        disabled={capturedBatchFiles.length === 0}
-                        className="w-full py-4 bg-[#141414] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-3 disabled:opacity-30 transition-all shadow-lg"
-                      >
-                        <Layout size={16} fill="currentColor" />
-                        Build Deck with {capturedBatchFiles.length} Photos
-                      </button>
-
-                      <button 
-                        onClick={() => {
-                          setIsBatchScanning(false);
-                          setCapturedBatchFiles([]);
-                        }}
-                        className="w-full py-3 text-stone-400 hover:text-stone-600 font-black uppercase tracking-widest text-[9px] active:scale-95 transition-all"
-                      >
-                        Cancel Batch
-                      </button>
-                   </div>
-                </div>
-              ) : isAnalyzing ? (
-                <div className="space-y-8 flex flex-col items-center animate-in fade-in zoom-in duration-500">
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-full border-2 border-amber-500/20 flex items-center justify-center bg-white shadow-xl">
-                      <Loader2 className="text-amber-500 animate-spin" size={40} strokeWidth={1.5} />
-                    </div>
-                    <div className="absolute inset-0 rounded-full border border-amber-500/10 animate-ping" />
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-xl font-black tracking-tight text-[#141414] uppercase">{analysisProgress}</p>
-                    {scanSeconds > 0 && (
-                      <p className="text-amber-600 font-mono text-sm font-bold animate-pulse">
-                        Scanning... {scanSeconds}s
-                      </p>
-                    )}
-                    <p className="text-xs text-stone-400 uppercase tracking-[0.15em] leading-relaxed font-bold">
-                      Cross-referencing database &<br />translating Japanese text
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4 w-full">
-                    <button 
-                      onClick={() => cameraInputRef.current?.click()}
-                      className="w-full py-6 bg-amber-500 hover:bg-amber-400 text-black rounded-2xl font-black uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-xl shadow-amber-500/10"
-                    >
-                      <Camera size={20} fill="currentColor" />
-                      Take Photo & Identify
-                    </button>
-
-                    <button 
-                      onClick={() => {
-                        setIsBatchScanning(true);
-                        setIsScanning(true);
-                        setCapturedBatchFiles([]);
-                      }}
-                      className="w-full py-6 bg-emerald-500 hover:bg-emerald-400 text-black rounded-2xl font-black uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/10"
-                    >
-                      <Layout size={20} fill="currentColor" />
-                      Build a deck (Multiple scans)
-                    </button>
-
-                    <div className="flex flex-col gap-2">
-                       <button 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full py-4 text-stone-400 hover:text-stone-600 font-black uppercase tracking-widest text-[9px] active:scale-95 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Upload size={14} />
-                        Upload single from Gallery
-                      </button>
-                      <p className="text-[9px] text-stone-400 font-bold uppercase tracking-widest text-center px-4 leading-relaxed">
-                        Tip: You can also upload pre-taken photos of your unique cards through the gallery.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-12 w-full p-4 rounded-2xl bg-white border border-stone-200 shadow-sm flex items-start gap-3">
-                    <Sparkles size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-stone-500 font-bold text-left leading-relaxed uppercase tracking-widest">
-                      AI translates Japanese cards to English and finds the correct card in our database instantly.
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Hidden stuff moved inside too */}
-            <canvas ref={canvasRef} className="hidden" />
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleCardUpload} 
-              accept="image/*" 
-              className="hidden" 
-            />
-            <input 
-              type="file" 
-              ref={cameraInputRef} 
-              onChange={handleCardUpload} 
-              accept="image/*" 
-              capture="environment"
-              className="hidden" 
-            />
-            <input 
-              type="file" 
-              ref={multiUploadInputRef} 
-              onChange={handleMultiCardUpload} 
-              accept="image/*" 
-              multiple
-              className="hidden" 
-            />
-            <input 
-              type="file" 
-              ref={batchCaptureInputRef} 
-              onChange={handleBatchPhotoCapture} 
-              accept="image/*" 
-              capture="environment"
-              className="hidden" 
-            />
-          </motion.div>
+              if (currentTab === 'scan') {
+                setCurrentTab('cards');
+                setTimeout(() => {
+                  setSelectedCard(card);
+                  setSelectedArtType(artType);
+                }, 100);
+              } else {
+                setSelectedCard(card);
+                setSelectedArtType(artType);
+                setCurrentTab('cards');
+              }
+            }}
+            onRetry={() => {
+              setScannerResults([]);
+            }}
+            isAnalyzing={isAnalyzing}
+            status={analysisProgress}
+            results={scannerResults}
+          />
         )}
       </AnimatePresence>
 
@@ -4749,6 +4674,24 @@ function AppContent() {
                           <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                           <span>View on Yu-Yu-Tei</span>
                         </a>
+
+                        <button 
+                          onClick={() => fetchCardPrice(selectedCard)}
+                          disabled={!!fetchingPriceFor}
+                          className={cn(
+                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-sm group w-fit border",
+                            fetchingPriceFor === selectedCard.cardNumber
+                              ? "bg-stone-50 border-stone-200 text-stone-400 cursor-not-allowed"
+                              : "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100 hover:border-amber-300"
+                          )}
+                        >
+                          {fetchingPriceFor === selectedCard.cardNumber ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Sparkles size={12} className="text-amber-500" />
+                          )}
+                          <span>{fetchingPriceFor === selectedCard.cardNumber ? "Searching..." : "Fetch Current Price"}</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -5166,6 +5109,7 @@ function AppContent() {
                   { id: 'color', label: 'Color' },
                   { id: 'ap', label: 'AP' },
                   { id: 'hp', label: 'HP' },
+                  { id: 'popularity', label: 'Popularity' },
                   { id: 'price', label: 'Price (¥)' }
                 ].map((option) => {
                   const isActive = sortOption.key === option.id;
@@ -5829,8 +5773,30 @@ function AppContent() {
         <TournamentManager 
           allCards={combinedCards}
           onClose={() => setShowTournamentManager(false)} 
+          initialTab={tournamentManagerContext.tab}
+          initialFocusedEventId={tournamentManagerContext.eventId}
           onSubmitDeck={(deck) => {
             setSubmissionDeck(deck);
+            setEditingTournamentSubmission(null);
+            setCurrentTab('submit-deck');
+            setShowTournamentManager(false);
+          }}
+          onEditSubmission={(submission) => {
+            setEditingTournamentSubmission(submission);
+            // We'll trust the manager to pass its context if we had a way, 
+            // but for now let's just infer it or set a flag.
+            // Actually, let's keep it simple: if editing, we want to return to submissions.
+            setTournamentManagerContext({ 
+              tab: 'submissions', 
+              eventId: submission.tournamentId || null 
+            });
+            setSubmissionDeck({
+              id: submission.deckId,
+              name: submission.deckName,
+              items: submission.deckItems,
+              lastModified: submission.createdAt,
+              coverImageUrl: submission.coverImageUrl
+            });
             setCurrentTab('submit-deck');
             setShowTournamentManager(false);
           }}
@@ -5967,18 +5933,32 @@ function AppContent() {
           >
             <DeckSubmissionForm 
               deck={submissionDeck} 
+              initialSubmission={editingTournamentSubmission || undefined}
               allCards={allCards}
               onClose={() => {
-                setCurrentTab('cards');
+                if (editingTournamentSubmission) {
+                  setShowTournamentManager(true);
+                  setCurrentTab('cards'); // Just to clear the submit-deck tab
+                } else {
+                  setCurrentTab('cards');
+                }
                 setSubmissionDeck(null);
+                setEditingTournamentSubmission(null);
                 setIsScanning(false);
                 setShowDeckList(false);
               }} 
               onSuccess={() => {
-                setCurrentTab('cards');
+                if (editingTournamentSubmission) {
+                  setShowTournamentManager(true);
+                  setCurrentTab('cards');
+                } else {
+                  setCurrentTab('cards');
+                }
                 setSubmissionDeck(null);
+                setEditingTournamentSubmission(null);
                 setIsScanning(false);
                 setShowDeckList(false);
+                showToast(editingTournamentSubmission ? "Deck updated successfully!" : "Deck submitted for review!");
               }}
             />
           </motion.div>

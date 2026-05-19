@@ -106,10 +106,12 @@ export interface DeckSubmission {
   eventType: EventType;
   tournamentId?: string; 
   tournamentName?: string;
+  totalPlayers?: number;
   date: string;
   placement: Placement;
   decklistText?: string;
   coverCardName?: string;
+  archetype?: string;
   createdAt: number;
   status: SubmissionStatus;
 }
@@ -157,4 +159,10 @@ export interface Product {
   contents: string[];
   imageUrl: string;
   category: "Starter Deck" | "Booster box" | "Other";
+}
+
+export interface Archetype {
+  id: string;
+  name: string;
+  createdAt: number;
 }

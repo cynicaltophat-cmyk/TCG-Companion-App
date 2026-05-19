@@ -9,7 +9,7 @@ import {
   where
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Deck, TournamentEvent, DeckSubmission, EventType, Placement, Country, GundamCard } from '../types';
+import { Deck, TournamentEvent, DeckSubmission, EventType, Placement, Country, GundamCard, Archetype } from '../types';
 import { 
   X, 
   ChevronDown, 
@@ -34,6 +34,7 @@ import { ProgressiveImage } from './ProgressiveImage';
 interface DeckSubmissionFormProps {
   deck: Deck;
   allCards: GundamCard[];
+  initialSubmission?: DeckSubmission;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -46,29 +47,46 @@ const EVENT_TYPES: EventType[] = ["Shop Battle", "Newtype challenge", "Organized
 const COUNTRIES: Country[] = ["Global", "Singapore"];
 // Removed fixed PLACEMENTS constant to allow numeric range 1-32
 
-export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, allCards, onClose, onSuccess }) => {
+export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, allCards, initialSubmission, onClose, onSuccess }) => {
   const [events, setEvents] = useState<TournamentEvent[]>([]);
+  const [archetypes, setArchetypes] = useState<Archetype[]>([]);
+  const [archetypeSearch, setArchetypeSearch] = useState(initialSubmission?.archetype || "");
+  const [showArchetypeSuggestions, setShowArchetypeSuggestions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showCardSuggestions, setShowCardSuggestions] = useState(false);
   const [cardSuggestions, setCardSuggestions] = useState<GundamCard[]>([]);
   
   const [formData, setFormData] = useState({
-    deckName: deck.name || "",
-    playerName: auth.currentUser?.displayName || "",
-    email: auth.currentUser?.email || "",
-    season: SEASONS[0].id,
-    country: COUNTRIES[0] as Country,
-    eventType: EVENT_TYPES[0] as EventType,
-    tournamentId: "",
-    date: new Date().toISOString().split('T')[0],
-    placement: "Top 1",
-    decklistText: deck.items
+    deckName: initialSubmission?.deckName || deck.name || "",
+    playerName: initialSubmission?.playerName || auth.currentUser?.displayName || "",
+    email: initialSubmission?.email || auth.currentUser?.email || "",
+    season: initialSubmission?.season || SEASONS[0].id,
+    country: initialSubmission?.country || COUNTRIES[0] as Country,
+    eventType: initialSubmission?.eventType || EVENT_TYPES[0] as EventType,
+    tournamentId: initialSubmission?.tournamentId || "",
+    date: initialSubmission?.date || new Date().toISOString().split('T')[0],
+    placement: initialSubmission?.placement || "Top 1",
+    decklistText: initialSubmission?.decklistText || deck.items
       .map(item => `${item.count} ${item.card.cardNumber} ${item.card.name}${item.card.traits?.[0] ? ` (${item.card.traits[0]})` : ''}`)
       .join('\n'),
-    coverCardName: "",
-    coverImageUrl: deck.coverImageUrl || ""
+    coverCardName: initialSubmission?.coverCardName || "",
+    coverImageUrl: initialSubmission?.coverImageUrl || deck.coverImageUrl || "",
+    archetype: initialSubmission?.archetype || ""
   });
+
+  useEffect(() => {
+    const q = query(collection(db, 'archetypes'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const archetypesData: Archetype[] = [];
+      snapshot.forEach((doc) => {
+        archetypesData.push(doc.data() as Archetype);
+      });
+      setArchetypes(archetypesData);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const q = query(
@@ -106,14 +124,14 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
     }
 
     setSubmitting(true);
-    const submissionId = `sub-${Date.now()}`;
+    const submissionId = initialSubmission?.id || `sub-${Date.now()}`;
     
     // Find tournament name if applicable
     const selectedTournament = events.find(e => e.id === formData.tournamentId);
 
     const submission: any = {
       id: submissionId,
-      uid: auth.currentUser.uid,
+      uid: initialSubmission?.uid || auth.currentUser.uid,
       deckId: deck.id,
       deckName: formData.deckName || "Untitled Deck",
       deckItems: deck.items,
@@ -126,8 +144,10 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
       placement: formData.placement,
       decklistText: formData.decklistText,
       coverCardName: formData.coverCardName,
-      createdAt: Date.now(),
-      status: 'pending'
+      archetype: formData.archetype,
+      createdAt: initialSubmission?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+      status: initialSubmission?.status || 'pending'
     };
 
     if (formData.coverImageUrl) submission.coverImageUrl = formData.coverImageUrl;
@@ -135,14 +155,21 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
     if (formData.eventType === 'Organized Event') {
       if (formData.tournamentId) submission.tournamentId = formData.tournamentId;
       if (selectedTournament?.name) submission.tournamentName = selectedTournament.name;
+      if (selectedTournament?.totalPlayers) submission.totalPlayers = selectedTournament.totalPlayers;
     }
 
     try {
       await setDoc(doc(db, 'deck_submissions', submissionId), submission);
-      setSuccess(true);
-      setTimeout(() => {
+      
+      if (initialSubmission) {
+        // Skip success screen for edits and return immediately
         onSuccess();
-      }, 1500);
+      } else {
+        setSuccess(true);
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
+      }
     } catch (err) {
       console.error("Error submitting deck:", err);
       // Enhanced error reporting
@@ -181,7 +208,9 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
         <button onClick={onClose} className="p-2 hover:bg-stone-50 rounded-full">
           <ArrowLeft size={20} className="text-stone-600" />
         </button>
-        <h2 className="text-lg font-black tracking-tight text-stone-900">Submit deck</h2>
+        <h2 className="text-lg font-black tracking-tight text-stone-900">
+          {initialSubmission ? "Edit deck submission" : "Submit deck"}
+        </h2>
         <div className="w-10 h-10" /> {/* Spacer */}
       </header>
 
@@ -208,18 +237,105 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
           </div>
         </section>
 
-        {/* Deck Name */}
-        <section className="space-y-2">
-          <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck Name</label>
-          <input 
-            type="text"
-            value={formData.deckName}
-            onChange={(e) => setFormData(prev => ({ ...prev, deckName: e.target.value }))}
-            placeholder="e.g. Red Unit Aggro"
-            className="w-full px-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
-            required
-          />
-        </section>
+        {/* Deck Name & Archetype */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="space-y-2">
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck Name</label>
+            <input 
+              type="text"
+              value={formData.deckName}
+              onChange={(e) => setFormData(prev => ({ ...prev, deckName: e.target.value }))}
+              placeholder="e.g. Red Unit Aggro"
+              className="w-full px-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+              required
+            />
+          </section>
+
+          <section className="space-y-2">
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck archetype</label>
+            <div className="relative">
+              <input 
+                type="text"
+                value={archetypeSearch}
+                onFocus={() => setShowArchetypeSuggestions(true)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setArchetypeSearch(val);
+                  setFormData(prev => ({ ...prev, archetype: val }));
+                  setShowArchetypeSuggestions(true);
+                }}
+                onBlur={() => {
+                  // Small delay to allow click on suggestion
+                  setTimeout(() => setShowArchetypeSuggestions(false), 200);
+                }}
+                placeholder="Search or select archetype..."
+                className="w-full px-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
+                <ChevronDown size={18} />
+              </div>
+
+              {showArchetypeSuggestions && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-64 overflow-y-auto">
+                  {(() => {
+                    const filtered = archetypes.filter(a => 
+                      a.name.toLowerCase().includes(archetypeSearch.toLowerCase())
+                    );
+                    
+                    if (filtered.length > 0) {
+                      return filtered.map(a => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => {
+                            setArchetypeSearch(a.name);
+                            setFormData(prev => ({ ...prev, archetype: a.name }));
+                            setShowArchetypeSuggestions(false);
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center justify-between border-b border-stone-50 last:border-none"
+                        >
+                          <span className="text-sm font-bold text-stone-900">{a.name}</span>
+                          {formData.archetype === a.name && <CheckCircle2 size={16} className="text-stone-900" />}
+                        </button>
+                      ));
+                    } else if (archetypeSearch.length > 0) {
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setArchetypeSearch("Other");
+                            setFormData(prev => ({ ...prev, archetype: "Other" }));
+                            setShowArchetypeSuggestions(false);
+                          }}
+                          className="w-full px-4 py-4 text-left hover:bg-stone-50 transition-colors flex flex-col border-b border-stone-50 last:border-none"
+                        >
+                          <span className="text-xs font-black text-stone-400 uppercase tracking-widest mb-1">No matches found</span>
+                          <span className="text-sm font-bold text-stone-900">Select "Other"</span>
+                        </button>
+                      );
+                    } else {
+                      return archetypes.map(a => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          onClick={() => {
+                            setArchetypeSearch(a.name);
+                            setFormData(prev => ({ ...prev, archetype: a.name }));
+                            setShowArchetypeSuggestions(false);
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center justify-between border-b border-stone-50 last:border-none"
+                        >
+                          <span className="text-sm font-bold text-stone-900">{a.name}</span>
+                          {formData.archetype === a.name && <CheckCircle2 size={16} className="text-stone-900" />}
+                        </button>
+                      ));
+                    }
+                  })()}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
 
         {/* Season & Country */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -468,10 +584,10 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
             {submitting ? (
               <>
                 <Loader2 size={24} className="animate-spin" />
-                Submitting...
+                {initialSubmission ? "Updating..." : "Submitting..."}
               </>
             ) : (
-              "SUBMIT"
+              initialSubmission ? "UPDATE" : "SUBMIT"
             )}
           </button>
         </div>

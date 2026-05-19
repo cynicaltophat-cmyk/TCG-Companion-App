@@ -476,7 +476,7 @@ export const QuickSetup: React.FC<QuickSetupProps> = ({ isOpen, onClose }) => {
                   onClick={handleClose}
                   className="w-full max-w-[240px] py-4 bg-[#141414] text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-black/10 active:scale-95 transition-all"
                 >
-                  Back to Quick Start
+                  Back to Home
                 </button>
               </motion.div>
             ) : null}

@@ -15,7 +15,7 @@ export const QuickStartScreen: React.FC<QuickStartScreenProps> = ({
     <div className="flex-1 flex flex-col bg-[#F5F5F0] min-h-screen">
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-[#141414]/10 px-4 py-4">
         <div className="max-w-md mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-black text-[#141414] tracking-tight uppercase">Quick Start</h1>
+          <h1 className="text-xl font-black text-[#141414] tracking-tight uppercase">Home</h1>
           <Zap size={20} className="text-amber-500" />
         </div>
       </header>

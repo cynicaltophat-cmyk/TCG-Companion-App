@@ -12,7 +12,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { TournamentEvent, DeckSubmission, ALL_SETS, EventType, Placement, Deck, GundamCard } from '../types';
+import { TournamentEvent, DeckSubmission, ALL_SETS, EventType, Placement, Deck, GundamCard, Archetype } from '../types';
 import { 
   Plus, 
   Trash2, 
@@ -41,19 +41,32 @@ interface TournamentManagerProps {
   allCards?: GundamCard[];
   onClose: () => void;
   onSubmitDeck?: (deck: Deck) => void;
+  onEditSubmission?: (submission: DeckSubmission) => void;
+  initialTab?: 'events' | 'submissions' | 'archetypes';
+  initialFocusedEventId?: string | null;
   showToast?: (message: string) => void;
 }
 
-export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards = [], onClose, onSubmitDeck, showToast }) => {
+export const TournamentManager: React.FC<TournamentManagerProps> = ({ 
+  allCards = [], 
+  onClose, 
+  onSubmitDeck, 
+  onEditSubmission, 
+  initialTab = 'events',
+  initialFocusedEventId = null,
+  showToast 
+}) => {
   const [events, setEvents] = useState<TournamentEvent[]>([]);
   const [submissions, setSubmissions] = useState<DeckSubmission[]>([]);
+  const [archetypes, setArchetypes] = useState<Archetype[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'events' | 'submissions'>('events');
+  const [activeTab, setActiveTab] = useState<'events' | 'submissions' | 'archetypes'>(initialTab);
   const [showEventForm, setShowEventForm] = useState(false);
+  const [showArchetypeForm, setShowArchetypeForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Partial<TournamentEvent> | null>(null);
-  const [editingSubmissionData, setEditingSubmissionData] = useState<Partial<DeckSubmission> | null>(null);
+  const [editingArchetype, setEditingArchetype] = useState<Partial<Archetype> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [seasonFilter, setSeasonFilter] = useState<string>("All");
   const [selectedSubmission, setSelectedSubmission] = useState<DeckSubmission | null>(null);
@@ -68,6 +81,13 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
         eventsData.push(doc.data() as TournamentEvent);
       });
       setEvents(eventsData);
+      
+      // If we had an initialFocusedEventId, set it now
+      if (initialFocusedEventId) {
+        const found = eventsData.find(e => e.id === initialFocusedEventId);
+        if (found) setFocusedEvent(found);
+      }
+      
       setLoading(false);
     });
 
@@ -84,9 +104,19 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
       console.error("Submissions listener error:", err);
     });
 
+    const qArchetypes = query(collection(db, 'archetypes'), orderBy('name', 'asc'));
+    const unsubscribeArchetypes = onSnapshot(qArchetypes, (snapshot) => {
+      const archetypesData: Archetype[] = [];
+      snapshot.forEach((doc) => {
+        archetypesData.push(doc.data() as Archetype);
+      });
+      setArchetypes(archetypesData);
+    });
+
     return () => {
       unsubscribeEvents();
       unsubscribeSubmissions();
+      unsubscribeArchetypes();
     };
   }, []);
 
@@ -176,19 +206,48 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
     }
   };
 
-  const handleSaveSubmission = async () => {
-    if (!editingSubmissionData || !editingSubmissionData.id) return;
+  const handleSaveArchetype = async () => {
+    if (!editingArchetype || !editingArchetype.name) {
+      alert("Please enter a name for the archetype");
+      return;
+    }
+
+    const archetypeId = editingArchetype.id || `arch-${Date.now()}`;
+    const newArchetype: Archetype = {
+      id: archetypeId,
+      name: editingArchetype.name,
+      createdAt: editingArchetype.createdAt || Date.now()
+    };
+
     try {
-      await updateDoc(doc(db, 'deck_submissions', editingSubmissionData.id), {
-        deckName: editingSubmissionData.deckName,
-        playerName: editingSubmissionData.playerName,
-        placement: editingSubmissionData.placement,
-        eventType: editingSubmissionData.eventType,
-        updatedAt: new Date().toISOString()
-      });
-      setEditingSubmissionData(null);
+      await setDoc(doc(db, 'archetypes', archetypeId), newArchetype);
+      setEditingArchetype(null);
+      setShowArchetypeForm(false);
+      showToast?.("Archetype saved successfully");
     } catch (err) {
-      handleFirestoreError(err, OperationType.UPDATE, `deck_submissions/${editingSubmissionData.id}`, auth);
+      handleFirestoreError(err, OperationType.WRITE, `archetypes/${archetypeId}`, auth);
+    }
+  };
+
+  const handleDeleteArchetype = async (id: string) => {
+    if (!id) return;
+
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      showToast?.("Click again to confirm delete");
+      setTimeout(() => setConfirmDeleteId(prev => prev === id ? null : prev), 3000);
+      return;
+    }
+
+    setIsDeleting(id);
+    setConfirmDeleteId(null);
+    try {
+      await deleteDoc(doc(db, 'archetypes', id));
+      showToast?.("Archetype deleted");
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `archetypes/${id}`, auth);
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -289,6 +348,15 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
               >
                 Submissions
               </button>
+              <button 
+                onClick={() => setActiveTab('archetypes')}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-xs font-bold transition-all",
+                  activeTab === 'archetypes' ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"
+                )}
+              >
+                Archetypes
+              </button>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -365,6 +433,11 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
                       <div className="text-[10px] text-stone-500 truncate flex items-center gap-1">
                         <Clock size={10} /> {new Date(sub.createdAt).toLocaleString()}
                       </div>
+                      {sub.archetype && (
+                        <div className="text-[10px] text-stone-900 font-black truncate flex items-center gap-1 uppercase tracking-tight">
+                          <Layers size={10} /> {sub.archetype}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex md:flex-col gap-2 mt-2 md:mt-0 md:justify-center">
@@ -376,7 +449,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
                       <Eye size={18} className="mx-auto" />
                     </button>
                     <button 
-                      onClick={() => setEditingSubmissionData(sub)}
+                      onClick={() => onEditSubmission?.(sub)}
                       className="flex-1 md:flex-none p-2 bg-stone-100 text-stone-600 rounded-xl hover:bg-stone-200 transition-colors"
                       title="Edit Submission"
                     >
@@ -501,7 +574,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
                 </div>
               ))}
             </div>
-          ) : (
+          ) : activeTab === 'submissions' ? (
             <div className="space-y-4">
               {filteredSubmissions.map(sub => (
                 <div key={sub.id} className="bg-white p-4 rounded-3xl border border-stone-100 shadow-sm flex flex-col md:flex-row gap-4">
@@ -542,6 +615,11 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
                       <div className="text-[10px] text-stone-500 truncate flex items-center gap-1">
                         <Clock size={10} /> {new Date(sub.createdAt).toLocaleString()}
                       </div>
+                      {sub.archetype && (
+                        <div className="text-[10px] text-stone-900 font-black truncate flex items-center gap-1 uppercase tracking-tight">
+                          <Layers size={10} /> {sub.archetype}
+                        </div>
+                      )}
                     </div>
                     {sub.tournamentName && (
                       <div className="mt-2 text-[10px] font-bold text-stone-600 bg-stone-50 p-2 rounded-xl border border-stone-100">
@@ -556,6 +634,13 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
                       title="Preview Deck"
                     >
                       <Eye size={18} className="mx-auto" />
+                    </button>
+                    <button 
+                      onClick={() => onEditSubmission?.(sub)}
+                      className="flex-1 md:flex-none p-2 bg-stone-100 text-stone-600 rounded-xl hover:bg-stone-200 transition-colors"
+                      title="Edit Submission"
+                    >
+                      <Edit2 size={18} className="mx-auto" />
                     </button>
                     {sub.status !== 'approved' && (
                       <button 
@@ -610,82 +695,126 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
                 </div>
               )}
             </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest">Deck Archetypes</h3>
+                <button 
+                  onClick={() => {
+                    setEditingArchetype({ name: "" });
+                    setShowArchetypeForm(true);
+                  }}
+                  className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-900 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  <Plus size={14} />
+                  Add New Archetype
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {archetypes.filter(a => a.name.toLowerCase().includes(searchQuery.toLowerCase())).map(arch => (
+                  <div key={arch.id} className="bg-white p-4 rounded-3xl border border-stone-100 shadow-sm flex items-center justify-between group">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-stone-50 rounded-xl text-stone-400 group-hover:bg-stone-900 group-hover:text-white transition-all">
+                        <Layers size={18} />
+                      </div>
+                      <h4 className="font-bold text-stone-900">{arch.name}</h4>
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setEditingArchetype(arch);
+                          setShowArchetypeForm(true);
+                        }}
+                        className="p-2 hover:bg-stone-100 rounded-full text-stone-500 transition-colors"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteArchetype(arch.id)}
+                        disabled={isDeleting === arch.id}
+                        className={cn(
+                          "p-2 rounded-full transition-all duration-200",
+                          isDeleting === arch.id
+                            ? "opacity-50 cursor-not-allowed"
+                            : confirmDeleteId === arch.id
+                              ? "bg-red-500 text-white animate-pulse shadow-md"
+                              : "hover:bg-red-50 text-stone-400 hover:text-red-500"
+                        )}
+                      >
+                        {isDeleting === arch.id ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {archetypes.length === 0 && (
+                  <div className="col-span-full text-center py-20 bg-white rounded-3xl border border-dashed border-stone-200">
+                    <Layers size={48} className="mx-auto text-stone-200 mb-4" />
+                    <p className="text-sm font-bold text-stone-400 uppercase tracking-widest">No archetypes defined</p>
+                    <button 
+                      onClick={() => {
+                        setEditingArchetype({ name: "" });
+                        setShowArchetypeForm(true);
+                      }}
+                      className="mt-4 text-xs font-black text-stone-900 hover:underline"
+                    >
+                      Click here to add your first archetype
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </main>
       </div>
 
-      {/* Edit Submission Form Modal */}
-      {editingSubmissionData && (
-        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      {/* Archetype Form Modal */}
+      {showArchetypeForm && (
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <header className="p-6 border-b border-stone-100 flex items-center justify-between">
-              <h3 className="text-xl font-black text-stone-900 uppercase tracking-tight">Edit Deck Metadata</h3>
+              <h3 className="text-xl font-black text-stone-900">
+                {editingArchetype?.id ? "Edit Archetype" : "Add Archetype"}
+              </h3>
               <button 
-                onClick={() => setEditingSubmissionData(null)}
+                onClick={() => {
+                  setShowArchetypeForm(false);
+                  setEditingArchetype(null);
+                }}
                 className="p-2 hover:bg-stone-50 rounded-full text-stone-400"
               >
                 <X size={20} />
               </button>
             </header>
-            <div className="p-6 space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest pl-1">Deck Name</label>
+            <div className="p-6 space-y-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest pl-1">Archetype Name</label>
                 <input 
                   type="text"
-                  value={editingSubmissionData.deckName || ""}
-                  onChange={(e) => setEditingSubmissionData(prev => ({ ...prev, deckName: e.target.value }))}
-                  className="w-full px-4 py-3 bg-stone-100 border-none rounded-2xl text-sm font-bold"
+                  value={editingArchetype?.name || ""}
+                  onChange={(e) => setEditingArchetype(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. Blue/Purple Barbatos Rush"
+                  className="w-full px-4 py-3 bg-stone-100 border-none rounded-2xl text-sm focus:ring-2 focus:ring-stone-200"
+                  autoFocus
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest pl-1">Player Name</label>
-                  <input 
-                    type="text"
-                    value={editingSubmissionData.playerName || ""}
-                    onChange={(e) => setEditingSubmissionData(prev => ({ ...prev, playerName: e.target.value }))}
-                    className="w-full px-4 py-3 bg-stone-100 border-none rounded-2xl text-sm font-bold"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest pl-1">Placement (1-32)</label>
-                  <input 
-                    type="number"
-                    min="1"
-                    max="32"
-                    value={(editingSubmissionData.placement || "Top 1").replace('Top ', '')}
-                    onChange={(e) => {
-                      const val = Math.min(32, Math.max(1, parseInt(e.target.value) || 1));
-                      setEditingSubmissionData(prev => ({ ...prev, placement: `Top ${val}` }));
-                    }}
-                    className="w-full px-4 py-3 bg-stone-100 border-none rounded-2xl text-sm font-bold"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest pl-1">Event Type</label>
-                <select 
-                  value={editingSubmissionData.eventType || "Shop Battle"}
-                  onChange={(e) => setEditingSubmissionData(prev => ({ ...prev, eventType: e.target.value as EventType }))}
-                  className="w-full px-4 py-3 bg-stone-100 border-none rounded-2xl text-sm font-bold appearance-none"
-                >
-                  <option value="Shop Battle">Shop Battle</option>
-                  <option value="Newtype challenge">Newtype challenge</option>
-                  <option value="Organized Event">Organized Event</option>
-                </select>
-              </div>
+
               <button 
-                onClick={handleSaveSubmission}
-                className="w-full py-4 bg-stone-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-stone-100 active:scale-95 transition-all mt-4"
+                onClick={handleSaveArchetype}
+                className="w-full py-4 bg-[#141414] text-white rounded-2xl font-black text-sm shadow-xl shadow-stone-200 transition-all hover:bg-stone-800 active:scale-95"
               >
-                Save Changes
+                Save Archetype
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Submission Detail Preview Modal */}
+      {/* Preview submission modal placeholder */}
       {selectedSubmission && (
         <div className="fixed inset-0 z-[100] bg-[#F9F9F7] flex flex-col animate-in slide-in-from-bottom duration-300">
           <header className="bg-white border-b border-stone-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
@@ -775,6 +904,12 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ allCards =
                         <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Date</p>
                         <p className="font-bold text-stone-700">{new Date(selectedSubmission.date).toLocaleDateString()}</p>
                       </div>
+                      {selectedSubmission.archetype && (
+                        <div className="col-span-2 mt-2 pt-2 border-t border-stone-50">
+                          <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Deck Archetype</p>
+                          <p className="font-black text-stone-900 text-lg uppercase tracking-tight">{selectedSubmission.archetype}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

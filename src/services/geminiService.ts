@@ -97,7 +97,7 @@ export async function analyzeCardImage(base64Image: string): Promise<Partial<Gun
   }
 }
 
-export async function identifyCard(base64Image: string, cards: GundamCard[]): Promise<IdentifiedCard | null> {
+export async function identifyCard(base64Image: string, cards: GundamCard[]): Promise<IdentifiedCard[] | null> {
   try {
     const response = await callWithRetry(() => ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -169,47 +169,50 @@ export async function identifyCard(base64Image: string, cards: GundamCard[]): Pr
     
     if (!result.cardNumber && !result.name) return null;
 
-    // Try to find the card in our database
-    let found = cards.find(c => {
-      if (!result.cardNumber) return false;
-      const targetNum = result.cardNumber.toLowerCase();
-      const cardNum = c.cardNumber.toLowerCase();
-      if (cardNum === targetNum) return true;
-      
-      const normalizedTarget = targetNum.replace(/[^a-z0-9]/g, '');
-      const normalizedCard = cardNum.replace(/[^a-z0-9]/g, '');
-      
-      return normalizedCard === normalizedTarget || 
-             normalizedCard.includes(normalizedTarget) || 
-             normalizedTarget.includes(normalizedCard);
-    });
+    // Build a list of potential matches
+    const potentialMatches: IdentifiedCard[] = [];
 
-    if (!found && result.name) {
+    // 1. Try exact or partial card number matches
+    if (result.cardNumber) {
+      const targetNum = result.cardNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const numMatches = cards.filter(c => {
+        const cardNum = c.cardNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return cardNum === targetNum || cardNum.includes(targetNum) || targetNum.includes(cardNum);
+      }).slice(0, 3);
+      
+      numMatches.forEach(found => {
+        if (!potentialMatches.find(pm => pm.card.id === found.id)) {
+          potentialMatches.push({
+            card: found,
+            isAlt: result.version === "alt"
+          });
+        }
+      });
+    }
+
+    // 2. Try name matches if we don't have enough
+    if (potentialMatches.length < 3 && result.name) {
       const normalizedResultName = result.name.toLowerCase().replace(/[^a-z0-9]/g, '');
       const nameMatches = cards.filter(c => {
         const cardName = c.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        return cardName === normalizedResultName;
-      });
+        return cardName === normalizedResultName || cardName.includes(normalizedResultName);
+      }).slice(0, 3 - potentialMatches.length);
       
-      if (nameMatches.length === 1) {
-        found = nameMatches[0];
-      } else if (nameMatches.length > 1 && result.cardNumber) {
-        const targetNum = result.cardNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
-        found = nameMatches.find(c => {
-          const cardNum = c.cardNumber.toLowerCase().replace(/[^a-z0-9]/g, '');
-          return cardNum.includes(targetNum) || targetNum.includes(cardNum);
-        });
-      }
+      nameMatches.forEach(found => {
+        if (!potentialMatches.find(pm => pm.card.id === found.id)) {
+          potentialMatches.push({
+            card: found,
+            isAlt: result.version === "alt"
+          });
+        }
+      });
     }
 
-    if (found) {
-      return {
-        card: found,
-        isAlt: result.version === "alt"
-      };
+    if (potentialMatches.length > 0) {
+      return potentialMatches;
     }
 
-    // Fallback: If not in database, use the fullDetails we already extracted in the same pass!
+    // Fallback: If not in database, use the fullDetails we already extracted
     if (result.fullDetails) {
       const fd = result.fullDetails;
       const virtualCard: GundamCard = {
@@ -230,11 +233,11 @@ export async function identifyCard(base64Image: string, cards: GundamCard[]): Pr
         zones: fd.zones || []
       };
 
-      return {
+      return [{
         card: virtualCard,
         isAlt: result.version === "alt",
         isVirtual: true
-      };
+      }];
     }
 
     return null;
