@@ -96,20 +96,24 @@ export function parseDecklistText(text: string, allCards: any[]): any[] {
 
   for (const line of lines) {
     // Expected format: "4 GD04-016 Zoloat (League Militaire)"
-    // or just "4 GD04-016"
-    // Regex matches: [count] [card number] [rest]
-    const match = line.match(/^(\d+)\s+([A-Z0-9-]{4,15})(.*)$/i);
+    // or "4x ST01-001"
+    // Regex matches leading spaces, quantity, optionally 'x' or spaces, and card number/ID
+    const match = line.match(/^\s*(\d+)[x\s]+([A-Z0-9-]{4,15})/i);
     if (match) {
       const count = parseInt(match[1]);
-      const cardIdOrNumber = match[2].trim();
+      const cardIdOrNumber = match[2].trim().toUpperCase();
       
       // Try to find the card by card number (most common in text lists)
       const card = allCards.find(c => 
-        c.cardNumber.toLowerCase() === cardIdOrNumber.toLowerCase()
+        c.cardNumber.toUpperCase() === cardIdOrNumber
       );
       
       if (card) {
-        items.push({ count, card });
+        items.push({ 
+          count: Math.min(count, 4), 
+          card,
+          artType: "Base art"
+        });
       }
     }
   }

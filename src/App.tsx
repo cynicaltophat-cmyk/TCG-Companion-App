@@ -184,6 +184,240 @@ const RarityTag = ({ rarity }: { rarity: GundamCard['rarity'] }) => {
   return <CardBadge className={rarities[rarity]}>{rarity}</CardBadge>;
 };
 
+interface QuickDropdownProps {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  isActive: boolean;
+}
+
+const QuickDropdown: React.FC<QuickDropdownProps> = ({ label, value, options, onChange, isActive }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative z-50">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 text-[10px] font-bold shadow-sm transition-all duration-200 cursor-pointer select-none outline-none",
+          isActive
+            ? "bg-amber-50/80 border-amber-200 text-amber-900 shadow-amber-500/5 focus:ring-2 focus:ring-amber-500/20"
+            : "bg-white border-stone-200 hover:border-stone-300 text-stone-700 hover:bg-stone-50/50 focus:ring-2 focus:ring-amber-500/10"
+        )}
+      >
+        <span className={cn(
+          "text-[9px] uppercase tracking-wider font-extrabold select-none",
+          isActive ? "text-amber-500" : "text-stone-400"
+        )}>{label}</span>
+        <span className={cn(
+          "font-extrabold leading-none",
+          isActive ? "text-amber-950 font-black" : "text-stone-800"
+        )}>{value}</span>
+        <ChevronDown 
+          size={11} 
+          className={cn(
+            "text-stone-400 transition-transform duration-200",
+            isOpen && "rotate-180",
+            isActive && "text-amber-500"
+          )} 
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            className="absolute left-0 mt-1 min-w-[110px] bg-white border border-stone-200 rounded-lg shadow-lg py-1 z-[100] max-h-60 overflow-y-auto overflow-x-hidden no-scrollbar"
+          >
+            {options.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "w-full text-left px-3 py-1.5 text-[10px] font-extrabold flex items-center justify-between transition-colors outline-none",
+                  option.value === value
+                    ? "bg-amber-50 text-amber-900 font-black"
+                    : "text-stone-700 hover:bg-stone-50 hover:text-stone-900"
+                )}
+              >
+                <span>{option.label}</span>
+                {option.value === value && (
+                  <Check size={10} className="text-amber-500 shrink-0 ml-2" />
+                )}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+interface QuickSliderDropdownProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  isActive: boolean;
+}
+
+const QuickSliderDropdown: React.FC<QuickSliderDropdownProps> = ({ label, value, onChange, isActive }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [tempValue, setTempValue] = useState<string>(value);
+
+  useEffect(() => {
+    setTempValue(value);
+  }, [value]);
+
+  const numTempValue = tempValue === "All" ? 0 : Number(tempValue);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = parseInt(e.target.value);
+    if (v === 0) {
+      setTempValue("All");
+    } else {
+      setTempValue(String(v));
+    }
+  };
+
+  const handleCommitChange = () => {
+    onChange(tempValue);
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative z-50">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={cn(
+          "flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 text-[10px] font-bold shadow-sm transition-all duration-200 cursor-pointer select-none outline-none",
+          isActive
+            ? "bg-amber-50/80 border-amber-200 text-amber-900 shadow-amber-500/5 focus:ring-2 focus:ring-amber-500/20"
+            : "bg-white border-stone-200 hover:border-stone-300 text-stone-700 hover:bg-stone-50/50 focus:ring-2 focus:ring-amber-500/10"
+        )}
+      >
+        <span className={cn(
+          "text-[9px] uppercase tracking-wider font-extrabold select-none",
+          isActive ? "text-amber-500" : "text-stone-400"
+        )}>{label}</span>
+        <span className={cn(
+          "font-extrabold leading-none",
+          isActive ? "text-amber-950 font-black" : "text-stone-800"
+        )}>{value}</span>
+        <ChevronDown 
+          size={11} 
+          className={cn(
+            "text-stone-400 transition-transform duration-200",
+            isOpen && "rotate-180",
+            isActive && "text-amber-500"
+          )} 
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            className="absolute left-0 mt-1 w-[190px] bg-white border border-stone-200 rounded-lg shadow-lg p-3.5 z-[100] flex flex-col gap-2.5"
+          >
+            <div className="flex items-center justify-between text-[9px] font-extrabold text-stone-400 uppercase tracking-wider">
+              <span>Select {label}</span>
+              <button 
+                onClick={() => {
+                  onChange("All");
+                  setIsOpen(false);
+                }}
+                className="text-amber-600 hover:text-amber-700 active:scale-95 transition-all outline-none"
+              >
+                Reset
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-xs font-black text-stone-800 min-w-[24px] text-center">
+                {tempValue}
+              </span>
+              <div className="flex-1 flex items-center relative h-8">
+                {/* Track highlight background */}
+                <div className="absolute left-1 right-1 h-[5px] rounded-full bg-stone-100 pointer-events-none w-full">
+                  <div 
+                    className={cn(
+                      "absolute left-0 h-full rounded-full transition-all duration-75",
+                      isActive ? "bg-amber-500" : "bg-stone-300"
+                    )}
+                    style={{ width: `${(numTempValue / 9) * 100}%` }}
+                  />
+                </div>
+
+                <input
+                  type="range"
+                  min="0"
+                  max="9"
+                  value={numTempValue}
+                  onChange={handleSliderChange}
+                  onMouseUp={handleCommitChange}
+                  onTouchEnd={handleCommitChange}
+                  onKeyUp={handleCommitChange}
+                  className="w-full h-full appearance-none bg-transparent cursor-pointer focus:outline-none relative z-10 
+                    [&::-webkit-slider-thumb]:appearance-none 
+                    [&::-webkit-slider-thumb]:w-5 
+                    [&::-webkit-slider-thumb]:h-5 
+                    [&::-webkit-slider-thumb]:rounded-full 
+                    [&::-webkit-slider-thumb]:bg-amber-600 
+                    [&::-webkit-slider-thumb]:shadow-lg 
+                    [&::-webkit-slider-thumb]:transition-all 
+                    [&::-webkit-slider-thumb]:active:scale-115
+                    [&::-webkit-slider-thumb]:border-2
+                    [&::-webkit-slider-thumb]:border-white
+                    [&::-moz-range-thumb]:w-5 
+                    [&::-moz-range-thumb]:h-5 
+                    [&::-moz-range-thumb]:rounded-full 
+                    [&::-moz-range-thumb]:bg-amber-600 
+                    [&::-moz-range-thumb]:border-2
+                    [&::-moz-range-thumb]:border-white
+                    [&::-moz-range-thumb]:shadow-lg 
+                    [&::-moz-range-thumb]:transition-all
+                    [&::-moz-range-thumb]:active:scale-115"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const ListContainer = React.forwardRef(({ style, children, isDeckBuilderMode, ...props }: any, ref: any) => (
   <div
     ref={ref}
@@ -235,11 +469,11 @@ const GridItem = React.memo(({
     <div
       onClick={() => onSelect(card)}
       className={cn(
-        "bg-white rounded-2xl overflow-hidden shadow-sm border cursor-pointer",
+        "bg-white rounded-[5px] overflow-hidden shadow-sm border cursor-pointer",
         card.isVariant ? "border-amber-200 bg-amber-50/10" : "border-stone-200"
       )}
     >
-      <div className="relative bg-stone-100 aspect-[2/3] flex items-center justify-center">
+      <div className="relative bg-stone-100 aspect-[2/3] flex items-center justify-center rounded-t-[5px] overflow-hidden">
         {(card.championshipParticipation || card.variantType === "Championship Participation" || card.variants?.some(v => v.type === "Championship Participation")) && (
           <div className="absolute top-8 left-2 bg-blue-500 text-white p-1 rounded-full shadow-lg z-10 border border-white/20">
             <Trophy size={10} strokeWidth={2} />
@@ -248,7 +482,7 @@ const GridItem = React.memo(({
         <ProgressiveImage 
           src={card.imageUrl} 
           alt={card.name}
-          className="w-full h-full"
+          className="w-full h-full rounded-t-[5px]"
         />
 
         {!card.isVariant && (card.variants?.length || card.altImageUrl) && (
@@ -321,31 +555,22 @@ const GridItem = React.memo(({
         </div>
       )}
       
-      <div className="p-2 h-[76px] flex flex-col justify-between">
+      <div className="pt-2 pb-1.5 px-1.5 h-[48px] flex flex-col justify-between">
         <div>
-          <div className="flex items-start justify-between mb-0.5">
-            <h3 className="font-bold text-[10px] leading-tight line-clamp-1 h-[14px] text-[#141414]">{card.name}</h3>
-          </div>
-          <div className="flex flex-col gap-0.5 mb-1">
-            <div className="flex items-center gap-2">
-              <ColorTag color={card.color} />
-              <span className="text-[8px] font-mono text-stone-400">{card.cardNumber}</span>
-            </div>
-          </div>
+          <h3 className="font-bold text-[11.5px] leading-none line-clamp-1 text-[#141414]">{card.name}</h3>
         </div>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 overflow-hidden">
-              <RarityTag rarity={card.rarity} />
-              {showPrice && price && (
-                <span className="text-[10px] font-black text-yellow-700 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200 italic shadow-sm">
-                  ¥{Number(price).toLocaleString()}
-                </span>
-              )}
-              {isBookmarked && (
-                <Bookmark size={10} className="text-amber-500 fill-amber-500" />
-              )}
-            </div>
+        <div className="flex items-center justify-between leading-none">
+          <span className="text-[9px] font-mono text-stone-400">{card.cardNumber}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            <RarityTag rarity={card.rarity} />
+            {showPrice && price && (
+              <span className="text-[10px] font-black text-yellow-700 bg-yellow-50 px-1 py-0.5 rounded border border-yellow-200 italic shadow-sm leading-none">
+                ¥{Number(price).toLocaleString()}
+              </span>
+            )}
+            {isBookmarked && (
+              <Bookmark size={10} className="text-amber-500 fill-amber-500" />
+            )}
           </div>
         </div>
       </div>
@@ -2058,6 +2283,10 @@ function AppContent() {
     metaCards: [] as string[]
   });
   
+  const [quickType, setQuickType] = useState<string>("All");
+  const [quickLevel, setQuickLevel] = useState<string>("All");
+  const [quickCost, setQuickCost] = useState<string>("All");
+  
   // Deck Management
   const [decks, setDecks] = useState<Deck[]>([]);
   const [folders, setFolders] = useState<DeckFolder[]>([]);
@@ -2132,6 +2361,13 @@ function AppContent() {
   const [showDeckSelector, setShowDeckSelector] = useState(false);
   const [printingDeck, setPrintingDeck] = useState<Deck | null>(null);
   const [expandedCardIds, setExpandedCardIds] = useState<string[]>([]);
+  const [rememberedDeckState, setRememberedDeckState] = useState<{
+    activeDeckId: string | null;
+    isDeckBuilderMode: boolean;
+    deckBuilderView: 'list' | 'editor';
+    isDeckEditorOpen: boolean;
+    isPreviewMode: boolean;
+  } | null>(null);
   
   // Sync activeDeckId if it's null but decks exist
   useEffect(() => {
@@ -2832,9 +3068,22 @@ function AppContent() {
       .reduce((sum, i) => sum + i.count, 0);
   }, [selectedCard, activeDeck]);
 
-  const toggleFilter = (category: keyof typeof activeFilters, value: string) => {
+  const toggleFilter = (category: string, value: string) => {
+    if (category === "quickType") {
+      setQuickType("All");
+      return;
+    }
+    if (category === "quickLevel") {
+      setQuickLevel("All");
+      return;
+    }
+    if (category === "quickCost") {
+      setQuickCost("All");
+      return;
+    }
+
     setActiveFilters(prev => {
-      const current = prev[category] as string[];
+      const current = prev[category as keyof typeof activeFilters] as string[];
       const next = current.includes(value)
         ? current.filter(v => v !== value)
         : [...current, value];
@@ -2853,17 +3102,29 @@ function AppContent() {
       metaCards: []
     });
     setSearchQuery("");
+    setQuickType("All");
+    setQuickLevel("All");
+    setQuickCost("All");
   };
 
   const activeFilterList = useMemo(() => {
-    const list: { category: keyof typeof activeFilters; value: string }[] = [];
+    const list: { category: string; value: string }[] = [];
     Object.entries(activeFilters).forEach(([category, values]) => {
       (values as string[]).forEach(value => {
-        list.push({ category: category as keyof typeof activeFilters, value });
+        list.push({ category, value });
       });
     });
+    if (quickType !== "All") {
+      list.push({ category: "quickType", value: `Type: ${quickType}` });
+    }
+    if (quickLevel !== "All") {
+      list.push({ category: "quickLevel", value: `Lvl: ${quickLevel}` });
+    }
+    if (quickCost !== "All") {
+      list.push({ category: "quickCost", value: `Cost: ${quickCost}` });
+    }
     return list;
-  }, [activeFilters]);
+  }, [activeFilters, quickType, quickLevel, quickCost]);
 
   const filteredCards = useMemo(() => {
     return combinedCards.filter(card => {
@@ -2930,7 +3191,32 @@ function AppContent() {
                            return false;
                          });
 
-      return matchesSearch && matchesSets && matchesRarities && matchesColors && matchesTypes && matchesVariants && matchesUsers && matchesMeta;
+      const matchesQuickType = quickType === "All" || (
+        card.type && (
+          Array.isArray(card.type)
+            ? card.type.some(t => {
+                if (quickType === "Pilots") {
+                  return t === "Pilot";
+                }
+                return t === quickType;
+              })
+            : (
+                typeof card.type === "string"
+                  ? (quickType === "Pilots" ? card.type === "Pilot" : card.type === quickType)
+                  : false
+              )
+        )
+      );
+      
+      const matchesQuickLevel = quickLevel === "All" || (
+        card.level !== undefined && card.level !== null && String(card.level).trim() === quickLevel
+      );
+      
+      const matchesQuickCost = quickCost === "All" || (
+        card.cost !== undefined && card.cost !== null && String(card.cost).trim() === quickCost
+      );
+
+      return matchesSearch && matchesSets && matchesRarities && matchesColors && matchesTypes && matchesVariants && matchesUsers && matchesMeta && matchesQuickType && matchesQuickLevel && matchesQuickCost;
     }).sort((a, b) => {
       const direction = sortOption.direction === 'asc' ? 1 : -1;
       
@@ -2950,10 +3236,10 @@ function AppContent() {
       if (sortOption.key === 'id') return a.cardNumber.localeCompare(b.cardNumber, undefined, { numeric: true }) * direction;
       if (sortOption.key === 'color') return a.color.localeCompare(b.color) * direction;
       if (sortOption.key === 'popularity') {
-        const popA = cardPopularityMap[a.cardNumber] || 0;
-        const popB = cardPopularityMap[b.cardNumber] || 0;
-        if (popA !== popB) return (popA - popB) * direction;
-        return a.cardNumber.localeCompare(b.cardNumber, undefined, { numeric: true }) * direction;
+         const popA = cardPopularityMap[a.cardNumber] || 0;
+         const popB = cardPopularityMap[b.cardNumber] || 0;
+         if (popA !== popB) return (popA - popB) * direction;
+         return a.cardNumber.localeCompare(b.cardNumber, undefined, { numeric: true }) * direction;
       }
       if (sortOption.key === 'price') {
         const getPrice = (card: GundamCard) => {
@@ -2976,7 +3262,7 @@ function AppContent() {
       if (indexA !== indexB) return (indexA - indexB) * direction;
       return a.cardNumber.localeCompare(b.cardNumber, undefined, { numeric: true }) * direction;
     });
-  }, [combinedCards, debouncedSearchQuery, activeFilters, sortOption]);
+  }, [combinedCards, debouncedSearchQuery, activeFilters, sortOption, quickType, quickLevel, quickCost]);
 
   const querySuggestions = useMemo(() => {
     if (filteredCards.length > 0 || !debouncedSearchQuery.trim()) return [];
@@ -3426,12 +3712,7 @@ function AppContent() {
           <div className={cn(
             "w-full px-4 landscape:px-20 lg:px-56 xl:px-[18%] 2xl:px-[28%] flex flex-col"
           )}>
-            <div className="flex items-center gap-2 w-full py-2">
-              <div className={cn(
-                "w-8 h-8 bg-[#141414] rounded-lg flex items-center justify-center text-white shrink-0 shadow-md shadow-black/10"
-              )}>
-                <Sparkles size={16} />
-              </div>
+            <div className="flex items-center gap-2 w-full pt-3.5 pb-2">
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -3493,32 +3774,68 @@ function AppContent() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 overflow-x-auto pt-1 pb-3 no-scrollbar px-1">
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest whitespace-nowrap">Quick filter</span>
-                <div className="flex gap-1.5">
-                  {COLORS.map(color => {
-                    const isActive = activeFilters.colors.includes(color);
-                    return (
-                      <button
-                        key={color}
-                        onClick={() => toggleFilter('colors', color)}
-                        className={cn(
-                          "w-5 h-5 rounded-md transition-all active:scale-90 shadow-sm relative overflow-hidden",
-                          getColorBg(color),
-                          (color === 'White' || color === 'Colorless') && "border border-stone-300",
-                          isActive ? "ring-2 ring-offset-1 ring-amber-500" : "opacity-80 hover:opacity-100"
-                        )}
-                      >
-                        {color === 'Colorless' && (
-                          <div className="absolute top-1/2 left-1/2 w-[140%] h-0.5 bg-stone-400 -translate-x-1/2 -translate-y-1/2 rotate-45" />
-                        )}
-                      </button>
-                    );
-                  })}
+            <div className="flex items-center justify-between gap-3 pt-1 pb-3 px-1 overflow-visible">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest whitespace-nowrap">Quick filter</span>
+                  <div className="flex gap-1.5">
+                    {COLORS.map(color => {
+                      const isActive = activeFilters.colors.includes(color);
+                      return (
+                        <button
+                          key={color}
+                          onClick={() => toggleFilter('colors', color)}
+                          className={cn(
+                            "w-5 h-5 rounded-md transition-all active:scale-90 shadow-sm relative overflow-hidden",
+                            getColorBg(color),
+                            (color === 'White' || color === 'Colorless') && "border border-stone-300",
+                            isActive ? "ring-2 ring-offset-1 ring-amber-500" : "opacity-80 hover:opacity-100"
+                          )}
+                        >
+                          {color === 'Colorless' && (
+                            <div className="absolute top-1/2 left-1/2 w-[140%] h-0.5 bg-stone-400 -translate-x-1/2 -translate-y-1/2 rotate-45" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="h-4 w-px bg-stone-200 hidden sm:block" />
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Card Type Filter */}
+                  <QuickDropdown
+                    label="Type"
+                    value={quickType}
+                    options={[
+                      { value: "All", label: "All" },
+                      { value: "Unit", label: "Unit" },
+                      { value: "Pilots", label: "Pilots" },
+                      { value: "Base", label: "Base" },
+                      { value: "Command", label: "Command" },
+                    ]}
+                    onChange={setQuickType}
+                    isActive={quickType !== "All"}
+                  />
+
+                  {/* Level Filter */}
+                  <QuickSliderDropdown
+                    label="Lvl"
+                    value={quickLevel}
+                    onChange={setQuickLevel}
+                    isActive={quickLevel !== "All"}
+                  />
+
+                  {/* Cost Filter */}
+                  <QuickSliderDropdown
+                    label="Cost"
+                    value={quickCost}
+                    onChange={setQuickCost}
+                    isActive={quickCost !== "All"}
+                  />
                 </div>
               </div>
-
             </div>
           </div>
         </header>
@@ -3759,46 +4076,36 @@ function AppContent() {
         {(currentTab === 'cards' || (isDeckBuilderMode && currentTab === 'decks')) && (
           <>
             <div className={cn(isDeckBuilderMode && "landscape:shrink-0")}>
-              <div className="mb-6 space-y-4">
-          {/* Active Filter Tags */}
-          {(activeFilterList.length > 0 || debouncedSearchQuery) && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {debouncedSearchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors border border-stone-200 group"
-                >
-                  Search: {debouncedSearchQuery}
-                  <X size={10} className="text-stone-400 group-hover:text-stone-600" />
-                </button>
+              {(activeFilterList.length > 0 || debouncedSearchQuery) && (
+                <div className="mb-5 flex flex-wrap gap-2">
+                  {debouncedSearchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="flex items-center gap-1.5 px-2.5 pt-1 pb-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors border border-stone-200 group leading-none"
+                    >
+                      Search: {debouncedSearchQuery}
+                      <X size={10} className="text-stone-400 group-hover:text-stone-600" />
+                    </button>
+                  )}
+                  {activeFilterList.map(({ category, value }) => (
+                    <button
+                      key={`${category}-${value}`}
+                      onClick={() => toggleFilter(category, value)}
+                      className="flex items-center gap-1.5 px-2.5 pt-1 pb-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors border border-amber-200 group leading-none"
+                    >
+                      {value}
+                      <X size={10} className="text-amber-400 group-hover:text-amber-600" />
+                    </button>
+                  ))}
+                  <button
+                    onClick={resetFilters}
+                    className="text-[9px] font-black uppercase tracking-wider text-stone-400 hover:text-stone-600 transition-colors py-1 px-1"
+                  >
+                    Clear all
+                  </button>
+                </div>
               )}
-              {activeFilterList.map(({ category, value }) => (
-                <button
-                  key={`${category}-${value}`}
-                  onClick={() => toggleFilter(category, value)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-full text-[9px] font-black uppercase tracking-wider transition-colors border border-amber-200 group"
-                >
-                  {value}
-                  <X size={10} className="text-amber-400 group-hover:text-amber-600" />
-                </button>
-              ))}
-              <button
-                onClick={resetFilters}
-                className="text-[9px] font-black uppercase tracking-wider text-stone-400 hover:text-stone-600 transition-colors py-1 px-1"
-              >
-                Clear all
-              </button>
             </div>
-          )}
-
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
-                {cardsLoading ? "..." : filteredCards.length} Cards Found
-              </p>
-            </div>
-        </div>
-
-        </div>
         
         {/* Card Grid */}
         <div className={cn(
@@ -3907,11 +4214,11 @@ function AppContent() {
   </div>
 
       {/* Sticky Bottom Interface */}
-      {!isPreviewMode && (
+      {true && (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col pointer-events-none">
         {/* Sticky Deck Builder Bar */}
         <AnimatePresence>
-          {isDeckBuilderMode && (
+          {isDeckBuilderMode && !isPreviewMode && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -3972,7 +4279,7 @@ function AppContent() {
                         "text-[10px] font-black uppercase tracking-widest transition-all text-center",
                         deckBuilderView === 'list' ? "text-stone-900" : "text-stone-400"
                       )}>
-                        Card List
+                        Add cards
                       </div>
                     </button>
                     <button 
@@ -4043,6 +4350,15 @@ function AppContent() {
                   setSelectedArtType("Base art");
                   setShowAnatomy(false);
                 }
+                if (isDeckEditorOpen || isDeckBuilderMode) {
+                  setRememberedDeckState({
+                    activeDeckId,
+                    isDeckBuilderMode,
+                    deckBuilderView,
+                    isDeckEditorOpen,
+                    isPreviewMode,
+                  });
+                }
                 if (isDeckEditorOpen && deckEditorRef.current && !isDeckInPlayMode && !isDeckBuilderMode) {
                   setOpenedEditorFromList(false);
                   setIsDeckEditorOpen(false);
@@ -4083,6 +4399,15 @@ function AppContent() {
                   setSelectedCard(null);
                   setSelectedArtType("Base art");
                   setShowAnatomy(false);
+                }
+                if (isDeckEditorOpen || isDeckBuilderMode) {
+                  setRememberedDeckState({
+                    activeDeckId,
+                    isDeckBuilderMode,
+                    deckBuilderView,
+                    isDeckEditorOpen,
+                    isPreviewMode,
+                  });
                 }
                 if (isDeckBuilderMode) {
                   setIsDeckBuilderMode(false);
@@ -4127,6 +4452,21 @@ function AppContent() {
                   setSelectedCard(null);
                   setSelectedArtType("Base art");
                   setShowAnatomy(false);
+                }
+                if (rememberedDeckState) {
+                  setActiveDeckId(rememberedDeckState.activeDeckId);
+                  setIsDeckBuilderMode(rememberedDeckState.isDeckBuilderMode);
+                  setDeckBuilderView(rememberedDeckState.deckBuilderView);
+                  setIsDeckEditorOpen(rememberedDeckState.isDeckEditorOpen);
+                  setIsPreviewMode(rememberedDeckState.isPreviewMode);
+                  setShowDeckList(!rememberedDeckState.isDeckEditorOpen && !rememberedDeckState.isDeckBuilderMode);
+                  setCurrentTab('decks');
+                  setShowFeedback(false);
+                  setShowAdminPanel(false);
+                  setShowTournamentManager(false);
+                  setIsScanning(false);
+                  setRememberedDeckState(null);
+                  return;
                 }
                 if (isDeckBuilderMode) {
                   setDeckBuilderView('editor');
@@ -4193,6 +4533,15 @@ function AppContent() {
                   setSelectedArtType("Base art");
                   setShowAnatomy(false);
                 }
+                if (isDeckEditorOpen || isDeckBuilderMode) {
+                  setRememberedDeckState({
+                    activeDeckId,
+                    isDeckBuilderMode,
+                    deckBuilderView,
+                    isDeckEditorOpen,
+                    isPreviewMode,
+                  });
+                }
                 if (isDeckEditorOpen && deckEditorRef.current && !isDeckInPlayMode && !isDeckBuilderMode) {
                   setOpenedEditorFromList(false);
                   setIsDeckEditorOpen(false);
@@ -4224,7 +4573,7 @@ function AppContent() {
               <span className={cn(
                 "text-[8px] font-bold uppercase tracking-tighter transition-colors",
                 currentTab === 'coverage' ? "text-[#141414]" : "text-stone-400 group-hover:text-[#141414]"
-              )}>Coverage</span>
+              )}>Meta</span>
             </button>
 
 
@@ -4238,6 +4587,15 @@ function AppContent() {
                   setSelectedCard(null);
                   setSelectedArtType("Base art");
                   setShowAnatomy(false);
+                }
+                if (isDeckEditorOpen || isDeckBuilderMode) {
+                  setRememberedDeckState({
+                    activeDeckId,
+                    isDeckBuilderMode,
+                    deckBuilderView,
+                    isDeckEditorOpen,
+                    isPreviewMode,
+                  });
                 }
                 if (isDeckEditorOpen && deckEditorRef.current && !isDeckInPlayMode && !isDeckBuilderMode) {
                   setOpenedEditorFromList(false);
@@ -4280,6 +4638,15 @@ function AppContent() {
             <button 
               onClick={() => {
                 if (user) {
+                  if (isDeckEditorOpen || isDeckBuilderMode) {
+                    setRememberedDeckState({
+                      activeDeckId,
+                      isDeckBuilderMode,
+                      deckBuilderView,
+                      isDeckEditorOpen,
+                      isPreviewMode,
+                    });
+                  }
                   if (isDeckBuilderMode) {
                     setIsDeckBuilderMode(false);
                     setIsDeckEditorOpen(false);

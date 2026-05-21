@@ -399,7 +399,7 @@ export const DeckList: React.FC<DeckListProps> = ({
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-40 border-b border-stone-200">
         <div className="w-full px-4 landscape:px-20 lg:px-56 xl:px-[18%] 2xl:px-[28%] flex flex-col">
-          <div className="flex items-center gap-2 w-full py-2">
+          <div className="flex items-center gap-2 w-full pt-3.5 pb-2">
             <button 
               onClick={onClose} 
               className="w-8 h-8 bg-white border border-stone-200 rounded-lg flex items-center justify-center text-stone-900 shadow-md active:scale-95 transition-all shrink-0 hover:bg-stone-50"

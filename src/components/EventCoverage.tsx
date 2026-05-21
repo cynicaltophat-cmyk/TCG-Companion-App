@@ -135,9 +135,14 @@ const getSubmissionColors = (sub: DeckSubmission, allCards: GundamCard[]) => {
   }
   const colors = Array.from(new Set(items.map(i => i.card.color))) as string[];
   
-  // Manual override for Okie Parker's Destiny Blocker deck which should be green and white
-  if (sub.playerName === 'Okie Parker' && (sub.deckName?.toLowerCase().includes('destiny blocker') || sub.archetype?.toLowerCase().includes('destiny blocker'))) {
+  // Manual override for Felix C's deck which should be green and white
+  if (sub.playerName && (sub.playerName.startsWith('Felix C') || sub.playerName.toLowerCase().includes('felix c'))) {
     return ['Green', 'White'];
+  }
+  
+  // Manual override for Okie Parker's Destiny Blocker deck which should be purple and white
+  if (sub.playerName === 'Okie Parker' && (sub.deckName?.toLowerCase().includes('destiny blocker') || sub.archetype?.toLowerCase().includes('destiny blocker'))) {
+    return ['Purple', 'White'];
   }
   
   // Manual override for Brian S.'s Felix C. wing zero deck which should be white and green only
@@ -237,7 +242,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
     });
   }, [submissions, searchQuery, selectedColors, exactColorMatch, maxPlacement, selectedMainCardId, selectedArchetypes, allCards]);
 
-  // Decoupled submissions for Meta Analysis (ignores Search and Main Card filters)
+  // Decoupled submissions for Meta Analysis (ignores Search/Archetype filters, but respects selected main card filter as requested)
   const metaSubmissions = useMemo(() => {
     const activeEvent = events.find(e => e.id === activeFilterId);
     const activeEventName = activeEvent?.name?.toLowerCase().trim();
@@ -259,9 +264,39 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
           : selectedColors.some(color => deckColors.includes(color))
       );
       
-      return matchesColors;
+      if (!matchesColors) return false;
+
+      // Main Card filter
+      if (selectedMainCardId && !sub.deckItems?.some(item => item.card.cardNumber === selectedMainCardId)) {
+        return false;
+      }
+      
+      return true;
     });
-  }, [submissions, activeFilterId, events, selectedColors, exactColorMatch, allCards]);
+  }, [submissions, activeFilterId, events, selectedColors, exactColorMatch, allCards, selectedMainCardId]);
+
+  // submissions that ignore selected colors for Top Colors pie chart
+  const metaSubmissionsWithoutColors = useMemo(() => {
+    const activeEvent = events.find(e => e.id === activeFilterId);
+    const activeEventName = activeEvent?.name?.toLowerCase().trim();
+    
+    return submissions.filter(sub => {
+      // Event Selection
+      const subEventName = sub.tournamentName?.toLowerCase().trim();
+      const matchesEvent = activeFilterId === 'all' || 
+        sub.tournamentId === activeFilterId || 
+        (activeEventName && subEventName === activeEventName);
+      
+      if (!matchesEvent) return false;
+
+      // Main Card filter
+      if (selectedMainCardId && !sub.deckItems?.some(item => item.card.cardNumber === selectedMainCardId)) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [submissions, activeFilterId, events, selectedMainCardId]);
 
   const activeEventSubmissions = useMemo(() => {
     const currentFilterEvent = events.find(e => e.id === activeFilterId);
@@ -328,15 +363,15 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
   const handleMetaClick = (item: any) => {
     if (metaCategory === 'archetypes') {
       setSelectedArchetypes([item.name]);
+      // Scroll to the decklist section
+      const decklistHeader = document.querySelector('section.mt-8');
+      if (decklistHeader) {
+        decklistHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } else {
       setSelectedColors(item.colors);
       setExactColorMatch(true);
-    }
-    
-    // Scroll to the decklist section
-    const decklistHeader = document.querySelector('section.mt-8');
-    if (decklistHeader) {
-      decklistHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setMetaCategory('archetypes');
     }
   };
 
@@ -455,7 +490,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
   const topColors = useMemo(() => {
     const counts: Record<string, { name: string; count: number; colors: string[]; coverImageUrl: string; bestRank: number }> = {};
     
-    metaSubmissions.forEach(sub => {
+    metaSubmissionsWithoutColors.forEach(sub => {
       const rank = getPlacementRank(sub.placement);
       if (rank <= metaTopRange) {
         const colors = getSubmissionColors(sub, allCards).sort();
@@ -485,7 +520,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
         return a.bestRank - b.bestRank; // Tie-break with best rank
       })
       .slice(0, 12);
-  }, [metaSubmissions, allCards, metaTopRange]);
+  }, [metaSubmissionsWithoutColors, allCards, metaTopRange]);
 
   const metaData = useMemo(() => {
     return metaCategory === 'archetypes' ? topArchetypes : topColors;
@@ -634,7 +669,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
     <div className="flex-1 overflow-y-auto bg-[#F9F9F7] animate-in fade-in duration-500 pb-24">
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200 transition-all duration-300">
         <div className="w-full px-4 flex flex-col">
-          <div className="flex items-center gap-2 w-full py-2">
+          <div className="flex items-center gap-2 w-full pt-3.5 pb-2">
             <div className="relative flex-1">
               <input 
                 type="text"
@@ -850,101 +885,6 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
         )}
       </AnimatePresence>
 
-      {/* Filter Tags */}
-      {hasActiveFilters && (
-        <div className="mt-6 px-6 flex flex-wrap gap-2">
-          {searchQuery && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full text-[10px] font-bold text-stone-600 uppercase tracking-tight">
-              <span>Search: "{searchQuery}"</span>
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="hover:text-amber-600 transition-colors"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          )}
-
-          {selectedCard && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 rounded-full text-[10px] font-bold text-amber-700 uppercase tracking-tight border border-amber-200/50">
-              <span>Main: {selectedCard.name}</span>
-              <button 
-                onClick={() => setSelectedMainCardId(null)}
-                className="hover:text-amber-900 transition-colors"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          )}
-
-          {selectedColors.map(color => (
-            <div 
-              key={color}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight text-white",
-                color === 'Red' && 'bg-red-500',
-                color === 'Blue' && 'bg-blue-500',
-                color === 'Green' && 'bg-emerald-500',
-                color === 'White' && 'bg-slate-400',
-                color === 'Yellow' && 'bg-amber-400',
-                color === 'Purple' && 'bg-purple-500'
-              )}
-            >
-              <span>{color}</span>
-              <button 
-                onClick={() => setSelectedColors(prev => prev.filter(c => c !== color))}
-                className="hover:scale-110 transition-transform"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          ))}
-
-          {selectedArchetypes.map(archetype => (
-            <div 
-              key={archetype}
-              className="flex items-center gap-2 px-3 py-1.5 bg-stone-900 rounded-full text-[10px] font-bold text-white uppercase tracking-tight"
-            >
-              <span>{archetype}</span>
-              <button 
-                onClick={() => setSelectedArchetypes(prev => prev.filter(a => a !== archetype))}
-                className="hover:text-amber-400 transition-colors"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          ))}
-
-          {maxPlacement < 32 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-full text-[10px] font-bold text-amber-900 uppercase tracking-tight border border-amber-200">
-              <span>Top {maxPlacement}</span>
-              <button 
-                onClick={() => setMaxPlacement(32)}
-                className="hover:text-amber-600 transition-colors"
-              >
-                <X size={12} />
-              </button>
-            </div>
-          )}
-
-          {(searchQuery || selectedColors.length > 0 || selectedMainCardId || selectedArchetypes.length > 0 || maxPlacement < 32) && (
-            <button 
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedColors([]);
-                setExactColorMatch(true);
-                setSelectedMainCardId(null);
-                setSelectedArchetypes([]);
-                setMaxPlacement(32);
-              }}
-              className="px-3 py-1.5 text-[10px] font-black text-stone-400 hover:text-stone-900 uppercase tracking-widest transition-colors flex items-center gap-1"
-            >
-              Clear All
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Meta Analysis Section */}
       <section className="mt-4 px-6">
         <div className="flex items-center justify-between mb-4">
@@ -974,7 +914,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
             <div className="relative">
               <button 
                 onClick={() => setShowMetaMenu(!showMetaMenu)}
-                className="flex items-center gap-2 px-4 py-1.5 bg-stone-200 text-stone-900 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-stone-300 transition-colors"
+                className="flex items-center gap-2 px-3 py-1 bg-stone-200 text-stone-900 rounded-lg text-[8.5px] font-black uppercase tracking-widest shadow-sm hover:bg-stone-300 transition-colors"
               >
                 {metaCategory === 'archetypes' ? `Top ${metaTopRange} archetypes` : `Top ${metaTopRange} colors`}
                 <ChevronDown size={14} className={cn("transition-transform", showMetaMenu ? "rotate-180" : "")} />
@@ -1037,7 +977,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                       let currentAngle = 0;
 
                       return metaData.map((item, i) => {
-                        const sliceAngle = (item.count / total) * 360;
+                        const sliceAngle = Math.min(359.9, (item.count / total) * 360);
                         const startAngle = currentAngle;
                         const endAngle = currentAngle + sliceAngle;
                         currentAngle += sliceAngle;
@@ -1052,9 +992,32 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
 
                         // Mid-angle for dot placement
                         const midAngle = startAngle + sliceAngle / 2;
-                        const dotRadius = radius * 0.88;
-                        const dx = center + dotRadius * Math.cos((midAngle - 90) * (Math.PI / 180));
-                        const dy = center + dotRadius * Math.sin((midAngle - 90) * (Math.PI / 180));
+                        const sliceFraction = item.count / total;
+                        // Reduce the outer offset for large segments to avoid showing awkward blank/white space
+                        const imgRadius = radius * Math.max(0, 0.7 * Math.pow(1 - sliceFraction, 1.5));
+                        const dx = center + imgRadius * Math.cos((midAngle - 90) * (Math.PI / 180));
+                        const dy = center + imgRadius * Math.sin((midAngle - 90) * (Math.PI / 180));
+
+                        const dotsRadius = radius + 18;
+                        const dotsX = center + dotsRadius * Math.cos((midAngle - 90) * (Math.PI / 180));
+                        const dotsY = center + dotsRadius * Math.sin((midAngle - 90) * (Math.PI / 180));
+
+                        const isColorView = metaCategory === 'colors';
+                        const colors = item.colors && item.colors.length > 0 ? item.colors : ['Grey'];
+                        
+                        const getColorHex = (c: string) => {
+                          switch (c) {
+                            case 'Red': return '#ef4444';
+                            case 'Blue': return '#3b82f6';
+                            case 'Green': return '#10b981';
+                            case 'White': return '#ffffff';
+                            case 'Purple': return '#a855f7';
+                            case 'Yellow': return '#fbbf24';
+                            default: return '#78716c';
+                          }
+                        };
+
+                        const gradId = `color-grad-${i}`;
 
                         return (
                           <g 
@@ -1063,20 +1026,50 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                             onClick={() => handleMetaClick(item)}
                           >
                             <defs>
-                              <clipPath id={`clip-${i}`}>
-                                <path d={pathData} />
-                              </clipPath>
+                              {isColorView ? (
+                                <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                                  {colors.length === 1 ? (
+                                    <>
+                                      <stop offset="0%" stopColor={getColorHex(colors[0])} />
+                                      <stop offset="100%" stopColor={getColorHex(colors[0])} />
+                                    </>
+                                  ) : colors.length === 2 ? (
+                                    <>
+                                      <stop offset="0%" stopColor={getColorHex(colors[0])} />
+                                      <stop offset="100%" stopColor={getColorHex(colors[1])} />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <stop offset="0%" stopColor={getColorHex(colors[0])} />
+                                      <stop offset="50%" stopColor={getColorHex(colors[1])} />
+                                      <stop offset="100%" stopColor={getColorHex(colors[2])} />
+                                    </>
+                                  )}
+                                </linearGradient>
+                              ) : (
+                                <clipPath id={`clip-${i}`}>
+                                  <path d={pathData} />
+                                </clipPath>
+                              )}
                             </defs>
-                            <image
-                              href={item.coverImageUrl}
-                              x={dx - center}
-                              y={Math.max(0, dy - center) * 0.8}
-                              width={size}
-                              height={size}
-                              preserveAspectRatio="xMidYMin slice"
-                              clipPath={`url(#clip-${i})`}
-                              className="transition-all duration-500 group-hover:scale-105 origin-center"
-                            />
+                            {isColorView ? (
+                              <path 
+                                d={pathData}
+                                fill={`url(#${gradId})`}
+                                className="transition-all duration-300 group-hover:opacity-90 hover:brightness-105"
+                              />
+                            ) : (
+                              <image
+                                href={item.coverImageUrl}
+                                x={dx - center}
+                                y={Math.max(0, dy - center) * 0.8}
+                                width={size}
+                                height={size}
+                                preserveAspectRatio="xMidYMin slice"
+                                clipPath={`url(#clip-${i})`}
+                                className="transition-all duration-500 group-hover:scale-105 origin-center"
+                              />
+                            )}
                             <path 
                               d={pathData} 
                               fill="none" 
@@ -1084,21 +1077,22 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                               strokeWidth="2"
                               className="pointer-events-none"
                             />
-
-                            {/* Status dots on slice */}
-                            <g transform={`translate(${dx}, ${dy})`}>
-                              {item.colors.slice(0, 3).map((color, ci) => (
+                            
+                            {/* Status dots on slice - rendered outside the ring for both archetypes and colors */}
+                            <g transform={`translate(${dotsX}, ${dotsY})`}>
+                              {(item.colors || []).slice(0, 3).map((color, ci) => (
                                 <circle 
                                   key={ci}
-                                  cx={(ci - (Math.min(item.colors.length, 3) - 1) / 2) * 12}
+                                  cx={(ci - (Math.min((item.colors || []).length, 3) - 1) / 2) * 12}
                                   cy={0}
                                   r={5}
                                   fill={
                                     color === 'Red' ? '#ef4444' :
                                     color === 'Blue' ? '#3b82f6' :
-                                    color === 'Green' ? '#22c55e' :
+                                    color === 'Green' ? '#10b981' :
                                     color === 'White' ? '#ffffff' :
-                                    color === 'Purple' ? '#a855f7' : '#78716c'
+                                    color === 'Purple' ? '#a855f7' :
+                                    color === 'Yellow' ? '#fbbf24' : '#78716c'
                                   }
                                   stroke="black"
                                   strokeWidth="2"
@@ -1167,6 +1161,101 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
             </div>
           )}
         </div>
+
+        {/* Filter Tags */}
+        {hasActiveFilters && (
+          <div className="mt-2 mb-4 flex flex-wrap justify-center gap-2">
+            {searchQuery && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full text-[10px] font-bold text-stone-600 uppercase tracking-tight">
+                <span>Search: "{searchQuery}"</span>
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="hover:text-amber-600 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
+            {selectedCard && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 rounded-full text-[10px] font-bold text-amber-700 uppercase tracking-tight border border-amber-200/50">
+                <span>Main: {selectedCard.name}</span>
+                <button 
+                  onClick={() => setSelectedMainCardId(null)}
+                  className="hover:text-amber-900 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
+            {selectedColors.map(color => (
+              <div 
+                key={color}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight text-white",
+                  color === 'Red' && 'bg-red-500',
+                  color === 'Blue' && 'bg-blue-500',
+                  color === 'Green' && 'bg-emerald-500',
+                  color === 'White' && 'bg-slate-400',
+                  color === 'Yellow' && 'bg-amber-400',
+                  color === 'Purple' && 'bg-purple-500'
+                )}
+              >
+                <span>{color}</span>
+                <button 
+                  onClick={() => setSelectedColors(prev => prev.filter(c => c !== color))}
+                  className="hover:scale-110 transition-transform"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+
+            {selectedArchetypes.map(archetype => (
+              <div 
+                key={archetype}
+                className="flex items-center gap-2 px-3 py-1.5 bg-stone-900 rounded-full text-[10px] font-bold text-white uppercase tracking-tight"
+              >
+                <span>{archetype}</span>
+                <button 
+                  onClick={() => setSelectedArchetypes(prev => prev.filter(a => a !== archetype))}
+                  className="hover:text-amber-400 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+
+            {maxPlacement < 32 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-full text-[10px] font-bold text-amber-900 uppercase tracking-tight border border-amber-200">
+                <span>Top {maxPlacement}</span>
+                <button 
+                  onClick={() => setMaxPlacement(32)}
+                  className="hover:text-amber-600 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
+            {(searchQuery || selectedColors.length > 0 || selectedMainCardId || selectedArchetypes.length > 0 || maxPlacement < 32) && (
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedColors([]);
+                  setExactColorMatch(true);
+                  setSelectedMainCardId(null);
+                  setSelectedArchetypes([]);
+                  setMaxPlacement(32);
+                }}
+                className="px-3 py-1.5 text-[10px] font-black text-stone-400 hover:text-stone-900 uppercase tracking-widest transition-colors flex items-center gap-1"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Popular main cards Horizontal Scroll */}
@@ -1663,7 +1752,11 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; allCar
         const deckToDuplicate = {
           id: submission.id,
           name: submission.deckName,
-          items: submission.deckItems,
+          items: deckItems.map(item => ({
+            card: item.card,
+            count: item.count,
+            artType: item.artType || "Base art"
+          })),
           coverImageUrl: submission.coverImageUrl,
           lastModified: Date.now()
         };
@@ -1690,7 +1783,11 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; allCar
         userName: auth.currentUser.displayName || 'User',
         deckName: `${submission.deckName} (Copy)`,
         season: submission.season,
-        deckItems: submission.deckItems,
+        deckItems: deckItems.map(item => ({
+          card: item.card,
+          count: item.count,
+          artType: item.artType || "Base art"
+        })),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         isPublic: false
