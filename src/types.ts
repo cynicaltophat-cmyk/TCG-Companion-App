@@ -36,14 +36,16 @@ export interface GundamCard {
   doublePlus?: boolean;
   championshipParticipation?: boolean;
   faq?: { question: string; answer: string }[];
+  variantType?: ArtVariantType;
+  parentId?: string;
+  isVariant?: boolean;
 }
 
 export const ALL_SETS = [
-  "TOKEN",
   "GD04",
   "GD03",
   "GD02",
-  "GD01-Newtype rising",
+  "GD01",
   "ST09",
   "ST08",
   "ST07",

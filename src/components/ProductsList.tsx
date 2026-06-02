@@ -51,13 +51,13 @@ export const ProductsList: React.FC<ProductsListProps> = ({ prices, onSelectSet,
       const seen = new Set();
       const consolidated = productData.filter(p => {
         const normalizedName = (p.name === 'GD01' || p.name === 'GD01-Newtype rising') 
-          ? 'GD01-Newtype rising' 
+          ? 'GD01' 
           : p.name;
         if (seen.has(normalizedName)) return false;
         seen.add(normalizedName);
         return true;
       }).map(p => {
-        if (p.name === 'GD01') return { ...p, name: 'GD01-Newtype rising' };
+        if (p.name === 'GD01-Newtype rising') return { ...p, name: 'GD01' };
         return p;
       });
 

@@ -9,7 +9,8 @@ const SET_NAMES: Record<string, string> = {
   'GD04': 'Battle for the Throne',
   'GD03': 'Prophecy of Justice',
   'GD02': 'Shadow of the Moon',
-  'GD01-Newtype rising': 'Newtype rising',
+  'GD01': 'GD01',
+  'GD01-Newtype rising': 'GD01',
   'ST09': 'Starter Deck 09',
   'ST08': 'Starter Deck 08',
   'ST07': 'Starter Deck 07',
@@ -27,6 +28,90 @@ interface DeckProductsBreakdownProps {
 }
 
 export const DeckProductsBreakdown: React.FC<DeckProductsBreakdownProps> = ({ items, prices }) => {
+  const getCardPriceInfo = (cardNum: string, rarity: string, artType?: string) => {
+    if (!cardNum) return null;
+    const normalizedNum = cardNum.toUpperCase();
+    const normalizedRarity = rarity ? rarity.toUpperCase() : "";
+    const cleanArtType = artType && artType !== "Base art" ? artType.toUpperCase() : "";
+
+    // Generate potential card codes mapped on Yu-Yu Tei (e.g. GD04-002, GD04-002+, GD04-002++, GD04-002★)
+    const possibleCodes = [normalizedNum];
+    if (cleanArtType) {
+      if (cleanArtType.includes("LR++")) {
+        possibleCodes.unshift(`${normalizedNum}++`, `${normalizedNum}+`, `${normalizedNum}★`);
+      } else if (cleanArtType.includes("+")) {
+        possibleCodes.unshift(`${normalizedNum}+`, `${normalizedNum}★`);
+      } else if (cleanArtType.includes("SP")) {
+        possibleCodes.unshift(`${normalizedNum}★`, `${normalizedNum}+`);
+      } else if (cleanArtType.includes("PARALLEL")) {
+        possibleCodes.unshift(`${normalizedNum}★`, `${normalizedNum}*`);
+      }
+    }
+
+    // Determine the target suffixes to check
+    const suffixes: string[] = [];
+    if (cleanArtType) {
+      const formattedArt = cleanArtType.replace(/\s+/g, '');
+      suffixes.push(`_${formattedArt}`);
+      
+      // Fallback translations for legacy parallel representation or equivalent namings
+      if (formattedArt.endsWith("++") || formattedArt.endsWith("PLUSPLUS")) {
+        const base = formattedArt.replace(/PLUSPLUS|\+\+/g, "");
+        suffixes.push(`_${base}++`, `_${base}PLUSPLUS`, "_PARALLEL");
+      } else if (formattedArt.endsWith("+") || formattedArt.endsWith("PLUS")) {
+        const base = formattedArt.replace(/PLUS|\+/g, "");
+        suffixes.push(`_${base}+`, `_${base}PLUS`, "_PARALLEL");
+      } else if (formattedArt === "PARALLEL") {
+        suffixes.push("_PARALLEL", "_ALTART");
+      }
+    }
+
+    for (const pCode of possibleCodes) {
+      // 1. Try with artType-specific suffixes
+      for (const sfx of suffixes) {
+        if (normalizedRarity) {
+          const customWithSfxRarity = prices[`${pCode}_${normalizedRarity}${sfx}`] || prices[`${pCode}_${normalizedRarity}${sfx}${sfx}`];
+          if (customWithSfxRarity) return customWithSfxRarity;
+          
+          if (cleanArtType && cleanArtType !== normalizedRarity) {
+            const customWithArtRarity = prices[`${pCode}_${cleanArtType}${sfx}`];
+            if (customWithArtRarity) return customWithArtRarity;
+          }
+        }
+        const customWithoutRarity = prices[`${pCode}${sfx}`];
+        if (customWithoutRarity) return customWithoutRarity;
+      }
+
+      // 2. Try direct keys, if pCode itself contains the suffix (e.g., GD04-017+ or GD04-017++)
+      if (pCode !== normalizedNum) {
+        if (normalizedRarity) {
+          const customWithRarityDirect = prices[`${pCode}_${normalizedRarity}`];
+          if (customWithRarityDirect) return customWithRarityDirect;
+          
+          if (cleanArtType) {
+            const customWithArtRarity = prices[`${pCode}_${cleanArtType}`];
+            if (customWithArtRarity) return customWithArtRarity;
+          }
+        }
+        const directMatch = prices[pCode];
+        if (directMatch) return directMatch;
+      }
+    }
+
+    // 3. Fallback to base code lookup ONLY if we are looking for "Base art" or the art type was not a parallel
+    if (!cleanArtType || cleanArtType === "BASEART") {
+      const pCode = normalizedNum;
+      if (normalizedRarity) {
+        const baseWithRarity = prices[`${pCode}_${normalizedRarity}`];
+        if (baseWithRarity) return baseWithRarity;
+      }
+      const direct = prices[pCode];
+      if (direct) return direct;
+    }
+
+    return null;
+  };
+
   const groupedBySet = React.useMemo(() => {
     const groups: Record<string, { 
       items: DeckItem[], 
@@ -38,12 +123,11 @@ export const DeckProductsBreakdown: React.FC<DeckProductsBreakdownProps> = ({ it
     items.forEach((item) => {
       let setId = item.card.set || 'Unknown';
       if (setId === 'GD01' || setId === 'GD01-Newtype rising') {
-        setId = 'GD01-Newtype rising';
+        setId = 'GD01';
       }
 
-      const priceStr = prices[item.card.cardNumber.toUpperCase() + "_" + item.card.rarity.toUpperCase()]?.price || 
-                       prices[item.card.cardNumber.toUpperCase()]?.price || "0";
-      const price = parseInt(priceStr);
+      const priceInfo = getCardPriceInfo(item.card.cardNumber, item.card.rarity, item.artType);
+      const price = parseInt(priceInfo?.price || "0");
       
       if (!groups[setId]) {
         groups[setId] = {
@@ -65,10 +149,7 @@ export const DeckProductsBreakdown: React.FC<DeckProductsBreakdownProps> = ({ it
   const totalDeckCost = groupedBySet.reduce((acc, [_, group]) => acc + group.totalCost, 0);
 
   const hasMissingPrices = React.useMemo(() => {
-    return items.some(item => {
-      const cardKey = item.card.cardNumber.toUpperCase() + "_" + item.card.rarity.toUpperCase();
-      return !prices[cardKey] && !prices[item.card.cardNumber.toUpperCase()];
-    });
+    return items.some(item => !getCardPriceInfo(item.card.cardNumber, item.card.rarity, item.artType));
   }, [items, prices]);
 
   return (
@@ -107,8 +188,12 @@ export const DeckProductsBreakdown: React.FC<DeckProductsBreakdownProps> = ({ it
       {/* Set List */}
       <div className="flex flex-col gap-10">
         {groupedBySet.map(([setId, group]) => {
-          const cardKey = group.items[0]?.card.cardNumber.toUpperCase();
-          const firstItemUrl = prices[cardKey]?.url || (group.items[0] ? getYYTLink(group.items[0].card.cardNumber) : null);
+          const firstItem = group.items[0];
+          const hasFirstItem = !!firstItem;
+          const firstItemUrl = hasFirstItem ? (
+            getCardPriceInfo(firstItem.card.cardNumber, firstItem.card.rarity, firstItem.artType)?.url ||
+            getYYTLink(firstItem.card.cardNumber)
+          ) : null;
           
           return (
             <div key={setId} className="flex flex-col gap-3">
@@ -140,8 +225,7 @@ export const DeckProductsBreakdown: React.FC<DeckProductsBreakdownProps> = ({ it
               {/* Card Carousel/Grid */}
               <div className="flex overflow-x-auto pb-4 gap-4 no-scrollbar -mx-4 px-4 scroll-smooth">
                 {group.items.map((item) => {
-                  const cardKey = item.card.cardNumber.toUpperCase() + "_" + item.card.rarity.toUpperCase();
-                  const priceInfo = prices[cardKey] || prices[item.card.cardNumber.toUpperCase()];
+                  const priceInfo = getCardPriceInfo(item.card.cardNumber, item.card.rarity, item.artType);
                   const price = parseInt(priceInfo?.price || "0");
                   const hasPrice = !!priceInfo;
                   

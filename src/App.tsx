@@ -140,7 +140,18 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 import { ProgressiveImage } from './components/ProgressiveImage';
 import { CameraScanner } from './components/CameraScanner';
 
-const COMMON_VARIANTS: ArtVariantType[] = ["Parallel", "Beta", "Beta Parallel", "Premium", "Championship", "Double Plus (++)", "Championship Participation"];
+const COMMON_VARIANTS: ArtVariantType[] = [
+  "LR+",
+  "LR++",
+  "R+",
+  "U+",
+  "SP",
+  "C+",
+  "Newtype Challenge",
+  "Release Event",
+  "Premium Goods Set",
+  "Championship"
+];
 const RARITIES = ["C", "U", "R", "LR"];
 const COLORS = ["Red", "Blue", "Green", "White", "Purple", "Colorless"];
 const TYPES = ["Base", "Unit", "Pilot", "Command", "Unit Token"];
@@ -469,8 +480,16 @@ const GridItem = React.memo(({
     <div
       onClick={() => onSelect(card)}
       className={cn(
-        "bg-white rounded-[5px] overflow-hidden shadow-sm border cursor-pointer",
-        card.isVariant ? "border-amber-200 bg-amber-50/10" : "border-stone-200"
+        "bg-white rounded-[5px] overflow-hidden shadow-sm border cursor-pointer transition-all duration-300 hover:shadow-md hover:-translate-y-0.5",
+        card.variantType === "LR++" || (card.isVariant && card.variantType?.includes("LR++"))
+          ? "border-red-400/40 bg-gradient-to-b from-white to-red-50/10 shadow-[0_4px_12px_-4px_rgba(239,68,68,0.12)] hover:shadow-[0_8px_20px_-6px_rgba(239,68,68,0.2)]"
+          : card.variantType === "LR+" || (card.isVariant && card.variantType?.includes("LR+"))
+            ? "border-amber-400/40 bg-gradient-to-b from-white to-amber-50/15 shadow-[0_4px_12px_-4px_rgba(245,158,11,0.12)] hover:shadow-[0_8px_20px_-6px_rgba(245,158,11,0.2)]"
+            : card.rarity === "LR"
+              ? "border-amber-500/30 bg-gradient-to-b from-white to-amber-50/5 shadow-sm hover:shadow-md"
+              : card.isVariant
+                ? "border-amber-200 bg-amber-50/10"
+                : "border-stone-200"
       )}
     >
       <div className="relative bg-stone-100 aspect-[2/3] flex items-center justify-center rounded-t-[5px] overflow-hidden">
@@ -503,7 +522,14 @@ const GridItem = React.memo(({
         )}
 
         {card.isVariant && (
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-amber-500 text-white text-[8px] font-black uppercase rounded-md shadow-sm">
+          <div className={cn(
+            "absolute top-2 right-2 px-1.5 py-0.5 text-[8px] font-black uppercase rounded-md shadow-sm transition-all",
+            card.variantType === "LR++"
+              ? "bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white border border-red-500/10 shadow-[0_0_8px_rgba(239,68,68,0.35)]"
+              : card.variantType === "LR+"
+                ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-stone-950 border border-amber-300"
+                : "bg-amber-500 text-white"
+          )}>
             {card.variantType}
           </div>
         )}
@@ -555,23 +581,27 @@ const GridItem = React.memo(({
         </div>
       )}
       
-      <div className="pt-2 pb-1.5 px-1.5 h-[48px] flex flex-col justify-between">
+      <div className="pt-2 pb-1.5 px-1.5 min-h-[48px] flex flex-col justify-between">
         <div>
           <h3 className="font-bold text-[11.5px] leading-none line-clamp-1 text-[#141414]">{card.name}</h3>
         </div>
-        <div className="flex items-center justify-between leading-none">
-          <span className="text-[9px] font-mono text-stone-400">{card.cardNumber}</span>
-          <div className="flex items-center gap-1 shrink-0">
-            <RarityTag rarity={card.rarity} />
-            {showPrice && price && (
-              <span className="text-[10px] font-black text-yellow-700 bg-yellow-50 px-1 py-0.5 rounded border border-yellow-200 italic shadow-sm leading-none">
+        <div className="flex flex-col gap-1 mt-1">
+          <div className="flex items-center justify-between leading-none">
+            <span className="text-[9px] font-mono text-stone-400">{card.cardNumber}</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <RarityTag rarity={card.rarity} />
+              {isBookmarked && (
+                <Bookmark size={10} className="text-amber-500 fill-amber-500" />
+              )}
+            </div>
+          </div>
+          {showPrice && price && (
+            <div className="flex justify-start">
+              <span className="text-[10px] font-black text-yellow-700 bg-yellow-50 px-1 py-0.5 rounded border border-yellow-200 italic shadow-sm leading-none mt-0.5">
                 ¥{Number(price).toLocaleString()}
               </span>
-            )}
-            {isBookmarked && (
-              <Bookmark size={10} className="text-amber-500 fill-amber-500" />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1119,6 +1149,9 @@ function AppContent() {
 
   const [selectedArtType, setSelectedArtType] = useState<ArtVariantType>("Base art");
   const [isCardMaximized, setIsCardMaximized] = useState(false);
+  const [touchStartDist, setTouchStartDist] = useState<number | null>(null);
+  const [pinchScale, setPinchScale] = useState<number>(1);
+  const [isPinching, setIsPinching] = useState(false);
   const [showAnatomy, setShowAnatomy] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
@@ -1217,29 +1250,43 @@ function AppContent() {
   const [pricesLoading, setPricesLoading] = useState(false);
   const [fetchingPriceFor, setFetchingPriceFor] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [showImportPricesModal, setShowImportPricesModal] = useState(false);
+  const [pastedPricesJSON, setPastedPricesJSON] = useState('');
 
   // Price fetching logic
   useEffect(() => {
-    // const fetchPrices = async () => {
-    //   if (pricesLoading) return;
-    //   setPricesLoading(true);
-    //   try {
-    //     const response = await fetch('/api/prices');
-    //     if (response.ok) {
-    //       const data = await response.json();
-    //       setPrices(data);
-    //     }
-    //   } catch (error) {
-    //     console.error("Failed to fetch market prices:", error);
-    //   } finally {
-    //     setPricesLoading(false);
-    //   }
-    // };
+    const fetchPrices = async () => {
+      let mergedPrices: Record<string, { price: string; url: string }> = {};
+      
+      // 1. Fetch from server-side json market-place
+      try {
+        const response = await fetch('/api/prices');
+        if (response.ok) {
+          const data = await response.json();
+          mergedPrices = { ...data };
+        }
+      } catch (error) {
+        console.error("Failed to fetch server market prices:", error);
+      }
+      
+      // 2. Fetch from local clipboard imports
+      try {
+        const savedLocal = localStorage.getItem('yuyutei_prices');
+        if (savedLocal) {
+          const localData = JSON.parse(savedLocal);
+          mergedPrices = { ...mergedPrices, ...localData };
+        }
+      } catch (error) {
+        console.error("Failed to parse local yuyutei prices:", error);
+      }
+      
+      setPrices(mergedPrices);
+    };
 
-    // fetchPrices();
-    // Refresh prices every 30 minutes
-    // const interval = setInterval(fetchPrices, 1000 * 60 * 30);
-    // return () => clearInterval(interval);
+    fetchPrices();
+    // Refresh prices every 10 minutes
+    const interval = setInterval(fetchPrices, 1000 * 60 * 10);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchCardPrice = async (card: GundamCard) => {
@@ -1280,6 +1327,90 @@ function AppContent() {
     } finally {
       setFetchingPriceFor(null);
     }
+  };
+
+  const getCardPriceInfo = (cardNum: string, rarity: string, artType?: string) => {
+    if (!cardNum) return null;
+    const normalizedNum = cardNum.toUpperCase();
+    const normalizedRarity = rarity ? rarity.toUpperCase() : "";
+    const cleanArtType = artType && artType !== "Base art" ? artType.toUpperCase() : "";
+
+    // Generate potential card codes mapped on Yu-Yu Tei (e.g. GD04-002, GD04-002+, GD04-002++, GD04-002★)
+    const possibleCodes = [normalizedNum];
+    if (cleanArtType) {
+      if (cleanArtType.includes("LR++")) {
+        possibleCodes.unshift(`${normalizedNum}++`, `${normalizedNum}+`, `${normalizedNum}★`);
+      } else if (cleanArtType.includes("+")) {
+        possibleCodes.unshift(`${normalizedNum}+`, `${normalizedNum}★`);
+      } else if (cleanArtType.includes("SP")) {
+        possibleCodes.unshift(`${normalizedNum}★`, `${normalizedNum}+`);
+      } else if (cleanArtType.includes("PARALLEL")) {
+        possibleCodes.unshift(`${normalizedNum}★`, `${normalizedNum}*`);
+      }
+    }
+
+    // Determine the target suffixes to check
+    const suffixes: string[] = [];
+    if (cleanArtType) {
+      const formattedArt = cleanArtType.replace(/\s+/g, '');
+      suffixes.push(`_${formattedArt}`);
+      
+      // Fallback translations for legacy parallel representation or equivalent namings
+      if (formattedArt.endsWith("++") || formattedArt.endsWith("PLUSPLUS")) {
+        const base = formattedArt.replace(/PLUSPLUS|\+\+/g, "");
+        suffixes.push(`_${base}++`, `_${base}PLUSPLUS`, "_PARALLEL");
+      } else if (formattedArt.endsWith("+") || formattedArt.endsWith("PLUS")) {
+        const base = formattedArt.replace(/PLUS|\+/g, "");
+        suffixes.push(`_${base}+`, `_${base}PLUS`, "_PARALLEL");
+      } else if (formattedArt === "PARALLEL") {
+        suffixes.push("_PARALLEL", "_ALTART");
+      }
+    }
+
+    for (const pCode of possibleCodes) {
+      // 1. Try with artType-specific suffixes
+      for (const sfx of suffixes) {
+        if (normalizedRarity) {
+          const customWithSfxRarity = prices[`${pCode}_${normalizedRarity}${sfx}`] || prices[`${pCode}_${normalizedRarity}${sfx}${sfx}`];
+          if (customWithSfxRarity) return customWithSfxRarity;
+          
+          if (cleanArtType && cleanArtType !== normalizedRarity) {
+            const customWithArtRarity = prices[`${pCode}_${cleanArtType}${sfx}`];
+            if (customWithArtRarity) return customWithArtRarity;
+          }
+        }
+        const customWithoutRarity = prices[`${pCode}${sfx}`];
+        if (customWithoutRarity) return customWithoutRarity;
+      }
+
+      // 2. Try direct keys, if pCode itself contains the suffix (e.g., GD04-017+ or GD04-017++)
+      if (pCode !== normalizedNum) {
+        if (normalizedRarity) {
+          const customWithRarityDirect = prices[`${pCode}_${normalizedRarity}`];
+          if (customWithRarityDirect) return customWithRarityDirect;
+          
+          if (cleanArtType) {
+            const customWithArtRarity = prices[`${pCode}_${cleanArtType}`];
+            if (customWithArtRarity) return customWithArtRarity;
+          }
+        }
+        const directMatch = prices[pCode];
+        if (directMatch) return directMatch;
+      }
+    }
+
+    // 3. Fallback to base code lookup ONLY if we are looking for "Base art" or the art type was not a parallel
+    if (!cleanArtType || cleanArtType === "BASEART") {
+      const pCode = normalizedNum;
+      if (normalizedRarity) {
+        const baseWithRarity = prices[`${pCode}_${normalizedRarity}`];
+        if (baseWithRarity) return baseWithRarity;
+      }
+      const direct = prices[pCode];
+      if (direct) return direct;
+    }
+
+    return null;
   };
 
   const [showLoginGate, setShowLoginGate] = useState(false);
@@ -2361,6 +2492,7 @@ function AppContent() {
   const [showDeckSelector, setShowDeckSelector] = useState(false);
   const [printingDeck, setPrintingDeck] = useState<Deck | null>(null);
   const [expandedCardIds, setExpandedCardIds] = useState<string[]>([]);
+  const [showAllAltArts, setShowAllAltArts] = useState(false);
   const [rememberedDeckState, setRememberedDeckState] = useState<{
     activeDeckId: string | null;
     isDeckBuilderMode: boolean;
@@ -3243,8 +3375,8 @@ function AppContent() {
       }
       if (sortOption.key === 'price') {
         const getPrice = (card: GundamCard) => {
-          const cardPrice = prices[card.cardNumber.toUpperCase() + "_" + card.rarity.toUpperCase()]?.price || prices[card.cardNumber.toUpperCase()]?.price;
-          return cardPrice ? parseInt(cardPrice) : 0;
+          const info = getCardPriceInfo(card.cardNumber, card.rarity, card.variantType);
+          return info?.price ? parseInt(info.price) : 0;
         };
         return (getPrice(a) - getPrice(b)) * direction;
       }
@@ -3335,7 +3467,7 @@ function AppContent() {
       result.push(card);
       
       const activeVariantFilters = activeFilters.variants;
-      const isExpanded = expandedCardIds.includes(card.id);
+      const isExpanded = showAllAltArts || expandedCardIds.includes(card.id);
       
       if (isExpanded || activeVariantFilters.length > 0) {
         if (card.variants && card.variants.length > 0) {
@@ -3356,7 +3488,7 @@ function AppContent() {
           });
         }
         
-        if (card.altImageUrl) {
+        if (card.altImageUrl && (!card.variants || card.variants.length === 0)) {
           const matchesParallel = activeVariantFilters.includes("Parallel");
           if (isExpanded || matchesParallel) {
             result.push({
@@ -3372,7 +3504,7 @@ function AppContent() {
       }
     });
     return result;
-  }, [filteredCards, expandedCardIds, activeFilters.variants]);
+  }, [filteredCards, expandedCardIds, activeFilters.variants, showAllAltArts]);
 
   const toggleExpanded = (id: string) => {
     setExpandedCardIds(prev => 
@@ -3673,7 +3805,7 @@ function AppContent() {
     <GridItem 
       key={card.id}
       card={card}
-      price={prices[card.cardNumber.toUpperCase() + "_" + card.rarity.toUpperCase()]?.price || prices[card.cardNumber.toUpperCase()]?.price}
+      price={getCardPriceInfo(card.cardNumber, card.rarity, card.variantType)?.price || "0"}
       showPrice={priceMode}
       onSelect={(c) => {
         setSelectedCard(c);
@@ -3775,10 +3907,10 @@ function AppContent() {
             </div>
 
             <div className="flex items-center justify-between gap-3 pt-1 pb-3 px-1 overflow-visible">
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-4 flex-wrap w-full justify-between sm:justify-start">
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest whitespace-nowrap">Quick filter</span>
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 items-center">
                     {COLORS.map(color => {
                       const isActive = activeFilters.colors.includes(color);
                       return (
@@ -3798,6 +3930,20 @@ function AppContent() {
                         </button>
                       );
                     })}
+                    
+                    {/* Alt Art Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setShowAllAltArts(!showAllAltArts)}
+                      className={cn(
+                        "ml-2 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all border flex items-center cursor-pointer active:scale-95 shadow-sm h-5 leading-none",
+                        showAllAltArts
+                          ? "bg-amber-500 text-white border-amber-500"
+                          : "bg-white text-stone-500 border-stone-200 hover:border-stone-400"
+                      )}
+                    >
+                      Alt Art
+                    </button>
                   </div>
                 </div>
 
@@ -4935,9 +5081,51 @@ function AppContent() {
                       >
                         <div 
                           className={cn(
-                            "relative w-[260px] aspect-[5/7] bg-stone-100 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 cursor-pointer group landscape:w-auto landscape:h-[85%]",
+                            "relative w-[260px] aspect-[5/7] bg-stone-100 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 cursor-pointer group landscape:w-auto landscape:h-[85%] origin-center",
                             isDeckBuilderMode && "lg:w-[240px] lg:h-auto lg:aspect-[5/7] landscape:lg:w-[240px] landscape:lg:h-auto"
                           )}
+                          style={{
+                            transform: isPinching ? `scale(${pinchScale})` : undefined,
+                            transition: isPinching ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                          onTouchStart={(e) => {
+                            if (e.touches.length === 2) {
+                              e.stopPropagation();
+                              const dist = Math.hypot(
+                                e.touches[0].clientX - e.touches[1].clientX,
+                                e.touches[0].clientY - e.touches[1].clientY
+                              );
+                              setTouchStartDist(dist);
+                              setIsPinching(true);
+                            }
+                          }}
+                          onTouchMove={(e) => {
+                            if (isPinching && e.touches.length === 2 && touchStartDist !== null) {
+                              e.stopPropagation();
+                              if (e.cancelable) {
+                                e.preventDefault();
+                              }
+                              const dist = Math.hypot(
+                                e.touches[0].clientX - e.touches[1].clientX,
+                                e.touches[0].clientY - e.touches[1].clientY
+                              );
+                              const scale = dist / touchStartDist;
+                              // Clamp scale between 1 and 1.5 for a satisfying feedback effect
+                              const cappedScale = Math.min(Math.max(scale, 1), 1.5);
+                              setPinchScale(cappedScale);
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            if (isPinching) {
+                              e.stopPropagation();
+                              if (pinchScale > 1.05) {
+                                setIsCardMaximized(true);
+                              }
+                              setIsPinching(false);
+                              setTouchStartDist(null);
+                              setPinchScale(1);
+                            }
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setIsCardMaximized(true);
@@ -5013,34 +5201,41 @@ function AppContent() {
                   <div className="space-y-1.5">
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-col gap-3">
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                          <p className="text-stone-400 font-mono text-xs font-bold uppercase tracking-widest">{selectedCard.cardNumber} • {selectedCard.set}</p>
-                          <div className="flex items-center gap-2">
-                            <RarityTag rarity={selectedCard.rarity} />
-                            <ColorTag color={selectedCard.color} />
-                            {priceMode && (prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]) && (
+                        {(() => {
+                          const detailPriceInfo = getCardPriceInfo(selectedCard.cardNumber, selectedCard.rarity, selectedArtType);
+                          return (
+                            <>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                <p className="text-stone-400 font-mono text-xs font-bold uppercase tracking-widest">{selectedCard.cardNumber} • {selectedCard.set}</p>
+                                <div className="flex items-center gap-2">
+                                  <RarityTag rarity={selectedCard.rarity} />
+                                  <ColorTag color={selectedCard.color} />
+                                  {priceMode && detailPriceInfo && (
+                                    <a 
+                                      href={detailPriceInfo.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-[10px] font-black italic shadow-sm hover:bg-yellow-105 hover:border-yellow-300 transition-all animate-in fade-in slide-in-from-left-2 duration-300 group"
+                                    >
+                                      <Zap size={10} className="fill-yellow-500 text-yellow-500" />
+                                      <span>YYT Price: ¥{Number(detailPriceInfo.price).toLocaleString()}</span>
+                                      <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
                               <a 
-                                href={(prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).url}
+                                href={detailPriceInfo?.url || getYYTLink(selectedCard.cardNumber)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-[10px] font-black italic shadow-sm hover:bg-yellow-100 hover:border-yellow-300 transition-all animate-in fade-in slide-in-from-left-2 duration-300 group"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-[#C86891] hover:bg-[#C86891]/5 hover:border-[#C86891]/30 transition-all shadow-sm group w-fit"
                               >
-                                <Zap size={10} className="fill-yellow-500 text-yellow-500" />
-                                <span>YYT Price: ¥{Number((prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()]).price).toLocaleString()}</span>
-                                <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                <span>View on Yu-Yu-Tei</span>
                               </a>
-                            )}
-                          </div>
-                        </div>
-                        <a 
-                          href={(prices[selectedCard.cardNumber.toUpperCase() + "_" + selectedCard.rarity.toUpperCase()] || prices[selectedCard.cardNumber.toUpperCase()])?.url || getYYTLink(selectedCard.cardNumber)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-[#C86891] hover:bg-[#C86891]/5 hover:border-[#C86891]/30 transition-all shadow-sm group w-fit"
-                        >
-                          <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                          <span>View on Yu-Yu-Tei</span>
-                        </a>
+                            </>
+                          );
+                        })()}
 
                         <button 
                           onClick={() => fetchCardPrice(selectedCard)}
@@ -5519,6 +5714,108 @@ function AppContent() {
               >
                 Reset sorting
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Import Prices Modal */}
+      <AnimatePresence>
+        {showImportPricesModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm flex items-end justify-center sm:items-center px-4"
+            onClick={() => setShowImportPricesModal(false)}
+          >
+            <motion.div 
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-lg bg-white text-[#141414] rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-[#141414]">Import Prices JSON</h3>
+                  <p className="text-xs text-stone-500 mt-1">Paste the JSON output copied from your Yu-Yu Tei price scraper extension.</p>
+                </div>
+                <button onClick={() => setShowImportPricesModal(false)} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <textarea
+                value={pastedPricesJSON}
+                onChange={(e) => setPastedPricesJSON(e.target.value)}
+                placeholder='e.g., { "GD04-016_SR": { "price": "1200", "url": "https://yuyu-tei.jp/sell/gcg/card/gd04/10016" } }'
+                className="w-full h-44 p-3 border border-stone-200 rounded-xl text-xs font-mono bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+              />
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowImportPricesModal(false)}
+                  className="flex-1 py-3 border border-stone-200 rounded-xl hover:bg-stone-50 font-bold text-xs text-stone-500 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    try {
+                      if (!pastedPricesJSON.trim()) {
+                        showToast("Please paste some valid JSON data");
+                        return;
+                      }
+                      const parsed = JSON.parse(pastedPricesJSON);
+                      
+                      // Perform basic validation
+                      const keys = Object.keys(parsed);
+                      if (keys.length === 0) {
+                        showToast("JSON is empty");
+                        return;
+                      }
+                      
+                      const sampleKey = keys[0];
+                      const sample = parsed[sampleKey];
+                      if (!sample || typeof sample !== 'object' || sample.price === undefined) {
+                        showToast("Invalid structure. Must be { \"CARD_ID\": { \"price\": \"X\", \"url\": \"Y\" } }");
+                        return;
+                      }
+
+                      // Update local prices in state and local storage
+                      let finalPrices = { ...prices };
+                      const localSaved = localStorage.getItem('yuyutei_prices');
+                      const currentLocal = localSaved ? JSON.parse(localSaved) : {};
+                      
+                      const newLocal = { ...currentLocal, ...parsed };
+                      localStorage.setItem('yuyutei_prices', JSON.stringify(newLocal));
+
+                      setPrices(prev => ({
+                        ...prev,
+                        ...parsed
+                      }));
+
+                      showToast(`Successfully imported prices for ${keys.length} cards!`);
+                      setShowImportPricesModal(false);
+                      setPriceMode(true); // Automatically show prices
+                    } catch (e: any) {
+                      showToast(`Failed to parse JSON: ${e.message}`);
+                    }
+                  }}
+                  className="flex-1 py-3 bg-[#3D5A61] hover:bg-[#2D454B] text-white rounded-xl font-bold text-xs shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  Import & Save
+                </button>
+              </div>
+
+              <div className="bg-amber-50 rounded-xl p-3 border border-amber-200/50 flex gap-2.5 items-start">
+                <Info size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-[10px] leading-relaxed text-amber-900">
+                  <span className="font-bold">Pro-tip:</span> Imported prices are stored securely in your browser's local storage and will persist across page reloads. Click "Show Prices" to view them anywhere on card details!
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -6035,43 +6332,54 @@ function AppContent() {
                   </div>
                 </div>
 
-                {/* Price Display */}
-                <div className="space-y-3">
-                  <h3 className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Market Prices</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setPriceMode(!priceMode)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1.5",
-                        priceMode
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/10"
-                          : "bg-white text-stone-500 border-stone-200 hover:border-stone-400"
-                      )}
-                    >
-                      <Zap size={12} className={cn(priceMode && "fill-white")} />
-                      {priceMode ? "Hide Prices" : "Show Prices"}
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (pricesLoading) return;
-                        setPricesLoading(true);
-                        try {
-                          await fetch('/api/clear-cache', { method: 'POST' });
-                          setPrices({});
-                          showToast("YYT Cache cleared. Syncing started...");
-                        } catch (error) {
-                          showToast("Failed to clear cache");
-                        } finally {
-                          setPricesLoading(false);
-                        }
-                      }}
-                      disabled={pricesLoading}
-                      className="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1.5 bg-white text-stone-500 border-stone-200 hover:border-red-400 hover:text-red-500 disabled:opacity-50"
-                    >
-                      <Trash2 size={12} />
-                      Clear YYT Cache
-                    </button>
-                    {pricesLoading && (
+              {/* Price Display */}
+              <div className="space-y-3">
+                <h3 className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Market Prices</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setPriceMode(!priceMode)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1.5",
+                      priceMode
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/10"
+                        : "bg-white text-stone-500 border-stone-200 hover:border-stone-400"
+                    )}
+                  >
+                    <Zap size={12} className={cn(priceMode && "fill-white")} />
+                    {priceMode ? "Hide Prices" : "Show Prices"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPastedPricesJSON('');
+                      setShowImportPricesModal(true);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1.5 bg-white text-stone-500 border-stone-200 hover:border-amber-400 hover:text-amber-600"
+                  >
+                    <Upload size={12} />
+                    Import Prices JSON
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (pricesLoading) return;
+                      setPricesLoading(true);
+                      try {
+                        await fetch('/api/clear-cache', { method: 'POST' });
+                        localStorage.removeItem('yuyutei_prices');
+                        setPrices({});
+                        showToast("YYT Cache cleared and local imports removed.");
+                      } catch (error) {
+                        showToast("Failed to clear cache");
+                      } finally {
+                        setPricesLoading(false);
+                      }
+                    }}
+                    disabled={pricesLoading}
+                    className="px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border flex items-center gap-1.5 bg-white text-stone-500 border-stone-200 hover:border-red-400 hover:text-red-500 disabled:opacity-50"
+                  >
+                    <Trash2 size={12} />
+                    Clear YYT Cache
+                  </button>
+                  {pricesLoading && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-600 text-[10px] font-bold animate-pulse">
                         <Loader2 size={12} className="animate-spin" />
                         Syncing...

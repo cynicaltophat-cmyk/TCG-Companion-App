@@ -38,6 +38,19 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+const ALT_ART_CATEGORIES = [
+  "LR+",
+  "LR++",
+  "R+",
+  "U+",
+  "SP",
+  "C+",
+  "Newtype Challenge",
+  "Release Event",
+  "Premium Goods Set",
+  "Championship"
+];
+
 interface AdminCardManagerProps {
   onClose: () => void;
   adminFeedback: Feedback[];
@@ -69,6 +82,26 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
   const [showRelatedCardSuggestions, setShowRelatedCardSuggestions] = useState(false);
   const [showOnlyFlagged, setShowOnlyFlagged] = useState(false);
   const [activeArtTab, setActiveArtTab] = useState<string | number>('Base art');
+  const [showAltDropdown, setShowAltDropdown] = useState(false);
+
+  const getEditingCardWithAltMigrated = (card: GundamCard): Partial<GundamCard> => {
+    let variants = card.variants ? [...card.variants] : [];
+    if (card.altImageUrl && !variants.some(v => v.imageUrl === card.altImageUrl)) {
+      variants = [
+        {
+          type: 'Parallel',
+          imageUrl: card.altImageUrl,
+          artist: card.altArtist,
+          artistLink: card.altArtistLink
+        },
+        ...variants
+      ];
+    }
+    return {
+      ...card,
+      variants
+    };
+  };
 
   useEffect(() => {
     console.log("Initializing AdminCardManager listener...");
@@ -112,7 +145,7 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
     if (initialCardId && cards.length > 0) {
       const card = cards.find(c => c.id === initialCardId);
       if (card) {
-        setEditingCard(card);
+        setEditingCard(getEditingCardWithAltMigrated(card));
         setTraitsInput(card.traits?.join(', ') || '');
         setLastEditingId(card.id);
         setActiveArtTab('Base art');
@@ -245,8 +278,32 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
     try {
       const batch = writeBatch(db);
       
+      const cleanData = (obj: any): any => {
+        if (obj === null || obj === undefined) return null;
+        if (Array.isArray(obj)) return obj.map(cleanData);
+        if (typeof obj === 'object') {
+          const res: any = {};
+          for (const key of Object.keys(obj)) {
+            if (obj[key] !== undefined) {
+              res[key] = cleanData(obj[key]);
+            }
+          }
+          return res;
+        }
+        return obj;
+      };
+
+      const cleanedCard = cleanData(editingCard);
+      
+      // If there are variants, remove legacy alt fields to prevent duplication
+      if (cleanedCard.variants && cleanedCard.variants.length > 0) {
+        delete cleanedCard.altImageUrl;
+        delete cleanedCard.altArtist;
+        delete cleanedCard.altArtistLink;
+      }
+      
       // 1. Save the main card
-      batch.set(doc(db, 'cards', editingCard.id), editingCard);
+      batch.set(doc(db, 'cards', editingCard.id), cleanedCard);
 
       // 2. Handle bidirectional links
       // Compare current editingCard.relatedCards with what was in the database (stored in `cards` state)
@@ -1125,6 +1182,7 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                     <label className="text-[10px] font-black uppercase text-stone-400">Card Art & Variants</label>
                     <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
                       <button 
+                        id="art-variant-tab-base"
                         type="button"
                         onClick={() => setActiveArtTab('Base art')}
                         className={cn(
@@ -1134,59 +1192,81 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                       >
                         Base
                       </button>
-                      <button 
-                        type="button"
-                        onClick={() => setActiveArtTab('Parallel')}
-                        className={cn(
-                          "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all",
-                          activeArtTab === 'Parallel' ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
-                        )}
-                      >
-                        Parallel
-                      </button>
-                      {(editingCard.variants || []).map((v, i) => (
-                        <button 
+                       {(editingCard.variants || []).map((v, i) => (
+                        <div 
+                          id={`art-variant-tab-${i}`}
                           key={i}
-                          type="button"
+                          role="button"
                           onClick={() => setActiveArtTab(i)}
                           className={cn(
-                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1",
+                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1 cursor-pointer select-none",
                             activeArtTab === i ? "bg-white text-stone-900 shadow-sm" : "text-stone-400 hover:text-stone-600"
                           )}
                         >
                           {v.type || `V${i + 1}`}
                           <Trash2 
-                            size={8} 
-                            className="hover:text-red-500 transition-colors ml-1" 
+                            size={10} 
+                            className="text-stone-400 hover:text-red-500 transition-colors ml-1 p-0.5 rounded hover:bg-stone-200" 
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm("Delete this variant?")) {
-                                const newVariants = [...(editingCard.variants || [])];
-                                newVariants.splice(i, 1);
-                                setEditingCard({ ...editingCard, variants: newVariants });
-                                setActiveArtTab('Base art');
-                                setHasUnsavedChanges(true);
-                              }
+                              const newVariants = [...(editingCard.variants || [])];
+                              newVariants.splice(i, 1);
+                              setEditingCard({ ...editingCard, variants: newVariants });
+                              setActiveArtTab('Base art');
+                              setHasUnsavedChanges(true);
                             }}
                           />
-                        </button>
+                        </div>
                       ))}
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const currentVariants = editingCard.variants || [];
-                          const newIndex = currentVariants.length;
-                          setEditingCard({
-                            ...editingCard,
-                            variants: [...currentVariants, { type: '', imageUrl: '' }]
-                          });
-                          setActiveArtTab(newIndex);
-                          setHasUnsavedChanges(true);
-                        }}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-amber-500 hover:bg-white transition-all"
-                      >
-                        <Plus size={14} />
-                      </button>
+                      <div id="add-alt-art-container" className="relative">
+                        <button 
+                          id="add-alt-art-btn"
+                          type="button"
+                          onClick={() => setShowAltDropdown(!showAltDropdown)}
+                          className={cn(
+                            "p-1.5 rounded-lg text-stone-400 hover:text-amber-500 hover:bg-white transition-all",
+                            showAltDropdown && "text-amber-500 bg-white"
+                          )}
+                          title="Add Alt Art"
+                        >
+                          <Plus size={14} />
+                        </button>
+
+                        {showAltDropdown && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-40 bg-transparent" 
+                              onClick={() => setShowAltDropdown(false)}
+                            />
+                            <div 
+                              id="alt-art-dropdown-menu"
+                              className="absolute right-0 top-full mt-1.5 w-48 bg-white border border-stone-200 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2 duration-200"
+                            >
+                              <p className="text-[8px] font-black uppercase text-stone-400 px-3 py-1 tracking-wider border-b border-stone-100">Select Category</p>
+                              {ALT_ART_CATEGORIES.map((category) => (
+                                <button
+                                  key={category}
+                                  type="button"
+                                  onClick={() => {
+                                    const currentVariants = editingCard.variants || [];
+                                    const newIndex = currentVariants.length;
+                                    setEditingCard({
+                                      ...editingCard,
+                                      variants: [...currentVariants, { type: category, imageUrl: '' }]
+                                    });
+                                    setActiveArtTab(newIndex);
+                                    setHasUnsavedChanges(true);
+                                    setShowAltDropdown(false);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-[10px] font-black uppercase text-stone-600 hover:bg-stone-50 hover:text-stone-900 transition-colors"
+                                >
+                                  {category}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1565,7 +1645,7 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
                       onClick={() => {
-                        setEditingCard(card);
+                        setEditingCard(getEditingCardWithAltMigrated(card));
                         setTraitsInput(card.traits?.join(', ') || '');
                         setActiveArtTab('Base art');
                         setHasUnsavedChanges(false);
