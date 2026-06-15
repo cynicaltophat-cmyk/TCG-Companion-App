@@ -3,7 +3,6 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import apiApp from "./api/index.ts";
-import { rateLimit } from "express-rate-limit";
 import fs from "fs/promises";
 import fsSync from "fs";
 import dotenv from 'dotenv';
@@ -27,32 +26,6 @@ async function startServer() {
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
   } catch (e) {}
-
-  // Trust proxy for rate limiting (needed behind our infrastructure)
-  app.set("trust proxy", 1);
-
-  // Rate Limiting
-  const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: "Too many requests from this IP, please try again after 15 minutes",
-  });
-
-  const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 5,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: "Too many attempts on sensitive routes, please try again after 15 minutes",
-  });
-
-  // Apply the global rate limiter to all requests
-  app.use(globalLimiter);
-
-  // Apply the stricter rate limiter to API routes
-  app.use("/api/", apiLimiter);
 
   // Serve public directory
   app.use(express.static('public'));

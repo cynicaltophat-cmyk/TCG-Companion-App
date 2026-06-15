@@ -42,6 +42,7 @@ export interface GundamCard {
 }
 
 export const ALL_SETS = [
+  "EB01",
   "GD04",
   "GD03",
   "GD02",

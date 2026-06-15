@@ -35,63 +35,6 @@ app.get("/api/prices", async (req, res) => {
   }
 });
 
-app.post("/api/fetch-price", express.json(), async (req, res) => {
-  const { cardNumber, cardName, rarity } = req.body;
-  
-  if (!cardNumber) {
-    return res.status(400).json({ error: "Card number is required" });
-  }
-
-  try {
-    const ai = getAi();
-    const searchUrl = `https://yuyu-tei.jp/sell/gcg/s/search?search_word=${cardNumber}`;
-    const prompt = `Find the current selling price for Gundam TCG card "${cardNumber} ${cardName || ""}" (Rarity: ${rarity || "any"}) on Yu-Yu Tei.
-    You should prioritize looking at this search result page: ${searchUrl}
-    
-    Return the price in Japanese Yen (JPY) as a number. 
-    If multiple versions exist, focus on the one that matches the rarity provided.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        tools: [{ googleSearch: {} } as any],
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            price: { type: Type.NUMBER },
-            sourceUrl: { type: Type.STRING }
-          },
-          required: ["price"]
-        }
-      }
-    });
-
-    const responseText = response.text || "";
-    const data = JSON.parse(responseText);
-    
-    res.json({
-      price: data.price,
-      url: data.sourceUrl || (response.candidates?.[0]?.groundingMetadata?.groundingChunks?.[0] as any)?.web?.uri || `https://yuyu-tei.jp/sell/gcg/s/search?search_word=${cardNumber}`,
-      lastUpdated: new Date().toISOString()
-    });
-  } catch (error: any) {
-    console.error("Error fetching price via Gemini:", error);
-    
-    // Specifically handle 429 Quota errors
-    if (error.message?.includes("429") || error.status === 429 || error.message?.includes("quota")) {
-      return res.status(429).json({ 
-        error: "Quota reached", 
-        message: "AI search limit reached. Please use the official search link.",
-        fallbackUrl: `https://yuyu-tei.jp/sell/gcg/s/search?search_word=${cardNumber}`
-      });
-    }
-    
-    res.status(500).json({ error: "Failed to fetch price", details: error.message });
-  }
-});
-
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });

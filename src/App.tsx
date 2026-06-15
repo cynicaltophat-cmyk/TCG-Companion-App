@@ -59,6 +59,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import CryptoJS from 'crypto-js';
 import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
+import { EB01_EXTRA_CARDS } from './data/EB01_new_cards';
 import { AdminCardManager } from './components/AdminCardManager';
 import { AdminProductManager } from './components/AdminProductManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
@@ -155,6 +156,106 @@ const COMMON_VARIANTS: ArtVariantType[] = [
 const RARITIES = ["C", "U", "R", "LR"];
 const COLORS = ["Red", "Blue", "Green", "White", "Purple", "Colorless"];
 const TYPES = ["Base", "Unit", "Pilot", "Command", "Unit Token"];
+
+const EB01_001_CARD: GundamCard = {
+  id: "eb01-001",
+  name: "Gundam Astray Red Frame Custom (EX)",
+  set: "EB01",
+  cardNumber: "EB01-001",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "LR",
+  cost: 5,
+  level: 6,
+  ap: 5,
+  hp: 4,
+  ability: "【Activate・Main】 【Once per Turn】 Exile 2 Command cards from your trash from the game: Choose 1 damaged enemy Unit that is Lv.7 or lower. Rest it. It won't be set as active during the start phase of your opponent's next turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/EB01-001.png",
+  traits: ["(G Generation)"],
+  link: "[Lowe Guele]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const EB01_002_CARD: GundamCard = {
+  id: "eb01-002",
+  name: "Hi-Nu Gundam (EX)",
+  set: "EB01",
+  cardNumber: "EB01-002",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "LR",
+  cost: 7,
+  level: 8,
+  ap: 6,
+  hp: 5,
+  ability: "【Deploy】 If another friendly (G Generation) Unit is in play, choose 1 Unit belonging to each enemy player. Rest them.\n【During Link】 【Attack】 【Once per Turn】 If 3 or more other rested Units are in play, set this Unit as active.",
+  imageUrl: "https://images.gundam-tcg.com/cards/EB01-002.png",
+  traits: ["(G Generation)"],
+  link: "(G Generation) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const EB01_003_CARD: GundamCard = {
+  id: "eb01-003",
+  name: "Narrative Gundam A-Packs (EX)",
+  set: "EB01",
+  cardNumber: "EB01-003",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "R",
+  cost: 4,
+  level: 5,
+  ap: 4,
+  hp: 4,
+  ability: "【Repair 2】 (At the end of your turn, this Unit recovers the specified number of HP.)\nAt the end of your turn, if this Unit is rested, rest all Units. If this effect rested 3 or more Units, draw 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/EB01-003.png",
+  traits: ["(G Generation)"],
+  link: "[Jona Basta]",
+  zones: ["Space"],
+  faq: []
+};
+
+const EB01_004_CARD: GundamCard = {
+  id: "eb01-004",
+  name: "Gundam Barbatos Lupus Rex (EX)",
+  set: "EB01",
+  cardNumber: "EB01-004",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "R",
+  cost: 5,
+  level: 6,
+  ap: 3,
+  hp: 5,
+  ability: "【Repair 2】 (At the end of your turn, this Unit recovers the specified number of HP.)\n【Once per Turn】 During your turn, when this Unit recovers HP, choose 1 rested enemy Unit. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/EB01-004.png",
+  traits: ["(G Generation)"],
+  link: "(Attack) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const EB01_005_CARD: GundamCard = {
+  id: "eb01-005",
+  name: "Zeta Gundam III P2 Type",
+  set: "EB01",
+  cardNumber: "EB01-005",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "R",
+  cost: 6,
+  level: 7,
+  ap: 6,
+  hp: 4,
+  ability: "【Deploy】 Choose 1 rested Unit belonging to another player. Set it as active. Draw 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/EB01-005.png",
+  traits: ["(G Generation)"],
+  link: "(Support) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
 
 // --- Components ---
 
@@ -876,7 +977,28 @@ function AppContent() {
 
   // Use Firestore cards directly
   const combinedCards = useMemo(() => {
-    return [...allCards].sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
+    const list = [...allCards];
+    if (!list.some(c => c.id === "eb01-001")) {
+      list.push(EB01_001_CARD);
+    }
+    if (!list.some(c => c.id === "eb01-002")) {
+      list.push(EB01_002_CARD);
+    }
+    if (!list.some(c => c.id === "eb01-003")) {
+      list.push(EB01_003_CARD);
+    }
+    if (!list.some(c => c.id === "eb01-004")) {
+      list.push(EB01_004_CARD);
+    }
+    if (!list.some(c => c.id === "eb01-005")) {
+      list.push(EB01_005_CARD);
+    }
+    EB01_EXTRA_CARDS.forEach(card => {
+      if (!list.some(c => c.id === card.id)) {
+        list.push(card);
+      }
+    });
+    return list.sort((a, b) => a.cardNumber.localeCompare(b.cardNumber));
   }, [allCards]);
 
   // Firestore Cards Listener
@@ -1150,8 +1272,8 @@ function AppContent() {
   const [selectedArtType, setSelectedArtType] = useState<ArtVariantType>("Base art");
   const [isCardMaximized, setIsCardMaximized] = useState(false);
   const [touchStartDist, setTouchStartDist] = useState<number | null>(null);
-  const [pinchScale, setPinchScale] = useState<number>(1);
   const [isPinching, setIsPinching] = useState(false);
+  const [hasTriggeredSpreadToast, setHasTriggeredSpreadToast] = useState(false);
   const [showAnatomy, setShowAnatomy] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
@@ -1253,80 +1375,27 @@ function AppContent() {
   const [showImportPricesModal, setShowImportPricesModal] = useState(false);
   const [pastedPricesJSON, setPastedPricesJSON] = useState('');
 
-  // Price fetching logic
+  // Price fetching logic (local clipboard imports only, to prevent network overhead)
   useEffect(() => {
-    const fetchPrices = async () => {
+    const loadPrices = () => {
       let mergedPrices: Record<string, { price: string; url: string }> = {};
-      
-      // 1. Fetch from server-side json market-place
-      try {
-        const response = await fetch('/api/prices');
-        if (response.ok) {
-          const data = await response.json();
-          mergedPrices = { ...data };
-        }
-      } catch (error) {
-        console.error("Failed to fetch server market prices:", error);
-      }
-      
-      // 2. Fetch from local clipboard imports
       try {
         const savedLocal = localStorage.getItem('yuyutei_prices');
         if (savedLocal) {
           const localData = JSON.parse(savedLocal);
-          mergedPrices = { ...mergedPrices, ...localData };
+          mergedPrices = { ...localData };
         }
       } catch (error) {
         console.error("Failed to parse local yuyutei prices:", error);
       }
-      
       setPrices(mergedPrices);
     };
 
-    fetchPrices();
-    // Refresh prices every 10 minutes
-    const interval = setInterval(fetchPrices, 1000 * 60 * 10);
-    return () => clearInterval(interval);
+    loadPrices();
   }, []);
 
   const fetchCardPrice = async (card: GundamCard) => {
-    if (!card.cardNumber || fetchingPriceFor) return;
-    
-    setFetchingPriceFor(card.cardNumber);
-    try {
-      const response = await fetch('/api/fetch-price', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cardNumber: card.cardNumber,
-          cardName: card.name,
-          rarity: card.rarity
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.status === 429) {
-        showToast("AI limit reached. Tap 'View on Yu-Yu-Tei' below.");
-        return;
-      }
-
-      if (data.price) {
-        const priceKey = `${card.cardNumber.toUpperCase()}_${card.rarity.toUpperCase()}`;
-        setPrices(prev => ({
-          ...prev,
-          [priceKey]: { price: data.price.toString(), url: data.url }
-        }));
-        showToast(`Updated price: ¥${data.price.toLocaleString()}`);
-      } else {
-        showToast("Price not found for this card.");
-      }
-    } catch (error) {
-      console.error("Error fetching price:", error);
-      showToast("Failed to fetch price via Gemini.");
-    } finally {
-      setFetchingPriceFor(null);
-    }
+    showToast("Live price fetching is disabled to prevent rate limits.");
   };
 
   const getCardPriceInfo = (cardNum: string, rarity: string, artType?: string) => {
@@ -2090,6 +2159,103 @@ function AppContent() {
       }
     }
   }, [isAdmin, cardsLoading, allCards.length]);
+
+  // Auto-import EB01 cards if missing or stale (Admin only)
+  useEffect(() => {
+    if (!isAdmin || cardsLoading || allCards.length === 0) return;
+    
+    const eb01Card1 = allCards.find(c => c.id === "eb01-001");
+    const needsUpdate1 = !eb01Card1 || (eb01Card1.traits && eb01Card1.traits.includes("Space"));
+    
+    if (needsUpdate1) {
+      console.log("Seeding or updating EB01-001 card...");
+      const cardRef = doc(db, 'cards', "eb01-001");
+      setDoc(cardRef, EB01_001_CARD)
+        .then(() => {
+          console.log("Auto-import of EB01-001 card successful!");
+        })
+        .catch(err => {
+          console.error("Auto-import EB01-001 failed:", err);
+        });
+    }
+
+    const eb01Card2 = allCards.find(c => c.id === "eb01-002");
+    const needsUpdate2 = !eb01Card2 || (eb01Card2.traits && eb01Card2.traits.includes("Space"));
+    
+    if (needsUpdate2) {
+      console.log("Seeding or updating EB01-002 card...");
+      const cardRef = doc(db, 'cards', "eb01-002");
+      setDoc(cardRef, EB01_002_CARD)
+        .then(() => {
+          console.log("Auto-import of EB01-002 card successful!");
+        })
+        .catch(err => {
+          console.error("Auto-import EB01-002 failed:", err);
+        });
+    }
+
+    const eb01Card3 = allCards.find(c => c.id === "eb01-003");
+    const needsUpdate3 = !eb01Card3 || (eb01Card3.traits && eb01Card3.traits.includes("Space"));
+    
+    if (needsUpdate3) {
+      console.log("Seeding or updating EB01-003 card...");
+      const cardRef = doc(db, 'cards', "eb01-003");
+      setDoc(cardRef, EB01_003_CARD)
+        .then(() => {
+          console.log("Auto-import of EB01-003 card successful!");
+        })
+        .catch(err => {
+          console.error("Auto-import EB01-003 failed:", err);
+        });
+    }
+
+    const eb01Card4 = allCards.find(c => c.id === "eb01-004");
+    const needsUpdate4 = !eb01Card4 || (eb01Card4.traits && eb01Card4.traits.includes("Space"));
+    
+    if (needsUpdate4) {
+      console.log("Seeding or updating EB01-004 card...");
+      const cardRef = doc(db, 'cards', "eb01-004");
+      setDoc(cardRef, EB01_004_CARD)
+        .then(() => {
+          console.log("Auto-import of EB01-004 card successful!");
+        })
+        .catch(err => {
+          console.error("Auto-import EB01-004 failed:", err);
+        });
+    }
+
+    const eb01Card5 = allCards.find(c => c.id === "eb01-005");
+    const needsUpdate5 = !eb01Card5 || (eb01Card5.traits && eb01Card5.traits.includes("Space"));
+    
+    if (needsUpdate5) {
+      console.log("Seeding or updating EB01-005 card...");
+      const cardRef = doc(db, 'cards', "eb01-005");
+      setDoc(cardRef, EB01_005_CARD)
+        .then(() => {
+          console.log("Auto-import of EB01-005 card successful!");
+        })
+        .catch(err => {
+          console.error("Auto-import EB01-005 failed:", err);
+        });
+    }
+
+    // Dynamic seeding/updates for all extra EB01 cards
+    EB01_EXTRA_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard || (dbCard.traits && dbCard.traits.includes("Space"));
+      if (needsUpdate) {
+        console.log(`Seeding or updating ${card.id}...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+  }, [isAdmin, cardsLoading, allCards]);
 
 
 
@@ -5084,10 +5250,6 @@ function AppContent() {
                             "relative w-[260px] aspect-[5/7] bg-stone-100 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 cursor-pointer group landscape:w-auto landscape:h-[85%] origin-center",
                             isDeckBuilderMode && "lg:w-[240px] lg:h-auto lg:aspect-[5/7] landscape:lg:w-[240px] landscape:lg:h-auto"
                           )}
-                          style={{
-                            transform: isPinching ? `scale(${pinchScale})` : undefined,
-                            transition: isPinching ? 'none' : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                          }}
                           onTouchStart={(e) => {
                             if (e.touches.length === 2) {
                               e.stopPropagation();
@@ -5096,6 +5258,7 @@ function AppContent() {
                                 e.touches[0].clientY - e.touches[1].clientY
                               );
                               setTouchStartDist(dist);
+                              setHasTriggeredSpreadToast(false);
                               setIsPinching(true);
                             }
                           }}
@@ -5109,21 +5272,19 @@ function AppContent() {
                                 e.touches[0].clientX - e.touches[1].clientX,
                                 e.touches[0].clientY - e.touches[1].clientY
                               );
-                              const scale = dist / touchStartDist;
-                              // Clamp scale between 1 and 1.5 for a satisfying feedback effect
-                              const cappedScale = Math.min(Math.max(scale, 1), 1.5);
-                              setPinchScale(cappedScale);
+                              // Detect finger spread/pinch-out motion
+                              if (dist > touchStartDist * 1.05 && !hasTriggeredSpreadToast) {
+                                showToast("Tap image to preview the full card");
+                                setHasTriggeredSpreadToast(true);
+                              }
                             }
                           }}
                           onTouchEnd={(e) => {
                             if (isPinching) {
                               e.stopPropagation();
-                              if (pinchScale > 1.05) {
-                                setIsCardMaximized(true);
-                              }
                               setIsPinching(false);
                               setTouchStartDist(null);
-                              setPinchScale(1);
+                              setHasTriggeredSpreadToast(false);
                             }
                           }}
                           onClick={(e) => {
@@ -5236,24 +5397,6 @@ function AppContent() {
                             </>
                           );
                         })()}
-
-                        <button 
-                          onClick={() => fetchCardPrice(selectedCard)}
-                          disabled={!!fetchingPriceFor}
-                          className={cn(
-                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-sm group w-fit border",
-                            fetchingPriceFor === selectedCard.cardNumber
-                              ? "bg-stone-50 border-stone-200 text-stone-400 cursor-not-allowed"
-                              : "bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-100 hover:border-amber-300"
-                          )}
-                        >
-                          {fetchingPriceFor === selectedCard.cardNumber ? (
-                            <Loader2 size={12} className="animate-spin" />
-                          ) : (
-                            <Sparkles size={12} className="text-amber-500" />
-                          )}
-                          <span>{fetchingPriceFor === selectedCard.cardNumber ? "Searching..." : "Fetch Current Price"}</span>
-                        </button>
                       </div>
                     </div>
                   </div>
