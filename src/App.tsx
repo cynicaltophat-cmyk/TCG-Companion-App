@@ -60,6 +60,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import CryptoJS from 'crypto-js';
 import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
 import { EB01_EXTRA_CARDS } from './data/EB01_new_cards';
+import { ST10_CARDS } from './data/ST10_new_cards';
 import { AdminCardManager } from './components/AdminCardManager';
 import { AdminProductManager } from './components/AdminProductManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
@@ -1157,6 +1158,10 @@ function AppContent() {
       return matches.map(m => m.slice(1, -1));
     };
 
+    const cleanTrait = (trait: string) => {
+      return trait.replace(/[()]/g, '').trim().toLowerCase();
+    };
+
     // Helper to extract names from a link string, splitting by "/" and ignoring trait patterns
     const getLinkNames = (linkStr: string) => {
       return linkStr.split('/')
@@ -1207,11 +1212,11 @@ function AppContent() {
         const pilotsByName = combinedCards.filter(c => c.type.includes('Pilot') && isCardMatch(c, linkNames));
         results.push(...pilotsByName);
 
-        const linkTraits = getLinkTraits(selectedCard.link);
+        const linkTraits = getLinkTraits(selectedCard.link).map(t => cleanTrait(t));
         if (linkTraits.length > 0) {
           const pilotsByTrait = combinedCards.filter(c => 
             c.type.includes('Pilot') && 
-            c.traits?.some(t => linkTraits.includes(t))
+            c.traits?.some(t => linkTraits.includes(cleanTrait(t)))
           );
           results.push(...pilotsByTrait);
         }
@@ -1222,8 +1227,8 @@ function AppContent() {
         if (!c.type.includes('Pilot') || !c.link) return false;
         const names = getLinkNames(c.link);
         if (isCardMatch(selectedCard, names)) return true;
-        const traits = getLinkTraits(c.link);
-        if (traits.some(t => selectedCard.traits?.includes(t))) return true;
+        const traits = getLinkTraits(c.link).map(t => cleanTrait(t));
+        if (traits.some(t => selectedCard.traits?.some(st => cleanTrait(st) === t))) return true;
         return false;
       });
       results.push(...linkingPilots);
@@ -1236,11 +1241,11 @@ function AppContent() {
         const unitsByName = combinedCards.filter(c => c.type.includes('Unit') && isCardMatch(c, linkNames));
         results.push(...unitsByName);
 
-        const linkTraits = getLinkTraits(selectedCard.link);
+        const linkTraits = getLinkTraits(selectedCard.link).map(t => cleanTrait(t));
         if (linkTraits.length > 0) {
           const unitsByTrait = combinedCards.filter(c => 
             c.type.includes('Unit') && 
-            c.traits?.some(t => linkTraits.includes(t))
+            c.traits?.some(t => linkTraits.includes(cleanTrait(t)))
           );
           results.push(...unitsByTrait);
         }
@@ -1251,8 +1256,8 @@ function AppContent() {
         if (!c.type.includes('Unit') || !c.link) return false;
         const names = getLinkNames(c.link);
         if (isCardMatch(selectedCard, names)) return true;
-        const traits = getLinkTraits(c.link);
-        if (traits.some(t => selectedCard.traits?.includes(t))) return true;
+        const traits = getLinkTraits(c.link).map(t => cleanTrait(t));
+        if (traits.some(t => selectedCard.traits?.some(st => cleanTrait(st) === t))) return true;
         return false;
       });
       results.push(...linkingUnits);
@@ -2243,6 +2248,23 @@ function AppContent() {
     EB01_EXTRA_CARDS.forEach(card => {
       const dbCard = allCards.find(c => c.id === card.id);
       const needsUpdate = !dbCard || (dbCard.traits && dbCard.traits.includes("Space"));
+      if (needsUpdate) {
+        console.log(`Seeding or updating ${card.id}...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+
+    // Seeding/updates for ST10 cards
+    ST10_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard;
       if (needsUpdate) {
         console.log(`Seeding or updating ${card.id}...`);
         const cardRef = doc(db, 'cards', card.id);

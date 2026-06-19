@@ -151,7 +151,8 @@
         "season": { "type": "string" },
         "date": { "type": "string" },
         "type": { "type": "string", "enum": ["Organized Event"] },
-        "totalPlayers": { "type": "integer" }
+        "totalPlayers": { "type": "integer" },
+        "source": { "type": "string" }
       },
       "required": ["id", "name", "season", "date", "type"]
     },

@@ -32,10 +32,12 @@ import {
   Eye,
   ChevronLeft,
   Layers,
-  Loader2
+  Loader2,
+  Link as LinkIcon
 } from 'lucide-react';
 import { cn, handleFirestoreError, OperationType, parseDecklistText } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
+import { DeckSubmissionForm } from './DeckSubmissionForm';
 
 interface TournamentManagerProps {
   allCards?: GundamCard[];
@@ -72,6 +74,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
   const [selectedSubmission, setSelectedSubmission] = useState<DeckSubmission | null>(null);
   const [focusedEvent, setFocusedEvent] = useState<TournamentEvent | null>(null);
   const [editingSubmission, setEditingSubmission] = useState<DeckSubmission | null>(null);
+  const [showAddDeckForEvent, setShowAddDeckForEvent] = useState(false);
 
   useEffect(() => {
     const qEvents = query(collection(db, 'tournament_events'), orderBy('date', 'desc'));
@@ -127,14 +130,21 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
     }
 
     const eventId = editingEvent.id || `event-${Date.now()}`;
-    const newEvent: TournamentEvent = {
+    const newEvent: any = {
       id: eventId,
-      name: editingEvent.name,
+      name: editingEvent.name.trim(),
       season: editingEvent.season,
       date: editingEvent.date,
-      type: 'Organized Event',
-      totalPlayers: editingEvent.totalPlayers
+      type: 'Organized Event'
     };
+
+    if (editingEvent.totalPlayers !== undefined && editingEvent.totalPlayers !== null && !isNaN(editingEvent.totalPlayers) && editingEvent.totalPlayers > 0) {
+      newEvent.totalPlayers = Number(editingEvent.totalPlayers);
+    }
+
+    if (editingEvent.source && editingEvent.source.trim() !== "") {
+      newEvent.source = editingEvent.source.trim();
+    }
 
     try {
       await setDoc(doc(db, 'tournament_events', eventId), newEvent);
@@ -284,7 +294,19 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
             {focusedEvent ? focusedEvent.name : "Tournament Decks Manager"}
           </h2>
         </div>
-        {!focusedEvent && (
+        {focusedEvent ? (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => {
+                setShowAddDeckForEvent(true);
+              }}
+              className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95"
+            >
+              <Plus size={16} />
+              Submit deck
+            </button>
+          </div>
+        ) : (
           <div className="flex gap-2">
             <button 
               onClick={() => {
@@ -562,6 +584,12 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                       <span className="px-2 py-1 bg-stone-100 rounded-lg text-[10px] font-bold text-stone-500 flex items-center gap-1">
                         <User size={10} />
                         {event.totalPlayers} Players
+                      </span>
+                    )}
+                    {event.source && (
+                      <span className="px-2 py-1 bg-amber-50 rounded-lg text-[10px] font-bold text-amber-800 flex items-center gap-1 border border-amber-100/50">
+                        <LinkIcon size={10} />
+                        {event.source}
                       </span>
                     )}
                   </div>
@@ -1045,6 +1073,16 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
                     className="w-full px-4 py-3 bg-stone-100 border-none rounded-2xl text-sm focus:ring-2 focus:ring-stone-200"
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest pl-1">Source</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Egman Events"
+                    value={editingEvent?.source || ""}
+                    onChange={(e) => setEditingEvent(prev => ({ ...prev, source: e.target.value }))}
+                    className="w-full px-4 py-3 bg-stone-100 border-none rounded-2xl text-sm focus:ring-2 focus:ring-stone-200"
+                  />
+                </div>
               </div>
 
               <button 
@@ -1053,6 +1091,56 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
               >
                 Save Event
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddDeckForEvent && focusedEvent && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex flex-col overflow-y-auto">
+          <div className="flex-1 max-w-4xl mx-auto w-full p-4 sm:p-8 flex flex-col justify-center">
+            <div className="relative bg-[#F5F5F0] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-5 duration-300">
+              <div className="absolute top-6 right-6 z-50">
+                <button 
+                  onClick={() => setShowAddDeckForEvent(false)}
+                  className="bg-stone-200/50 hover:bg-stone-200 backdrop-blur-md p-3 rounded-full text-stone-900 transition-all border border-black/10"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <DeckSubmissionForm 
+                  deck={{
+                    id: `deck-${Date.now()}`,
+                    name: "",
+                    items: [],
+                    lastModified: Date.now()
+                  }}
+                  allCards={allCards}
+                  initialSubmission={{
+                    id: `sub-${Date.now()}`,
+                    uid: auth.currentUser?.uid || "",
+                    eventType: 'Organized Event',
+                    tournamentId: focusedEvent.id,
+                    tournamentName: focusedEvent.name,
+                    date: focusedEvent.date,
+                    season: focusedEvent.season || 'GD04',
+                    status: 'approved',
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    deckName: "",
+                    playerName: "",
+                    email: "",
+                    placement: "Top 1",
+                    decklistText: ""
+                  } as any}
+                  onClose={() => setShowAddDeckForEvent(false)}
+                  onSuccess={() => {
+                    setShowAddDeckForEvent(false);
+                    showToast?.("Deck added successfully!");
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>

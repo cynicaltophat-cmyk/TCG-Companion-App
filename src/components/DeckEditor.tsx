@@ -333,11 +333,14 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
 
     // 2. Trait-based pairing in unit ability text
     if (pilot.traits && pilot.traits.length > 0) {
-      for (const trait of pilot.traits) {
-        const traitRegex = new RegExp(`[\\(\\(【]${trait}[\\)\\)】].*Pilot`, 'i');
+      for (const t of pilot.traits) {
+        const traitClean = t.replace(/[()]/g, '').trim();
+        const escapedTrait = traitClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        const traitRegex = new RegExp(`[\\(\\(【]${escapedTrait}[\\)\\)】].*Pilot`, 'i');
         if (traitRegex.test(unit.ability)) return true;
         
-        const simpleTraitRegex = new RegExp(`${trait}\\s*Pilot`, 'i');
+        const simpleTraitRegex = new RegExp(`${escapedTrait}\\s*Pilot`, 'i');
         if (simpleTraitRegex.test(unit.ability)) return true;
       }
     }
@@ -359,11 +362,14 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
 
     // 5. Pilot ability mentions Unit traits or names
     if (unit.traits && unit.traits.length > 0) {
-      for (const trait of unit.traits) {
-        const traitRegex = new RegExp(`'${trait}'\\s*unit`, 'i');
+      for (const t of unit.traits) {
+        const traitClean = t.replace(/[()]/g, '').trim();
+        const escapedTrait = traitClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        const traitRegex = new RegExp(`'${escapedTrait}'\\s*unit`, 'i');
         if (traitRegex.test(pilot.ability)) return true;
         
-        const traitRegex2 = new RegExp(`${trait}\\s*unit`, 'i');
+        const traitRegex2 = new RegExp(`${escapedTrait}\\s*unit`, 'i');
         if (traitRegex2.test(pilot.ability)) return true;
       }
     }

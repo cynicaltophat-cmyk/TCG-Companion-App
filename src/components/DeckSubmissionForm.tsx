@@ -28,7 +28,7 @@ import {
   ImageIcon,
   Plus
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, parseDecklistText, handleFirestoreError, OperationType } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
 
 interface DeckSubmissionFormProps {
@@ -57,10 +57,12 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
   const [showCardSuggestions, setShowCardSuggestions] = useState(false);
   const [cardSuggestions, setCardSuggestions] = useState<GundamCard[]>([]);
   
+  const isPresetTournament = !!initialSubmission?.tournamentId;
+  
   const [formData, setFormData] = useState({
     deckName: initialSubmission?.deckName || deck.name || "",
-    playerName: initialSubmission?.playerName || auth.currentUser?.displayName || "",
-    email: initialSubmission?.email || auth.currentUser?.email || "",
+    playerName: initialSubmission?.playerName || "",
+    email: initialSubmission?.email || "",
     season: initialSubmission?.season || SEASONS[0].id,
     country: initialSubmission?.country || COUNTRIES[0] as Country,
     eventType: initialSubmission?.eventType || EVENT_TYPES[0] as EventType,
@@ -102,7 +104,7 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
       setEvents(eventsData);
       
       // Select first event if available and it's an organized event
-      if (eventsData.length > 0 && formData.eventType === 'Organized Event') {
+      if (eventsData.length > 0 && formData.eventType === 'Organized Event' && !formData.tournamentId) {
         setFormData(prev => ({ ...prev, tournamentId: eventsData[0].id }));
       }
     });
@@ -117,7 +119,10 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
       return;
     }
 
-    const totalCards = deck.items.reduce((acc, item) => acc + item.count, 0);
+    const parsedItems = parseDecklistText(formData.decklistText || "", allCards);
+    const finalItems = parsedItems.length > 0 ? parsedItems : deck.items;
+
+    const totalCards = finalItems.reduce((acc, item) => acc + item.count, 0);
     if (totalCards > 0 && totalCards !== 50) {
       alert("Please submit a 50 card decklist");
       return;
@@ -132,9 +137,9 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
     const submission: any = {
       id: submissionId,
       uid: initialSubmission?.uid || auth.currentUser.uid,
-      deckId: deck.id,
+      deckId: deck.id || `deck-${Date.now()}`,
       deckName: formData.deckName || "Untitled Deck",
-      deckItems: deck.items,
+      deckItems: finalItems,
       playerName: formData.playerName,
       email: formData.email,
       season: formData.season,
@@ -150,12 +155,28 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
       status: initialSubmission?.status || 'pending'
     };
 
-    if (formData.coverImageUrl) submission.coverImageUrl = formData.coverImageUrl;
+    let finalCoverUrl = formData.coverImageUrl;
+    if (!finalCoverUrl && finalItems.length > 0) {
+      const firstUnit = finalItems.find(i => i.card.type.includes('Unit')) || finalItems[0];
+      if (firstUnit) {
+        finalCoverUrl = firstUnit.card.imageUrl;
+      }
+    }
+    if (finalCoverUrl) submission.coverImageUrl = finalCoverUrl;
 
     if (formData.eventType === 'Organized Event') {
       if (formData.tournamentId) submission.tournamentId = formData.tournamentId;
-      if (selectedTournament?.name) submission.tournamentName = selectedTournament.name;
-      if (selectedTournament?.totalPlayers) submission.totalPlayers = selectedTournament.totalPlayers;
+      if (selectedTournament?.name) {
+        submission.tournamentName = selectedTournament.name;
+      } else if (initialSubmission?.tournamentName) {
+        submission.tournamentName = initialSubmission.tournamentName;
+      }
+      
+      if (selectedTournament?.totalPlayers) {
+        submission.totalPlayers = selectedTournament.totalPlayers;
+      } else if (initialSubmission?.totalPlayers) {
+        submission.totalPlayers = initialSubmission.totalPlayers;
+      }
     }
 
     try {
@@ -214,372 +235,437 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
         <div className="w-10 h-10" /> {/* Spacer */}
       </header>
 
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
-        {/* Deck List Preview */}
-        <section className="space-y-4">
-          <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck list</label>
-          <div className="relative h-40 bg-stone-100 rounded-[2rem] overflow-hidden border border-stone-100 shadow-lg">
-            {formData.coverImageUrl ? (
-              <ProgressiveImage src={formData.coverImageUrl} imageClassName="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-stone-300">
-                <Layout size={48} />
-              </div>
-            )}
-            <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between">
-              <h3 className="text-white font-black text-2xl drop-shadow-md truncate max-w-[70%]">
-                {formData.deckName || "New Deck"}
-              </h3>
-              <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/30 text-white text-[10px] font-black uppercase tracking-widest">
-                {deck.items.reduce((acc, i) => acc + i.count, 0)} cards
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Deck Name & Archetype */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <section className="space-y-2">
-            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck Name</label>
-            <input 
-              type="text"
-              value={formData.deckName}
-              onChange={(e) => setFormData(prev => ({ ...prev, deckName: e.target.value }))}
-              placeholder="e.g. Red Unit Aggro"
-              className="w-full px-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
-              required
-            />
-          </section>
-
-          <section className="space-y-2">
-            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck archetype</label>
-            <div className="relative">
-              <input 
-                type="text"
-                value={archetypeSearch}
-                onFocus={() => setShowArchetypeSuggestions(true)}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setArchetypeSearch(val);
-                  setFormData(prev => ({ ...prev, archetype: val }));
-                  setShowArchetypeSuggestions(true);
-                }}
-                onBlur={() => {
-                  // Small delay to allow click on suggestion
-                  setTimeout(() => setShowArchetypeSuggestions(false), 200);
-                }}
-                placeholder="Search or select archetype..."
-                className="w-full px-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
-                <ChevronDown size={18} />
-              </div>
-
-              {showArchetypeSuggestions && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-64 overflow-y-auto">
-                  {(() => {
-                    const filtered = archetypes.filter(a => 
-                      a.name.toLowerCase().includes(archetypeSearch.toLowerCase())
-                    );
-                    
-                    if (filtered.length > 0) {
-                      return filtered.map(a => (
-                        <button
-                          key={a.id}
-                          type="button"
-                          onClick={() => {
-                            setArchetypeSearch(a.name);
-                            setFormData(prev => ({ ...prev, archetype: a.name }));
-                            setShowArchetypeSuggestions(false);
-                          }}
-                          className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center justify-between border-b border-stone-50 last:border-none"
-                        >
-                          <span className="text-sm font-bold text-stone-900">{a.name}</span>
-                          {formData.archetype === a.name && <CheckCircle2 size={16} className="text-stone-900" />}
-                        </button>
-                      ));
-                    } else if (archetypeSearch.length > 0) {
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setArchetypeSearch("Other");
-                            setFormData(prev => ({ ...prev, archetype: "Other" }));
-                            setShowArchetypeSuggestions(false);
-                          }}
-                          className="w-full px-4 py-4 text-left hover:bg-stone-50 transition-colors flex flex-col border-b border-stone-50 last:border-none"
-                        >
-                          <span className="text-xs font-black text-stone-400 uppercase tracking-widest mb-1">No matches found</span>
-                          <span className="text-sm font-bold text-stone-900">Select "Other"</span>
-                        </button>
-                      );
-                    } else {
-                      return archetypes.map(a => (
-                        <button
-                          key={a.id}
-                          type="button"
-                          onClick={() => {
-                            setArchetypeSearch(a.name);
-                            setFormData(prev => ({ ...prev, archetype: a.name }));
-                            setShowArchetypeSuggestions(false);
-                          }}
-                          className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center justify-between border-b border-stone-50 last:border-none"
-                        >
-                          <span className="text-sm font-bold text-stone-900">{a.name}</span>
-                          {formData.archetype === a.name && <CheckCircle2 size={16} className="text-stone-900" />}
-                        </button>
-                      ));
-                    }
-                  })()}
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-
-        {/* Season & Country */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+        {/* Row 1: Season, country, event type, tournament organizer, date */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 bg-stone-50 border border-stone-100 p-5 rounded-[2rem]">
+          {/* Season */}
           <section className="space-y-2">
             <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Season</label>
             <div className="relative">
               <select 
+                disabled={isPresetTournament}
                 value={formData.season}
                 onChange={(e) => setFormData(prev => ({ ...prev, season: e.target.value }))}
-                className="w-full pl-4 pr-10 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-stone-200 transition-all"
+                className={cn(
+                  "w-full pl-4 pr-10 py-3 bg-white border border-stone-100 rounded-xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-stone-200 transition-all",
+                  isPresetTournament && "opacity-60 cursor-not-allowed bg-stone-200"
+                )}
               >
                 {SEASONS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={16} />
             </div>
           </section>
 
+          {/* Country */}
           <section className="space-y-2">
             <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Country</label>
             <div className="relative">
               <select 
                 value={formData.country}
                 onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value as Country }))}
-                className="w-full pl-4 pr-10 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-stone-200 transition-all"
+                className="w-full pl-4 pr-10 py-3 bg-white border border-stone-100 rounded-xl text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-stone-200 transition-all"
               >
                 {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={16} />
             </div>
           </section>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Event Type */}
+          {/* Event type */}
           <section className="space-y-2">
             <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Event type</label>
             <div className="relative">
               <select 
+                disabled={isPresetTournament}
                 value={formData.eventType}
                 onChange={(e) => setFormData(prev => ({ ...prev, eventType: e.target.value as EventType }))}
-                className="w-full pl-4 pr-10 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold appearance-none focus:ring-2 focus:ring-stone-200 transition-all"
+                className={cn(
+                  "w-full pl-4 pr-10 py-3 bg-white border border-stone-100 rounded-xl text-sm font-bold appearance-none focus:ring-2 focus:ring-stone-200 transition-all",
+                  isPresetTournament && "opacity-60 cursor-not-allowed bg-stone-200"
+                )}
               >
                 {EVENT_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={16} />
             </div>
           </section>
 
           {/* Tournament Organizer */}
           <section className="space-y-2">
-            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Tournament Organizer</label>
+            <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Organizer</label>
             <div className="relative">
               <select 
-                disabled={formData.eventType !== 'Organized Event'}
+                disabled={isPresetTournament || formData.eventType !== 'Organized Event'}
                 value={formData.tournamentId}
                 onChange={(e) => setFormData(prev => ({ ...prev, tournamentId: e.target.value }))}
                 className={cn(
-                  "w-full pl-4 pr-10 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold appearance-none focus:ring-2 focus:ring-stone-200 transition-all",
-                  formData.eventType !== 'Organized Event' && "opacity-50 cursor-not-allowed bg-stone-200"
+                  "w-full pl-4 pr-10 py-3 bg-white border border-stone-100 rounded-xl text-sm font-bold appearance-none focus:ring-2 focus:ring-stone-200 transition-all",
+                  (isPresetTournament || formData.eventType !== 'Organized Event') && "opacity-60 cursor-not-allowed bg-stone-200"
                 )}
               >
                 {events.length === 0 ? (
-                  <option value="">No events found for this season</option>
+                  <option value="">No events</option>
                 ) : (
                   events.map(event => <option key={event.id} value={event.id}>{event.name}</option>)
                 )}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={16} />
             </div>
           </section>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Date */}
           <section className="space-y-2">
             <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Date</label>
             <div className="relative">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={16} />
               <input 
                 type="date"
+                disabled={isPresetTournament}
                 value={formData.date}
                 onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
-              />
-            </div>
-          </section>
-
-          {/* Placement */}
-          <section className="space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Placement</label>
-              <span className="text-[10px] text-stone-400 font-bold">Only up till top 32</span>
-            </div>
-            <div className="relative">
-              <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
-              <input 
-                type="number"
-                min="1"
-                max="32"
-                value={formData.placement.replace('Top ', '')}
-                onChange={(e) => {
-                  const val = Math.min(32, Math.max(1, parseInt(e.target.value) || 1));
-                  setFormData(prev => ({ ...prev, placement: `Top ${val}` }));
-                }}
-                className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+                className={cn(
+                  "w-full pl-9 pr-4 py-[9px] bg-white border border-stone-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none",
+                  isPresetTournament && "opacity-60 cursor-not-allowed bg-stone-200"
+                )}
               />
             </div>
           </section>
         </div>
 
-        {/* Player Name */}
-        <section className="space-y-2">
-          <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Player name</label>
-          <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
-            <input 
-              type="text"
-              value={formData.playerName}
-              onChange={(e) => setFormData(prev => ({ ...prev, playerName: e.target.value }))}
-              placeholder="e.g. kaisenesse"
-              className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
-              required
-            />
-          </div>
-        </section>
+        {/* Two-Column Split Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* COLUMN LEFT GOING DOWN: Deck name, Archetype, Player Name, Email, Placement */}
+          <div className="space-y-5">
+            {/* Deck Name */}
+            <section className="space-y-2">
+              <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck Name</label>
+              <input 
+                type="text"
+                value={formData.deckName}
+                onChange={(e) => setFormData(prev => ({ ...prev, deckName: e.target.value }))}
+                placeholder="e.g. Red Unit Aggro"
+                className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+                required
+              />
+            </section>
 
-        {/* Email */}
-        <section className="space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Email (Optional)</label>
-            <span className="text-[10px] text-stone-400 font-bold italic">For profile picture display</span>
-          </div>
-          <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
-            <input 
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="your@email.com"
-              className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
-            />
-          </div>
-        </section>
-
-        {/* Decklist Text Format */}
-        <section className="space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Decklist (Text Format)</label>
-            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-tight">Copy-pasteable</span>
-          </div>
-          <div className="relative">
-            <FileText className="absolute left-4 top-6 text-stone-400 pointer-events-none" size={18} />
-            <textarea 
-              value={formData.decklistText}
-              onChange={(e) => setFormData(prev => ({ ...prev, decklistText: e.target.value }))}
-              rows={8}
-              className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-stone-200 transition-all outline-none font-mono leading-relaxed"
-              placeholder="4 GD04-016 Zoloat (League Militaire)..."
-              required
-            />
-          </div>
-        </section>
-
-        {/* Cover Card */}
-        <section className="space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Cover Image Card</label>
-            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-tight italic">Which card represents this deck?</span>
-          </div>
-          <div className="relative">
-            <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
-            <input 
-              type="text"
-              value={formData.coverCardName}
-              onFocus={() => {
-                if (formData.coverCardName.length >= 2) {
-                  const filtered = allCards.filter(c => 
-                    c.name.toLowerCase().includes(formData.coverCardName.toLowerCase())
-                  ).slice(0, 5);
-                  setCardSuggestions(filtered);
-                  setShowCardSuggestions(filtered.length > 0);
-                }
-              }}
-              onChange={(e) => {
-                const val = e.target.value;
-                setFormData(prev => ({ ...prev, coverCardName: val }));
-                if (val.length >= 2) {
-                  const filtered = allCards.filter(c => 
-                    c.name.toLowerCase().includes(val.toLowerCase()) ||
-                    c.cardNumber.toLowerCase().includes(val.toLowerCase())
-                  ).slice(0, 5);
-                  setCardSuggestions(filtered);
-                  setShowCardSuggestions(filtered.length > 0);
-                } else {
-                  setShowCardSuggestions(false);
-                }
-              }}
-              onBlur={() => {
-                // Small delay to allow click on suggestion
-                setTimeout(() => setShowCardSuggestions(false), 200);
-              }}
-              placeholder="e.g. Zoloat"
-              className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
-              required
-            />
-            {showCardSuggestions && (
-              <div className="absolute z-50 bottom-full left-0 right-0 mb-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 max-h-64 overflow-y-auto">
-                <div className="px-4 py-2 bg-stone-50 border-b border-stone-100">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Card Results</span>
+            {/* Deck Archetype */}
+            <section className="space-y-2">
+              <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Deck archetype</label>
+              <div className="relative">
+                <input 
+                  type="text"
+                  value={archetypeSearch}
+                  onFocus={() => setShowArchetypeSuggestions(true)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setArchetypeSearch(val);
+                    setFormData(prev => ({ ...prev, archetype: val }));
+                    setShowArchetypeSuggestions(true);
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowArchetypeSuggestions(false), 200);
+                  }}
+                  placeholder="Search or select archetype..."
+                  className="w-full px-4 py-3 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
+                  <ChevronDown size={18} />
                 </div>
-                {cardSuggestions.map(c => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        coverCardName: c.name,
-                        coverImageUrl: c.imageUrl
-                      }));
-                      setShowCardSuggestions(false);
-                    }}
-                    className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center gap-3 border-b border-stone-50 last:border-none"
-                  >
-                    <div className="w-8 h-12 bg-stone-100 rounded overflow-hidden flex-shrink-0">
-                      <ProgressiveImage src={c.imageUrl} imageClassName="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-stone-900 truncate">{c.name}</p>
-                      <p className="text-[10px] text-stone-400 font-bold">{c.cardNumber}</p>
-                    </div>
-                    <Plus size={16} className="text-stone-300" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
 
-        <div className="pt-8 pb-12">
+                {showArchetypeSuggestions && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 max-h-64 overflow-y-auto">
+                    {(() => {
+                      const trimmedSearch = archetypeSearch.trim();
+                      const filtered = archetypes.filter(a => 
+                        a.name.toLowerCase().includes(trimmedSearch.toLowerCase())
+                      );
+                      
+                      const exactMatch = archetypes.find(a => a.name.toLowerCase() === trimmedSearch.toLowerCase());
+                      
+                      const handleAddArchetype = async (nameToAdd: string) => {
+                        if (!nameToAdd) return;
+                        const id = `archetype-${Date.now()}`;
+                        try {
+                          await setDoc(doc(db, 'archetypes', id), {
+                            id,
+                            name: nameToAdd,
+                            createdAt: Date.now()
+                          });
+                          alert(`Successfully added archetype "${nameToAdd}" to database!`);
+                          setArchetypeSearch(nameToAdd);
+                          setFormData(prev => ({ ...prev, archetype: nameToAdd }));
+                          setShowArchetypeSuggestions(false);
+                        } catch (err) {
+                          try {
+                            handleFirestoreError(err, OperationType.WRITE, `archetypes/${id}`, auth);
+                          } catch (formattedErr) {
+                            console.error(formattedErr);
+                          }
+                          alert(`Failed to add archetype: ${err instanceof Error ? err.message : String(err)}`);
+                        }
+                      };
+
+                      return (
+                        <div className="flex flex-col">
+                          {filtered.length > 0 ? (
+                            filtered.map(a => (
+                              <button
+                                key={a.id}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setArchetypeSearch(a.name);
+                                  setFormData(prev => ({ ...prev, archetype: a.name }));
+                                  setShowArchetypeSuggestions(false);
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center justify-between border-b border-stone-50 last:border-none"
+                              >
+                                <span className="text-sm font-bold text-stone-900">{a.name}</span>
+                                {formData.archetype === a.name && <CheckCircle2 size={16} className="text-stone-900" />}
+                              </button>
+                            ))
+                          ) : trimmedSearch.length > 0 ? (
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setArchetypeSearch("Other");
+                                setFormData(prev => ({ ...prev, archetype: "Other" }));
+                                setShowArchetypeSuggestions(false);
+                              }}
+                              className="w-full px-4 py-4 text-left hover:bg-stone-50 transition-colors flex flex-col border-b border-stone-50"
+                            >
+                              <span className="text-xs font-black text-stone-400 uppercase tracking-widest mb-1">No matches found</span>
+                              <span className="text-sm font-bold text-stone-900">Select "Other"</span>
+                            </button>
+                          ) : (
+                            archetypes.map(a => (
+                              <button
+                                key={a.id}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setArchetypeSearch(a.name);
+                                  setFormData(prev => ({ ...prev, archetype: a.name }));
+                                  setShowArchetypeSuggestions(false);
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center justify-between border-b border-stone-50 last:border-none"
+                              >
+                                <span className="text-sm font-bold text-stone-900">{a.name}</span>
+                                {formData.archetype === a.name && <CheckCircle2 size={16} className="text-stone-900" />}
+                              </button>
+                            ))
+                          )}
+
+                          {trimmedSearch.length > 0 && !exactMatch && (
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleAddArchetype(trimmedSearch);
+                              }}
+                              className="w-full px-4 py-4 text-left bg-amber-50/40 hover:bg-amber-50/70 transition-colors flex flex-col border-t border-stone-100 cursor-pointer"
+                            >
+                              <span className="text-xs font-black text-amber-600 uppercase tracking-widest mb-1">New Archetype</span>
+                              <span className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                                <Plus size={16} className="text-amber-600" />
+                                Add "{trimmedSearch}" to database
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Player Name */}
+            <section className="space-y-2">
+              <label className="text-xs font-black text-stone-900 uppercase tracking-widest pl-1">Player name</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+                <input 
+                  type="text"
+                  value={formData.playerName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, playerName: e.target.value }))}
+                  placeholder="e.g. kaisenesse"
+                  className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+                  required
+                />
+              </div>
+            </section>
+
+            {/* Email */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Email (Optional)</label>
+                <span className="text-[10px] text-stone-400 font-bold italic">For profile picture</span>
+              </div>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+                <input 
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="your@email.com"
+                  className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+                />
+              </div>
+            </section>
+
+            {/* Placement */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Placement</label>
+                <span className="text-[10px] text-stone-400 font-bold">Only up till top 32</span>
+              </div>
+              <div className="relative">
+                <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+                <input 
+                  type="number"
+                  min="1"
+                  max="32"
+                  value={formData.placement.replace('Top ', '')}
+                  onChange={(e) => {
+                    const val = Math.min(32, Math.max(1, parseInt(e.target.value) || 1));
+                    setFormData(prev => ({ ...prev, placement: `Top ${val}` }));
+                  }}
+                  className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* COLUMN RIGHT GOING DOWN: Cover-Image-Card Search & List Preview, and Text Decklist */}
+          <div className="space-y-5">
+            {/* Interactive Live Banner Preview */}
+            <div className="relative h-28 bg-stone-100 rounded-[2rem] overflow-hidden border border-stone-100 shadow-md">
+              {formData.coverImageUrl ? (
+                <ProgressiveImage src={formData.coverImageUrl} imageClassName="w-full h-full object-cover animate-in fade-in duration-300" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-stone-300">
+                  <Layout size={32} />
+                </div>
+              )}
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] uppercase font-black text-amber-400 tracking-wider mb-0.5">Deck list Preview</p>
+                  <h3 className="text-white font-black text-lg drop-shadow-md truncate">
+                    {formData.deckName || "New Deck"}
+                  </h3>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/30 text-white text-[9px] font-black uppercase tracking-widest flex-shrink-0">
+                  {deck.items.reduce((acc, i) => acc + i.count, 0)} cards
+                </div>
+              </div>
+            </div>
+
+            {/* Cover Image Card */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Cover Image Card</label>
+                <span className="text-[10px] text-stone-400 font-bold uppercase tracking-tight italic">Select a card graphic</span>
+              </div>
+              <div className="relative">
+                <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" size={18} />
+                <input 
+                  type="text"
+                  value={formData.coverCardName}
+                  onFocus={() => {
+                    if (formData.coverCardName.length >= 2) {
+                      const filtered = allCards.filter(c => 
+                        c.name.toLowerCase().includes(formData.coverCardName.toLowerCase())
+                      ).slice(0, 5);
+                      setCardSuggestions(filtered);
+                      setShowCardSuggestions(filtered.length > 0);
+                    }
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData(prev => ({ ...prev, coverCardName: val }));
+                    if (val.length >= 2) {
+                      const filtered = allCards.filter(c => 
+                        c.name.toLowerCase().includes(val.toLowerCase()) ||
+                        c.cardNumber.toLowerCase().includes(val.toLowerCase())
+                      ).slice(0, 5);
+                      setCardSuggestions(filtered);
+                      setShowCardSuggestions(filtered.length > 0);
+                    } else {
+                      setShowCardSuggestions(false);
+                    }
+                  }}
+                  onBlur={() => {
+                    setTimeout(() => setShowCardSuggestions(false), 200);
+                  }}
+                  placeholder="Search and select card..."
+                  className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-stone-200 transition-all outline-none"
+                  required
+                />
+                {showCardSuggestions && (
+                  <div className="absolute z-50 bottom-full left-0 right-0 mb-2 bg-white border border-stone-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 max-h-64 overflow-y-auto">
+                    <div className="px-4 py-2 bg-stone-50 border-b border-stone-100">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Card Results</span>
+                    </div>
+                    {cardSuggestions.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            coverCardName: c.name,
+                            coverImageUrl: c.imageUrl
+                          }));
+                          setShowCardSuggestions(false);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-stone-50 transition-colors flex items-center gap-3 border-b border-stone-50 last:border-none"
+                      >
+                        <div className="w-8 h-12 bg-stone-100 rounded overflow-hidden flex-shrink-0">
+                          <ProgressiveImage src={c.imageUrl} imageClassName="w-full h-full object-cover animate-in fade-in duration-200" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-stone-900 truncate">{c.name}</p>
+                          <p className="text-[10px] text-stone-400 font-bold">{c.cardNumber}</p>
+                        </div>
+                        <Plus size={16} className="text-stone-300" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Decklist Text Format */}
+            <section className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-xs font-black text-stone-900 uppercase tracking-widest">Decklist (Text Format)</label>
+                <span className="text-[10px] text-stone-400 font-bold uppercase tracking-tight">Copy-pasteable</span>
+              </div>
+              <div className="relative">
+                <FileText className="absolute left-4 top-5 text-stone-400 pointer-events-none" size={18} />
+                <textarea 
+                  value={formData.decklistText}
+                  onChange={(e) => setFormData(prev => ({ ...prev, decklistText: e.target.value }))}
+                  rows={6}
+                  className="w-full pl-12 pr-4 py-4 bg-stone-50 border border-stone-100 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-stone-200 transition-all outline-none font-mono leading-relaxed"
+                  placeholder="4 GD04-016 Zoloat (League Militaire)..."
+                  required
+                />
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {/* Submit button */}
+        <div className="pt-4 pb-8">
           <button 
             type="submit"
             disabled={submitting}
-            className="w-full py-5 bg-[#E5E5E0] hover:bg-[#DEDECB] text-stone-900 rounded-[2rem] font-black text-xl shadow-xl shadow-stone-200 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full py-4 bg-[#E5E5E0] hover:bg-[#DEDECB] text-stone-900 rounded-[2rem] font-black text-lg shadow-lg shadow-stone-200/50 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
           >
             {submitting ? (
               <>
@@ -587,7 +673,7 @@ export const DeckSubmissionForm: React.FC<DeckSubmissionFormProps> = ({ deck, al
                 {initialSubmission ? "Updating..." : "Submitting..."}
               </>
             ) : (
-              initialSubmission ? "UPDATE" : "SUBMIT"
+              initialSubmission ? "UPDATE DECK" : "SUBMIT DECK"
             )}
           </button>
         </div>

@@ -37,7 +37,8 @@ import {
   List,
   Hash,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Link as LinkIcon
 } from 'lucide-react';
 import { cn, parseDecklistText } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
@@ -1258,53 +1259,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
         )}
       </section>
 
-      {/* Popular main cards Horizontal Scroll */}
-      <section className="mt-2 mb-1">
-        <div className="px-6 flex items-center gap-4 mb-1.5">
-          <h2 className="text-[11px] font-bold text-stone-400 uppercase tracking-tight">Filter by popular main cards</h2>
-          <div className="flex-1 h-px bg-stone-100" />
-        </div>
-        
-        <div className="flex gap-2 overflow-x-auto no-scrollbar px-6 pb-3">
-          {popularMainCards.map(({ card }) => (
-            <button
-              key={card.cardNumber}
-              onClick={() => setSelectedMainCardId(prev => prev === card.cardNumber ? null : card.cardNumber)}
-              className={cn(
-                "flex-shrink-0 relative w-[100px] h-[50px] rounded-xl overflow-hidden group transition-all duration-300 ring-2",
-                selectedMainCardId === card.cardNumber ? "ring-stone-900 scale-105 shadow-xl" : "ring-transparent hover:ring-stone-200"
-              )}
-            >
-              <ProgressiveImage 
-                src={card.imageUrl} 
-                referrerPolicy="no-referrer"
-                imageClassName="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              />
-              <div className={cn(
-                "absolute inset-0 bg-gradient-to-t transition-opacity",
-                selectedMainCardId === card.cardNumber ? "from-stone-900/95 via-stone-900/40" : "from-black/80 via-black/30 opacity-90 group-hover:opacity-100"
-              )} />
-              
-              <div className="absolute inset-0 flex items-center justify-center p-1.5">
-                <p className="text-white text-[8px] font-black uppercase tracking-tight text-center leading-[1.1] drop-shadow-md">
-                  {card.name}
-                </p>
-              </div>
-              
-              {selectedMainCardId === card.cardNumber && (
-                <div className="absolute top-1 right-1 text-white">
-                  <CheckCircle2 size={12} fill="currentColor" stroke="none" className="text-stone-900 bg-white rounded-full p-0" />
-                </div>
-              )}
-            </button>
-          ))}
-          {popularMainCards.length === 0 && (
-            <div className="py-4 w-full text-center text-stone-300 font-bold uppercase text-[10px] tracking-widest bg-stone-50 rounded-2xl border border-dashed border-stone-100">
-              No main cards detected
-            </div>
-          )}
-        </div>
-      </section>
+
 
       {false && (
       <section className="mt-2 relative">
@@ -1353,7 +1308,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
         </div>
 
         {recentTopDecks.length > 0 ? (
-          <div className="relative h-[310px] md:h-[350px] flex items-center justify-center -mt-6">
+          <div className="relative h-[400px] md:h-[450px] flex items-center justify-center -mt-6">
             <motion.div 
               className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing touch-none"
               drag="x"
@@ -1406,22 +1361,22 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                       initial={{ 
                         opacity: 0, 
                         scale: 0.8,
-                        x: offset * 200,
+                        x: offset * 250,
                         zIndex: 0
                       }}
                       animate={{ 
                         opacity: isCenter ? 1 : 0.4, 
                         scale: isCenter ? 1 : 0.75,
                         zIndex: isCenter ? 20 : 10,
-                        x: offset * 120
+                        x: offset * 155
                       }}
                       style={{
-                        x: isCenter ? dragX : offset * 120
+                        x: isCenter ? dragX : offset * 155
                       }}
                       exit={{ 
                         opacity: 0, 
                         scale: 0.8,
-                        x: offset * 200,
+                        x: offset * 250,
                         zIndex: 0
                       }}
                       transition={{ 
@@ -1429,7 +1384,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                         stiffness: 300, 
                         damping: 30
                       }}
-                      className="absolute w-[160px] md:w-[200px] transform-gpu will-change-transform"
+                      className="absolute w-[208px] md:w-[260px] transform-gpu will-change-transform"
                     >
                       <div className="bg-white rounded-[2rem] shadow-[0_15px_40px_-15px_rgba(0,0,0,0.15)] border border-stone-100 overflow-hidden transition-all select-none pointer-events-none">
                         <div className="relative aspect-[4/5] overflow-hidden">
@@ -1541,30 +1496,60 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
         </div>
 
         {/* Horizontal Event Filter */}
-        <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2">
+        <div className="flex gap-2.5 mb-6 overflow-x-auto no-scrollbar pb-2 items-stretch">
           <button
             onClick={() => setActiveFilterId('all')}
             className={cn(
-              "px-4 py-2 rounded-full whitespace-nowrap text-[10px] font-black uppercase tracking-widest transition-all border",
+              "px-5 py-2.5 rounded-2xl flex flex-col items-start justify-center transition-all border min-w-[145px] shrink-0 text-left cursor-pointer",
               activeFilterId === 'all'
-                ? "bg-stone-900 text-white border-stone-900 shadow-md"
-                : "bg-white text-stone-400 border-stone-200 hover:border-stone-300 shadow-sm"
+                ? "bg-stone-900 border-stone-900 shadow-md"
+                : "bg-white border-stone-200 hover:border-stone-300 shadow-sm"
             )}
           >
-            All tournament decklist
+            <span className={cn(
+              "text-[10px] font-black uppercase tracking-widest whitespace-nowrap",
+              activeFilterId === 'all' ? "text-white" : "text-stone-900"
+            )}>
+              All Events
+            </span>
+            <span className={cn(
+              "text-[8.5px] font-bold uppercase tracking-wider mt-0.5 whitespace-nowrap",
+              activeFilterId === 'all' ? "text-stone-300/80" : "text-stone-400"
+            )}>
+              All Decklists
+            </span>
           </button>
           {events.map((event) => (
             <button
               key={event.id}
               onClick={() => setActiveFilterId(event.id)}
               className={cn(
-                "px-4 py-2 rounded-full whitespace-nowrap text-[10px] font-black uppercase tracking-widest transition-all border",
+                "px-5 py-2.5 rounded-2xl flex flex-col items-start justify-center transition-all border min-w-[145px] shrink-0 text-left cursor-pointer",
                 activeFilterId === event.id
-                  ? "bg-stone-900 text-white border-stone-900 shadow-md"
-                  : "bg-white text-stone-400 border-stone-200 hover:border-stone-300 shadow-sm"
+                  ? "bg-stone-900 border-stone-900 shadow-md"
+                  : "bg-white border-stone-200 hover:border-stone-300 shadow-sm"
               )}
             >
-              {event.name}
+              <span className={cn(
+                "text-[10px] font-black uppercase tracking-widest whitespace-nowrap",
+                activeFilterId === event.id ? "text-white" : "text-stone-900"
+              )}>
+                {event.name}
+              </span>
+              <span className={cn(
+                "text-[8.5px] font-bold uppercase tracking-wider mt-0.5 whitespace-nowrap flex items-center gap-1",
+                activeFilterId === event.id ? "text-stone-300/80" : "text-stone-400"
+              )}>
+                <span>{event.totalPlayers ? `${event.totalPlayers} Players` : "— Players"}</span>
+                {event.source && (
+                  <>
+                    <span className="opacity-40 select-none">•</span>
+                    <span className="truncate max-w-[110px]">
+                      {event.source}
+                    </span>
+                  </>
+                )}
+              </span>
             </button>
           ))}
         </div>
@@ -1928,6 +1913,15 @@ export const TournamentDeckDetail: React.FC<{ submission: DeckSubmission; allCar
               <>
                 <span className="w-1 h-1 rounded-full bg-stone-200" />
                 <span className="text-stone-500">{submission.totalPlayers || eventDetails?.totalPlayers} Players</span>
+              </>
+            )}
+            {eventDetails?.source && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-stone-200" />
+                <span className="text-stone-500 flex items-center gap-0.5">
+                  <LinkIcon size={10} className="text-stone-400 mr-0.5 shrink-0" />
+                  {eventDetails.source}
+                </span>
               </>
             )}
             <span className="w-1 h-1 rounded-full bg-stone-200" />

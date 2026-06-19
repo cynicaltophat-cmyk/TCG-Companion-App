@@ -35,7 +35,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() &&
-        request.auth.token.email_verified == true &&
+        request.auth.token.email != null &&
         request.auth.token.email.matches("(?i)^(inkytophat|cynicaltophat|angkaiyan)@gmail\\.com$");
     }
 
@@ -124,13 +124,14 @@ service cloud.firestore {
 
 
     function isValidTournamentEvent(data) {
-      return hasOnlyAllowedFields(['id', 'name', 'season', 'date', 'type', 'totalPlayers']) &&
+      return hasOnlyAllowedFields(['id', 'name', 'season', 'date', 'type', 'totalPlayers', 'source']) &&
              data.id is string &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
              data.season is string &&
              data.date is string &&
              data.type == 'Organized Event' &&
-             (!('totalPlayers' in data) || data.totalPlayers is int);
+             (!('totalPlayers' in data) || data.totalPlayers is int) &&
+             (!('source' in data) || (data.source is string && data.source.size() <= 200));
     }
 
     function isValidDeckSubmission(data) {
@@ -208,7 +209,7 @@ service cloud.firestore {
 
     match /deck_submissions/{submissionId} {
       allow read, list: if (resource.data.status == 'approved') || isDocOwner() || isAdmin();
-      allow create: if isAuthenticated() && isValidDeckSubmission(request.resource.data) && request.resource.data.status == 'pending' && request.resource.data.uid == request.auth.uid;
+      allow create: if (isAdmin() && isValidDeckSubmission(request.resource.data)) || (isAuthenticated() && isValidDeckSubmission(request.resource.data) && request.resource.data.status == 'pending' && request.resource.data.uid == request.auth.uid);
       allow update: if (isAdmin() && isValidDeckSubmission(request.resource.data)) || (isDocOwner() && resource.data.status == 'pending' && isValidDeckSubmission(request.resource.data) && request.resource.data.status == 'pending' && request.resource.data.uid == resource.data.uid);
       allow delete: if isAdmin() || (isDocOwner() && resource.data.status == 'pending');
     }

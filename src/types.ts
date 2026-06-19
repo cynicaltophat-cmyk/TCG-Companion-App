@@ -47,6 +47,7 @@ export const ALL_SETS = [
   "GD03",
   "GD02",
   "GD01",
+  "ST10",
   "ST09",
   "ST08",
   "ST07",
@@ -88,6 +89,7 @@ export interface TournamentEvent {
   date: string;
   type: 'Organized Event';
   totalPlayers?: number;
+  source?: string;
 }
 
 export type EventType = 'Shop Battle' | 'Newtype challenge' | 'Organized Event' | 'Release event';
