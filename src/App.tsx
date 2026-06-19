@@ -327,7 +327,7 @@ const QuickDropdown: React.FC<QuickDropdownProps> = ({ label, value, options, on
           "flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 text-[10px] font-bold shadow-sm transition-all duration-200 cursor-pointer select-none outline-none",
           isActive
             ? "bg-amber-50/80 border-amber-200 text-amber-900 shadow-amber-500/5 focus:ring-2 focus:ring-amber-500/20"
-            : "bg-white border-stone-200 hover:border-stone-300 text-stone-700 hover:bg-stone-50/50 focus:ring-2 focus:ring-amber-500/10"
+            : "bg-white border-stone-200 hover:border-stone-300 text-[#141414] hover:bg-stone-50/50 focus:ring-2 focus:ring-amber-500/10"
         )}
       >
         <span className={cn(
@@ -355,7 +355,7 @@ const QuickDropdown: React.FC<QuickDropdownProps> = ({ label, value, options, on
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.95 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
-            className="absolute left-0 mt-1 min-w-[110px] bg-white border border-stone-200 rounded-lg shadow-lg py-1 z-[100] max-h-60 overflow-y-auto overflow-x-hidden no-scrollbar"
+            className="absolute left-0 mt-1 min-w-[145px] bg-white border border-stone-200 rounded-lg shadow-lg py-1.5 z-[100] max-h-60 overflow-y-auto overflow-x-hidden no-scrollbar"
           >
             {options.map((option) => (
               <button
@@ -365,7 +365,7 @@ const QuickDropdown: React.FC<QuickDropdownProps> = ({ label, value, options, on
                   setIsOpen(false);
                 }}
                 className={cn(
-                  "w-full text-left px-3 py-1.5 text-[10px] font-extrabold flex items-center justify-between transition-colors outline-none",
+                  "w-full text-left px-4 py-2 text-[13px] font-extrabold flex items-center justify-between transition-colors outline-none",
                   option.value === value
                     ? "bg-amber-50 text-amber-900 font-black"
                     : "text-stone-700 hover:bg-stone-50 hover:text-stone-900"
@@ -373,7 +373,7 @@ const QuickDropdown: React.FC<QuickDropdownProps> = ({ label, value, options, on
               >
                 <span>{option.label}</span>
                 {option.value === value && (
-                  <Check size={10} className="text-amber-500 shrink-0 ml-2" />
+                  <Check size={13} className="text-amber-500 shrink-0 ml-2" />
                 )}
               </button>
             ))}
@@ -476,52 +476,64 @@ const QuickSliderDropdown: React.FC<QuickSliderDropdownProps> = ({ label, value,
               </button>
             </div>
             
-            <div className="flex items-center gap-3 mt-1">
-              <span className="text-xs font-black text-stone-800 min-w-[24px] text-center">
+            <div className="flex items-start gap-3 mt-2">
+              <span className="text-xs font-black text-stone-800 min-w-[24px] text-center mt-1.5 animate-none">
                 {tempValue}
               </span>
-              <div className="flex-1 flex items-center relative h-8">
-                {/* Track highlight background */}
-                <div className="absolute left-1 right-1 h-[5px] rounded-full bg-stone-100 pointer-events-none w-full">
-                  <div 
-                    className={cn(
-                      "absolute left-0 h-full rounded-full transition-all duration-75",
-                      isActive ? "bg-amber-500" : "bg-stone-300"
-                    )}
-                    style={{ width: `${(numTempValue / 9) * 100}%` }}
+              <div className="flex-1 flex flex-col">
+                <div className="relative h-8 flex items-center">
+                  {/* Track highlight background */}
+                  <div className="absolute left-1 right-1 h-[5px] rounded-full bg-stone-100 pointer-events-none w-full">
+                    <div 
+                      className={cn(
+                        "absolute left-0 h-full rounded-full transition-all duration-75",
+                        isActive ? "bg-amber-500" : "bg-stone-300"
+                      )}
+                      style={{ width: `${(numTempValue / 9) * 100}%` }}
+                    />
+                  </div>
+
+                  <input
+                    type="range"
+                    min="0"
+                    max="9"
+                    value={numTempValue}
+                    onChange={handleSliderChange}
+                    onMouseUp={handleCommitChange}
+                    onTouchEnd={handleCommitChange}
+                    onKeyUp={handleCommitChange}
+                    className="w-full h-full appearance-none bg-transparent cursor-pointer focus:outline-none relative z-10 
+                      [&::-webkit-slider-thumb]:appearance-none 
+                      [&::-webkit-slider-thumb]:w-5 
+                      [&::-webkit-slider-thumb]:h-5 
+                      [&::-webkit-slider-thumb]:rounded-full 
+                      [&::-webkit-slider-thumb]:bg-amber-600 
+                      [&::-webkit-slider-thumb]:shadow-lg 
+                      [&::-webkit-slider-thumb]:transition-all 
+                      [&::-webkit-slider-thumb]:active:scale-115
+                      [&::-webkit-slider-thumb]:border-2
+                      [&::-webkit-slider-thumb]:border-white
+                      [&::-moz-range-thumb]:w-5 
+                      [&::-moz-range-thumb]:h-5 
+                      [&::-moz-range-thumb]:rounded-full 
+                      [&::-moz-range-thumb]:bg-amber-600 
+                      [&::-moz-range-thumb]:border-2
+                      [&::-moz-range-thumb]:border-white
+                      [&::-moz-range-thumb]:shadow-lg 
+                      [&::-moz-range-thumb]:transition-all
+                      [&::-moz-range-thumb]:active:scale-115"
                   />
                 </div>
 
-                <input
-                  type="range"
-                  min="0"
-                  max="9"
-                  value={numTempValue}
-                  onChange={handleSliderChange}
-                  onMouseUp={handleCommitChange}
-                  onTouchEnd={handleCommitChange}
-                  onKeyUp={handleCommitChange}
-                  className="w-full h-full appearance-none bg-transparent cursor-pointer focus:outline-none relative z-10 
-                    [&::-webkit-slider-thumb]:appearance-none 
-                    [&::-webkit-slider-thumb]:w-5 
-                    [&::-webkit-slider-thumb]:h-5 
-                    [&::-webkit-slider-thumb]:rounded-full 
-                    [&::-webkit-slider-thumb]:bg-amber-600 
-                    [&::-webkit-slider-thumb]:shadow-lg 
-                    [&::-webkit-slider-thumb]:transition-all 
-                    [&::-webkit-slider-thumb]:active:scale-115
-                    [&::-webkit-slider-thumb]:border-2
-                    [&::-webkit-slider-thumb]:border-white
-                    [&::-moz-range-thumb]:w-5 
-                    [&::-moz-range-thumb]:h-5 
-                    [&::-moz-range-thumb]:rounded-full 
-                    [&::-moz-range-thumb]:bg-amber-600 
-                    [&::-moz-range-thumb]:border-2
-                    [&::-moz-range-thumb]:border-white
-                    [&::-moz-range-thumb]:shadow-lg 
-                    [&::-moz-range-thumb]:transition-all
-                    [&::-moz-range-thumb]:active:scale-115"
-                />
+                {/* Scale indicators */}
+                <div className="flex justify-between px-1 text-[7px] font-bold text-stone-400 select-none -mt-1 pointer-events-none">
+                  <span className={cn("transition-colors duration-200", numTempValue === 0 ? "text-amber-600 font-extrabold scale-110" : "text-stone-300")}>All</span>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                    <span key={num} className={cn("transition-colors duration-200", numTempValue === num ? "text-amber-600 font-extrabold scale-110" : "text-stone-300")}>
+                      {num}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>

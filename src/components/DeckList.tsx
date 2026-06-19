@@ -16,7 +16,8 @@ import {
   Folder,
   FolderPlus,
   MoreVertical,
-  Move
+  Move,
+  Pencil
 } from 'lucide-react';
 import { Deck, GundamCard, DeckFolder } from '../types';
 import { cn, getColorBg } from '../lib/utils';
@@ -45,79 +46,167 @@ interface DeckCardProps {
   onSelect: (deckId: string) => void;
   onDelete: (deckId: string) => void;
   onMove: (deckId: string) => void;
+  onRename: (deckId: string, newName: string) => void;
+  isDeleteMode?: boolean;
+  isMoveMode?: boolean;
 }
 
-const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove }: DeckCardProps) => {
+const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove, onRename, isDeleteMode = false, isMoveMode = false }: DeckCardProps) => {
   const colors = React.useMemo(() => Array.from(new Set(deck.items.map(i => i.card.color))), [deck.items]);
+  const totalCards = React.useMemo(() => deck.items.reduce((sum, item) => sum + item.count, 0), [deck.items]);
   
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempName, setTempName] = useState(deck.name);
+
+  // Sync state if deck.name changes
+  useEffect(() => {
+    setTempName(deck.name);
+  }, [deck.name]);
+
+  const startEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setTempName(deck.name);
+  };
+
+  const saveRename = () => {
+    if (tempName.trim() && tempName.trim() !== deck.name) {
+      onRename(deck.id, tempName.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const cancelRename = () => {
+    setTempName(deck.name);
+    setIsEditing(false);
+  };
+
   return (
     <div 
-      onClick={() => onSelect(deck.id)}
-      className="relative aspect-square bg-[#E5E5E0] rounded-[2rem] shadow-xl border border-white/50 overflow-hidden cursor-pointer group transform-gpu will-change-transform"
+      onClick={() => {
+        if (isDeleteMode) {
+          onDelete(deck.id);
+        } else if (isMoveMode) {
+          onMove(deck.id);
+        } else {
+          onSelect(deck.id);
+        }
+      }}
+      className={cn(
+        "bg-white rounded-2xl border flex overflow-hidden relative cursor-pointer group transition-all duration-200 h-[80px] sm:h-[88px]",
+        isDeleteMode 
+          ? "border-red-200 shadow-sm hover:border-red-400 hover:shadow-md hover:bg-red-50/10" 
+          : isMoveMode
+            ? "border-amber-200 shadow-sm hover:border-amber-400 hover:shadow-md hover:bg-amber-50/10"
+            : "border-stone-200/80 shadow-sm hover:border-stone-300 hover:shadow-md"
+      )}
     >
-      {/* Background Image / Cover */}
-      <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-110">
-        {deck.coverImageUrl ? (
-          <ProgressiveImage 
-            src={deck.coverImageUrl} 
-            imageClassName="object-cover object-center h-full w-full"
-            referrerPolicy="no-referrer" 
-          />
+      {/* 1. Left Section: Cover Image with Diagonal Separator */}
+      <div className="w-24 sm:w-[130px] h-full relative shrink-0 overflow-hidden bg-stone-50 select-none">
+        {/* Background diagonal layer (the gray border line) */}
+        <div 
+          className="absolute inset-0 bg-stone-200"
+          style={{
+            clipPath: 'polygon(0 0, 100% 0, 83% 100%, 0 100%)'
+          }}
+        />
+        {/* Front image layer */}
+        <div 
+          className="absolute inset-0 right-[4px] bg-stone-50 overflow-hidden"
+          style={{
+            clipPath: 'polygon(0 0, 97.5% 0, 80.5% 100%, 0 100%)'
+          }}
+        >
+          {deck.coverImageUrl ? (
+            <ProgressiveImage 
+              src={deck.coverImageUrl} 
+              imageClassName="object-cover object-center h-full w-full scale-[1.3] translate-y-[12px]"
+              referrerPolicy="no-referrer" 
+            />
+          ) : (
+            <div className="w-full h-full bg-stone-100 flex items-center justify-center text-stone-300">
+              <Layout size={28} strokeWidth={1.5} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2. Middle Section: Info */}
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-5 min-w-0">
+        {isEditing ? (
+          <div className="flex items-center gap-1.5 w-full" onClick={e => e.stopPropagation()}>
+            <input 
+              type="text"
+              value={tempName}
+              onChange={e => setTempName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') saveRename();
+                if (e.key === 'Escape') cancelRename();
+              }}
+              autoFocus
+              className="text-xs sm:text-sm font-bold text-stone-900 border border-amber-300 bg-amber-50/30 rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-amber-500/20 flex-1 min-w-0"
+            />
+            <button 
+              onClick={saveRename}
+              className="p-1 text-emerald-600 hover:text-emerald-700 hover:bg-stone-50 rounded shrink-0"
+            >
+              <Check size={14} strokeWidth={2.5} />
+            </button>
+          </div>
         ) : (
-          <div className="w-full h-full bg-stone-200 flex items-center justify-center text-stone-400">
-            <Layout size={48} strokeWidth={1} />
+          <div className="flex items-center gap-1.5 group/title min-w-0 max-w-full">
+            <h3 className="font-extrabold text-stone-900 text-sm sm:text-[15px] truncate tracking-tight leading-snug">
+              {deck.name}
+            </h3>
+            {!isDeleteMode && !isMoveMode && (
+              <button 
+                onClick={startEditing}
+                className="p-1 text-stone-300 hover:text-stone-500 hover:bg-stone-50 rounded transition-all md:opacity-0 group-hover/title:opacity-100 focus:opacity-100 shrink-0"
+                title="Rename deck"
+              >
+                <Pencil size={11} strokeWidth={2} className="text-stone-400/80" />
+              </button>
+            )}
           </div>
         )}
+
+        <div className="flex items-center gap-2 mt-1 sm:mt-1.5">
+          <span className="text-[9px] sm:text-[10px] font-bold tracking-wider text-stone-400 uppercase select-none shrink-0">
+            {totalCards} / 50 CARDS
+          </span>
+          
+          {/* Colors indicator pills */}
+          <div className="flex gap-1">
+            {colors.length === 0 ? (
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[3px] bg-stone-200" />
+            ) : (
+              colors.map(color => (
+                <div 
+                  key={color} 
+                  className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[4px] shadow-[inset_0_1px_rgba(255,255,255,0.15)]", getColorBg(color))} 
+                  title={color}
+                />
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Top Left Delete Trash Can */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(deck.id);
-          }}
-          className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-stone-400 hover:text-red-500 shadow-lg transition-all active:scale-90 border border-stone-100"
-        >
-          <Trash2 size={18} />
-        </button>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onMove(deck.id);
-          }}
-          className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-stone-400 hover:text-amber-500 shadow-lg transition-all active:scale-90 border border-stone-100"
-        >
-          <Move size={18} />
-        </button>
-      </div>
-
-      {/* Top Right Open Icon */}
-      <div className="absolute top-0 right-0 w-12 h-12 z-10">
-        <div 
-          className="absolute top-0 right-0 w-0 h-0 border-t-[48px] border-l-[48px] border-t-white border-l-transparent" 
-        />
-        <ArrowUpRight size={18} className="absolute top-[8px] right-[8px] text-stone-400" />
-      </div>
-
-      {/* Bottom Text Overlay */}
-      <div className="absolute inset-x-0 bottom-0 p-4 pt-16 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
-        <h3 className="text-white font-black text-base truncate drop-shadow-lg tracking-tight">
-          {deck.name}
-        </h3>
-      </div>
-
-      {/* Color Indicator Bar at bottom */}
-      <div className="absolute bottom-0 inset-x-0 flex h-2">
-        {colors.length === 0 ? (
-          <div className="w-full h-full bg-stone-400/50" />
+      {/* 3. Right Section: Action Chevron / Trash Icon / Move Icon with Border divider */}
+      <div className={cn(
+        "w-12 sm:w-14 items-center justify-center flex shrink-0 transition-colors",
+        isDeleteMode 
+          ? "border-l-2 border-red-350 bg-red-50/10 group-hover:bg-red-50/30 text-red-500"
+          : isMoveMode
+            ? "border-l-2 border-amber-350 bg-amber-50/10 group-hover:bg-amber-50/30 text-amber-500"
+            : "border-l-2 border-[#E7E5E4] bg-stone-50/20 group-hover:bg-stone-50/50 text-stone-300"
+      )}>
+        {isDeleteMode ? (
+          <Trash2 size={18} className="text-red-500 group-hover:scale-110 active:scale-90 transition-transform duration-200" />
+        ) : isMoveMode ? (
+          <Move size={18} className="text-amber-500 group-hover:scale-110 active:scale-90 transition-transform duration-200" />
         ) : (
-          colors.map(color => (
-            <div 
-              key={color} 
-              className={cn("flex-1 h-full", getColorBg(color))} 
-            />
-          ))
+          <ChevronRight size={18} className="text-stone-300 group-hover:text-stone-500 transition-colors transform group-hover:translate-x-0.5 duration-200" />
         )}
       </div>
     </div>
@@ -143,6 +232,9 @@ export const DeckList: React.FC<DeckListProps> = ({
   const [isCreating, setIsCreating] = useState(autoStartCreate);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [showDeleteToast, setShowDeleteToast] = useState(false);
+  const [isMoveMode, setIsMoveMode] = useState(false);
+  const [showMoveToast, setShowMoveToast] = useState(false);
   const [newDeckName, setNewDeckName] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
@@ -286,6 +378,42 @@ export const DeckList: React.FC<DeckListProps> = ({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 bg-[#F5F5F0] flex flex-col min-h-0"
     >
+      {/* Delete mode notification */}
+      {showDeleteToast && (
+        <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 10 }}
+            transition={{ type: "spring", duration: 0.4 }}
+            className="bg-[#242422]/95 backdrop-blur shadow-2xl text-[#f5f5f0] px-6 py-3.5 rounded-2xl flex items-center gap-3 border border-white/10 pointer-events-auto"
+          >
+            <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center animate-pulse shadow-md shadow-red-500/30">
+              <Trash2 size={12} className="stroke-[2.5]" />
+            </div>
+            <span className="text-xs font-black uppercase tracking-widest text-[#f5f5f0]">Entering Delete Mode</span>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Move mode notification */}
+      {showMoveToast && (
+        <div className="fixed inset-0 z-[150] pointer-events-none flex items-center justify-center">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 10 }}
+            transition={{ type: "spring", duration: 0.4 }}
+            className="bg-[#242422]/95 backdrop-blur shadow-2xl text-[#f5f5f0] px-6 py-3.5 rounded-2xl flex items-center gap-3 border border-white/10 pointer-events-auto"
+          >
+            <div className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center animate-pulse shadow-md shadow-amber-500/30">
+              <Move size={12} className="stroke-[2.5]" />
+            </div>
+            <span className="text-xs font-black uppercase tracking-widest text-[#f5f5f0]">Entering Move Mode</span>
+          </motion.div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6">
@@ -427,10 +555,59 @@ export const DeckList: React.FC<DeckListProps> = ({
             </div>
 
             <button 
+              onClick={() => {
+                const nextMode = !isMoveMode;
+                setIsMoveMode(nextMode);
+                setIsDeleteMode(false);
+                if (nextMode) {
+                  setShowMoveToast(true);
+                  const timer = setTimeout(() => {
+                    setShowMoveToast(false);
+                  }, 2000);
+                  return () => clearTimeout(timer);
+                }
+              }} 
+              className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-md active:scale-95 shrink-0",
+                isMoveMode 
+                  ? "bg-amber-500 text-white hover:bg-amber-600 ring-2 ring-amber-500/20" 
+                  : "bg-stone-100 text-stone-500 hover:text-amber-500 hover:bg-amber-50"
+              )}
+              title={isMoveMode ? "Exit Move Mode" : "Move Deck Mode"}
+            >
+              <Move size={16} className="stroke-[2]" />
+            </button>
+
+            <button 
               onClick={() => setIsCreatingFolder(true)}
               className="w-8 h-8 bg-stone-100 text-stone-600 rounded-lg flex items-center justify-center hover:bg-stone-200 transition-all shadow-md active:scale-95 shrink-0"
+              title="New Deck Folder"
             >
               <FolderPlus size={16} className="stroke-[2]" />
+            </button>
+
+            <button 
+              onClick={() => {
+                const nextMode = !isDeleteMode;
+                setIsDeleteMode(nextMode);
+                setIsMoveMode(false);
+                if (nextMode) {
+                  setShowDeleteToast(true);
+                  const timer = setTimeout(() => {
+                    setShowDeleteToast(false);
+                  }, 2000);
+                  return () => clearTimeout(timer);
+                }
+              }} 
+              className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-md active:scale-95 shrink-0",
+                isDeleteMode 
+                  ? "bg-red-500 text-white hover:bg-red-600 ring-2 ring-red-500/20" 
+                  : "bg-stone-100 text-stone-500 hover:text-red-500 hover:bg-red-50"
+              )}
+              title={isDeleteMode ? "Exit Delete Mode" : "Delete Deck Mode"}
+            >
+              <Trash2 size={16} className="stroke-[2]" />
             </button>
 
             <button 
@@ -668,7 +845,7 @@ export const DeckList: React.FC<DeckListProps> = ({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredDecks.map((deck) => (
               <DeckCard 
                 key={deck.id}
@@ -676,6 +853,9 @@ export const DeckList: React.FC<DeckListProps> = ({
                 onSelect={onSelectDeck}
                 onDelete={setDeleteConfirmId}
                 onMove={setMoveDeckId}
+                onRename={onRenameDeck}
+                isDeleteMode={isDeleteMode}
+                isMoveMode={isMoveMode}
               />
             ))}
           </div>
