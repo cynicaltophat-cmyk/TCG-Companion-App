@@ -1391,6 +1391,7 @@ function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [showImportPricesModal, setShowImportPricesModal] = useState(false);
   const [pastedPricesJSON, setPastedPricesJSON] = useState('');
+  const [enlargedCardUrl, setEnlargedCardUrl] = useState<string | null>(null);
 
   // Price fetching logic (local clipboard imports only, to prevent network overhead)
   useEffect(() => {
@@ -1409,6 +1410,34 @@ function AppContent() {
     };
 
     loadPrices();
+  }, []);
+
+  // Listen for right clicks on images to enlarge card illustrations
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && target.tagName === 'IMG') {
+        const img = target as HTMLImageElement;
+        
+        // Exclude avatar images or other small non-card icons
+        if (
+          img.classList.contains('rounded-full') || 
+          img.src.includes('lh3.googleusercontent.com') || 
+          img.src.includes('avatar') || 
+          img.width < 40 || 
+          img.height < 45
+        ) {
+          return;
+        }
+
+        // If it is inside layout elements that display we can safely assume it is a card image
+        e.preventDefault();
+        setEnlargedCardUrl(img.src);
+      }
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+    return () => window.removeEventListener('contextmenu', handleContextMenu);
   }, []);
 
   const fetchCardPrice = async (card: GundamCard) => {
@@ -6958,6 +6987,46 @@ function AppContent() {
               />
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Enlarged Card Overlay on Right-Click */}
+      <AnimatePresence>
+        {enlargedCardUrl && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-6 md:p-12 cursor-zoom-out select-none"
+            onClick={() => setEnlargedCardUrl(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-2xl h-full flex items-center justify-center pointer-events-none"
+            >
+              <div className="relative w-full h-full flex items-center justify-center p-4">
+                <img 
+                  src={enlargedCardUrl} 
+                  alt="Enlarged Card" 
+                  className="w-auto h-auto max-w-full max-h-full rounded-xl shadow-2xl object-contain pointer-events-auto"
+                  referrerPolicy="no-referrer"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEnlargedCardUrl(null);
+                  }}
+                  className="absolute top-4 right-4 md:-right-12 md:top-0 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all backdrop-blur-md border border-white/10 shadow-xl active:scale-90 pointer-events-auto"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

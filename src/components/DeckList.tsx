@@ -49,11 +49,18 @@ interface DeckCardProps {
   onRename: (deckId: string, newName: string) => void;
   isDeleteMode?: boolean;
   isMoveMode?: boolean;
+  folders?: DeckFolder[];
 }
 
-const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove, onRename, isDeleteMode = false, isMoveMode = false }: DeckCardProps) => {
+const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove, onRename, isDeleteMode = false, isMoveMode = false, folders = [] }: DeckCardProps) => {
   const colors = React.useMemo(() => Array.from(new Set(deck.items.map(i => i.card.color))), [deck.items]);
   const totalCards = React.useMemo(() => deck.items.reduce((sum, item) => sum + item.count, 0), [deck.items]);
+  
+  const folderName = React.useMemo(() => {
+    if (!deck.folderId) return "Unsorted";
+    const foundFolder = folders.find(f => f.id === deck.folderId);
+    return foundFolder ? foundFolder.name : "Unsorted";
+  }, [deck.folderId, folders]);
   
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(deck.name);
@@ -189,6 +196,19 @@ const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove, onRename, isDel
               ))
             )}
           </div>
+        </div>
+
+        {/* Folder Indicator */}
+        <div className="text-[8.5px] sm:text-[9.5px] font-bold text-stone-400 mt-0.5 sm:mt-1 select-none flex items-center gap-1 leading-none">
+          <span className="uppercase tracking-widest text-stone-450 font-extrabold text-[8px]">Folder:</span>
+          <span className={cn(
+            "px-1.5 py-0.5 rounded uppercase tracking-wider font-extrabold text-[8px] leading-none shrink-0",
+            folderName === "Unsorted"
+              ? "bg-stone-150/60 text-[#78716C]"
+              : "bg-amber-100/50 text-[#92400E] border border-amber-200/20"
+          )}>
+            {folderName}
+          </span>
         </div>
       </div>
 
@@ -856,6 +876,7 @@ export const DeckList: React.FC<DeckListProps> = ({
                 onRename={onRenameDeck}
                 isDeleteMode={isDeleteMode}
                 isMoveMode={isMoveMode}
+                folders={folders}
               />
             ))}
           </div>
