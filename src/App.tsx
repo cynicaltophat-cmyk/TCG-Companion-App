@@ -5243,7 +5243,7 @@ function AppContent() {
                 isDeckBuilderMode && "lg:flex-col lg:overflow-visible landscape:lg:flex-col landscape:lg:overflow-visible"
               )}>
                 <div className={cn(
-                  "relative w-full h-[372px] mt-1 flex items-center justify-center overflow-hidden landscape:w-1/2 landscape:h-full landscape:mt-0",
+                  "relative w-full h-[410px] md:h-[372px] mt-1 flex items-center justify-center overflow-hidden landscape:w-1/2 landscape:h-full landscape:mt-0",
                   isDeckBuilderMode && "lg:w-full lg:h-auto lg:shrink-0 lg:mt-4 lg:mb-0 landscape:lg:w-full landscape:lg:h-auto landscape:lg:mt-4 landscape:lg:relative"
                 )}>
                   <div className="relative w-full h-full flex items-center justify-center">
@@ -5251,7 +5251,7 @@ function AppContent() {
                     {currentIndex > 0 && (
                       <div 
                         key={`peek-prev-${gridData[currentIndex - 1].id}`}
-                        className="absolute left-0 -translate-x-[60%] w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] transition-transform duration-500 landscape:w-auto landscape:h-[75%] landscape:-translate-x-[3%] landscape:scale-115"
+                        className="absolute left-0 -translate-x-[60%] w-[264px] md:w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] transition-transform duration-500 landscape:w-auto landscape:h-[75%] landscape:-translate-x-[3%] landscape:scale-115"
                       >
                         <img 
                           src={gridData[currentIndex - 1].imageUrl} 
@@ -5310,7 +5310,7 @@ function AppContent() {
                       >
                         <div 
                           className={cn(
-                            "relative w-[260px] aspect-[5/7] bg-stone-100 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 cursor-pointer group landscape:w-auto landscape:h-[85%] origin-center",
+                            "relative w-[286px] md:w-[260px] aspect-[5/7] bg-stone-100 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 cursor-pointer group landscape:w-auto landscape:h-[85%] origin-center",
                             isDeckBuilderMode && "lg:w-[240px] lg:h-auto lg:aspect-[5/7] landscape:lg:w-[240px] landscape:lg:h-auto"
                           )}
                           onTouchStart={(e) => {
@@ -5329,7 +5329,7 @@ function AppContent() {
                             if (isPinching && e.touches.length === 2 && touchStartDist !== null) {
                               e.stopPropagation();
                               if (e.cancelable) {
-                                e.preventDefault();
+                                  e.preventDefault();
                               }
                               const dist = Math.hypot(
                                 e.touches[0].clientX - e.touches[1].clientX,
@@ -5379,7 +5379,7 @@ function AppContent() {
                     {currentIndex < gridData.length - 1 && currentIndex !== -1 && (
                       <div 
                         key={`peek-next-${gridData[currentIndex + 1].id}`}
-                        className="absolute right-0 translate-x-[60%] w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] transition-transform duration-500 landscape:w-auto landscape:h-[75%] landscape:translate-x-[3%] landscape:scale-115"
+                        className="absolute right-0 translate-x-[60%] w-[264px] md:w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] transition-transform duration-500 landscape:w-auto landscape:h-[75%] landscape:translate-x-[3%] landscape:scale-115"
                       >
                         <img 
                           src={gridData[currentIndex + 1].imageUrl} 
@@ -5430,7 +5430,14 @@ function AppContent() {
                           return (
                             <>
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                <p className="text-stone-400 font-mono text-xs font-bold uppercase tracking-widest">{selectedCard.cardNumber} • {selectedCard.set}</p>
+                                <p className="text-stone-400 font-mono text-xs font-bold uppercase tracking-widest">
+                                  {(() => {
+                                    const normCard = selectedCard.cardNumber?.toLowerCase() || '';
+                                    const normSet = selectedCard.set?.toLowerCase() || '';
+                                    const showSet = normSet && !normCard.startsWith(normSet);
+                                    return showSet ? `${selectedCard.cardNumber} • ${selectedCard.set}` : selectedCard.cardNumber;
+                                  })()}
+                                </p>
                                 <div className="flex items-center gap-2">
                                   <RarityTag rarity={selectedCard.rarity} />
                                   <ColorTag color={selectedCard.color} />
@@ -5447,16 +5454,16 @@ function AppContent() {
                                     </a>
                                   )}
                                 </div>
+                                <a 
+                                  href={detailPriceInfo?.url || getYYTLink(selectedCard.cardNumber)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-[#C86891] hover:bg-[#C86891]/5 hover:border-[#C86891]/30 transition-all shadow-sm group w-fit"
+                                >
+                                  <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                  <span>View on Yu-Yu-Tei</span>
+                                </a>
                               </div>
-                              <a 
-                                href={detailPriceInfo?.url || getYYTLink(selectedCard.cardNumber)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-[#C86891] hover:bg-[#C86891]/5 hover:border-[#C86891]/30 transition-all shadow-sm group w-fit"
-                              >
-                                <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                                <span>View on Yu-Yu-Tei</span>
-                              </a>
                             </>
                           );
                         })()}

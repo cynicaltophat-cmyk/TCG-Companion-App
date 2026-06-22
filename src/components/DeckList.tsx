@@ -109,7 +109,7 @@ const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove, onRename, isDel
       )}
     >
       {/* 1. Left Section: Cover Image with Diagonal Separator */}
-      <div className="w-24 sm:w-[130px] h-full relative shrink-0 overflow-hidden bg-stone-50 select-none">
+      <div className="w-24 sm:w-[130px] h-full relative shrink-0 overflow-hidden bg-white select-none">
         {/* Background diagonal layer (the gray border line) */}
         <div 
           className="absolute inset-0 bg-stone-200"
@@ -119,7 +119,7 @@ const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove, onRename, isDel
         />
         {/* Front image layer */}
         <div 
-          className="absolute inset-0 right-[4px] bg-stone-50 overflow-hidden"
+          className="absolute inset-0 right-[4px] bg-white overflow-hidden"
           style={{
             clipPath: 'polygon(0 0, 97.5% 0, 80.5% 100%, 0 100%)'
           }}
@@ -127,7 +127,7 @@ const DeckCard = React.memo(({ deck, onSelect, onDelete, onMove, onRename, isDel
           {deck.coverImageUrl ? (
             <ProgressiveImage 
               src={deck.coverImageUrl} 
-              imageClassName="object-cover object-center h-full w-full scale-[1.3] translate-y-[12px]"
+              imageClassName="object-cover object-center h-full w-full scale-[1.3] translate-y-[24px] origin-bottom"
               referrerPolicy="no-referrer" 
             />
           ) : (
