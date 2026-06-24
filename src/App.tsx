@@ -5311,7 +5311,7 @@ function AppContent() {
                         <div 
                           className={cn(
                             "relative w-[286px] md:w-[260px] aspect-[5/7] bg-stone-100 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-black/5 cursor-pointer group landscape:w-auto landscape:h-[85%] origin-center",
-                            isDeckBuilderMode && "lg:w-[240px] lg:h-auto lg:aspect-[5/7] landscape:lg:w-[240px] landscape:lg:h-auto"
+                            isDeckBuilderMode && "lg:w-[312px] lg:h-auto lg:aspect-[5/7] landscape:lg:w-[312px] landscape:lg:h-auto"
                           )}
                           onTouchStart={(e) => {
                             if (e.touches.length === 2) {
