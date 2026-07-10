@@ -61,6 +61,7 @@ import CryptoJS from 'crypto-js';
 import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
 import { EB01_EXTRA_CARDS } from './data/EB01_new_cards';
 import { ST10_CARDS } from './data/ST10_new_cards';
+import { GD05_EXTRA_CARDS } from './data/GD05_new_cards';
 import { AdminCardManager } from './components/AdminCardManager';
 import { AdminProductManager } from './components/AdminProductManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
@@ -254,6 +255,26 @@ const EB01_005_CARD: GundamCard = {
   imageUrl: "https://images.gundam-tcg.com/cards/EB01-005.png",
   traits: ["(G Generation)"],
   link: "(Support) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD05_001_CARD: GundamCard = {
+  id: "gd05-001",
+  name: "V2 Gundam",
+  set: "GD05",
+  cardNumber: "GD05-001",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "LR",
+  cost: 4,
+  level: 6,
+  ap: 4,
+  hp: 5,
+  ability: "【Repair 2】 (At the end of your turn, this Unit recovers the specified number of HP.)\n【Activate・Main】 【Once per Turn】 Rest 2 of your Units: Set this Unit as active.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD05-001.png",
+  traits: ["(League Militaire)", "(Victory Type)"],
+  link: "[Üso Ewin]",
   zones: ["Space", "Earth"],
   faq: []
 };
@@ -991,6 +1012,9 @@ function AppContent() {
   // Use Firestore cards directly
   const combinedCards = useMemo(() => {
     const list = [...allCards];
+    if (!list.some(c => c.id === "gd05-001")) {
+      list.push(GD05_001_CARD);
+    }
     if (!list.some(c => c.id === "eb01-001")) {
       list.push(EB01_001_CARD);
     }
@@ -1007,6 +1031,11 @@ function AppContent() {
       list.push(EB01_005_CARD);
     }
     EB01_EXTRA_CARDS.forEach(card => {
+      if (!list.some(c => c.id === card.id)) {
+        list.push(card);
+      }
+    });
+    GD05_EXTRA_CARDS.forEach(card => {
       if (!list.some(c => c.id === card.id)) {
         list.push(card);
       }
@@ -2206,10 +2235,25 @@ function AppContent() {
     }
   }, [isAdmin, cardsLoading, allCards.length]);
 
-  // Auto-import EB01 cards if missing or stale (Admin only)
+  // Auto-import EB01 and GD05 cards if missing or stale (Admin only)
   useEffect(() => {
     if (!isAdmin || cardsLoading || allCards.length === 0) return;
     
+    const gd05Card1 = allCards.find(c => c.id === "gd05-001");
+    const needsUpdateGd05_1 = !gd05Card1 || (gd05Card1.traits && gd05Card1.traits.includes("Space"));
+    
+    if (needsUpdateGd05_1) {
+      console.log("Seeding or updating GD05-001 card...");
+      const cardRef = doc(db, 'cards', "gd05-001");
+      setDoc(cardRef, GD05_001_CARD)
+        .then(() => {
+          console.log("Auto-import of GD05-001 card successful!");
+        })
+        .catch(err => {
+          console.error("Auto-import GD05-001 failed:", err);
+        });
+    }
+
     const eb01Card1 = allCards.find(c => c.id === "eb01-001");
     const needsUpdate1 = !eb01Card1 || (eb01Card1.traits && eb01Card1.traits.includes("Space"));
     
@@ -2306,6 +2350,23 @@ function AppContent() {
     ST10_CARDS.forEach(card => {
       const dbCard = allCards.find(c => c.id === card.id);
       const needsUpdate = !dbCard;
+      if (needsUpdate) {
+        console.log(`Seeding or updating ${card.id}...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+
+    // Seeding/updates for GD05 extra cards
+    GD05_EXTRA_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard || (dbCard.traits && dbCard.traits.includes("Space"));
       if (needsUpdate) {
         console.log(`Seeding or updating ${card.id}...`);
         const cardRef = doc(db, 'cards', card.id);
@@ -4893,11 +4954,11 @@ function AppContent() {
                 "text-[8px] font-bold uppercase tracking-tighter transition-colors",
                 (currentTab === 'decks' || isDeckBuilderMode) ? "text-[#141414]" : "text-stone-400 group-hover:text-[#141414]"
               )}>Decks</span>
-              {decks.length > 0 && (
+              {/* {decks.length > 0 && (
                 <span className="absolute top-0 right-0 w-3 h-3 bg-amber-500 text-white text-[6px] font-black rounded-full flex items-center justify-center border-2 border-[#F5F5F0]">
                   {decks.length}
                 </span>
-              )}
+              )} */}
             </button>
 
 
@@ -4952,6 +5013,7 @@ function AppContent() {
             </button>
 
 
+            {/* 
             <button 
               onClick={() => {
                 if (!isAdmin) {
@@ -5009,6 +5071,7 @@ function AppContent() {
                 currentTab === 'scan' ? "text-[#141414]" : (!isAdmin ? "text-stone-500" : "text-stone-400 group-hover:text-[#141414]")
               )}>Scan</span>
             </button>
+            */}
 
             <button 
               onClick={() => {
@@ -5084,6 +5147,7 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Scanner Overlay */}
+      {/* 
       <AnimatePresence>
         {isScanning && (
           <CameraScanner 
@@ -5122,6 +5186,7 @@ function AppContent() {
           />
         )}
       </AnimatePresence>
+      */}
 
       {/* Card Detail Modal */}
       <AnimatePresence>
