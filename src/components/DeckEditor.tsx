@@ -76,6 +76,7 @@ interface DeckEditorProps {
   isPreviewMode?: boolean;
   onTogglePreviewMode?: () => void;
   prices?: Record<string, { price: string, url: string }>;
+  onUpdateVariant?: (deckId: string, cardId: string, currentArtType: ArtVariantType, newArtType: ArtVariantType) => void;
 }
 
 export interface DeckEditorHandle {
@@ -114,79 +115,138 @@ const ColorTag = React.memo(({ color }: { color: string }) => {
   );
 });
 
+const getCardVariants = (card: GundamCard) => {
+  const list: { type: string; imageUrl: string; artist?: string }[] = [];
+  
+  // 1. Add base art
+  list.push({
+    type: "Base art",
+    imageUrl: card.imageUrl,
+    artist: card.baseArtist
+  });
+
+  // 2. Add from variants array if exists
+  if (card.variants && card.variants.length > 0) {
+    card.variants.forEach(v => {
+      if (v.type !== "Base art" && v.imageUrl !== card.imageUrl) {
+        list.push({
+          type: v.type,
+          imageUrl: v.imageUrl,
+          artist: v.artist
+        });
+      }
+    });
+  }
+
+  // 3. Add parallel art if exists and not already added
+  if (card.altImageUrl) {
+    if (!list.some(v => v.type === "Parallel" || v.imageUrl === card.altImageUrl)) {
+      list.push({
+        type: "Parallel",
+        imageUrl: card.altImageUrl,
+        artist: card.altArtist
+      });
+    }
+  }
+
+  return list;
+};
+
 const CardGridItem = React.memo(({ 
   item, 
   deckId,
   hideControls = false, 
   onPreviewCard, 
   onRemove, 
-  onUpdateCount 
+  onUpdateCount,
+  onOpenAltModal
 }: { 
   item: DeckItem, 
   deckId: string,
   hideControls?: boolean,
   onPreviewCard: (card: GundamCard) => void,
   onRemove: (deckId: string, cardId: string, artType: ArtVariantType) => void,
-  onUpdateCount: (deckId: string, cardId: string, artType: ArtVariantType, delta: number) => void
-}) => (
-  <motion.div 
-    className="bg-white rounded-xl overflow-hidden shadow-sm border border-stone-200 flex flex-col"
-  >
-    <div className="relative aspect-[2/3] bg-stone-100 flex items-center justify-center cursor-pointer" onClick={() => onPreviewCard(item.card)}>
-      <ProgressiveImage 
-        src={
-          item.card.variants 
-            ? item.card.variants.find(v => v.type === item.artType)?.imageUrl || item.card.imageUrl
-            : (item.artType === "Parallel" && item.card.altImageUrl ? item.card.altImageUrl : item.card.imageUrl)
-        } 
-        alt={item.card.name}
-        className="w-full h-full"
-        referrerPolicy="no-referrer"
-      />
-    </div>
+  onUpdateCount: (deckId: string, cardId: string, artType: ArtVariantType, delta: number) => void,
+  onOpenAltModal?: (item: DeckItem) => void
+}) => {
+  const variantsList = getCardVariants(item.card);
+  const hasAlt = variantsList.length > 1;
 
-    {/* Count Controls - Now below the image */}
-    {!hideControls && (
-      <div className="p-1 bg-white border-b border-stone-100 flex items-center justify-between gap-1">
-        <button 
-          onClick={() => {
-            if (item.count === 1) {
-              onRemove(deckId, item.card.id, item.artType);
-            } else {
-              onUpdateCount(deckId, item.card.id, item.artType, -1);
-            }
-          }}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 text-stone-600 active:scale-90 transition-transform"
-        >
-          <Minus size={14} />
-        </button>
-        <span className={cn(
-          "text-xs font-black transition-colors px-1",
-          item.count >= 4 ? "text-red-500" : "text-[#141414]"
-        )}>
-          {item.count}
-        </span>
-        <button 
-          onClick={() => onUpdateCount(deckId, item.card.id, item.artType, 1)}
-          disabled={item.count >= 4}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-[#141414] text-white active:scale-90 transition-transform disabled:opacity-30"
-        >
-          <Plus size={14} />
-        </button>
-      </div>
-    )}
+  return (
+    <motion.div 
+      className="bg-white rounded-xl overflow-hidden shadow-sm border border-stone-200 flex flex-col relative"
+    >
+      <div className="relative aspect-[2/3] bg-stone-100 flex items-center justify-center cursor-pointer" onClick={() => onPreviewCard(item.card)}>
+        <ProgressiveImage 
+          src={
+            item.card.variants 
+              ? item.card.variants.find(v => v.type === item.artType)?.imageUrl || item.card.imageUrl
+              : (item.artType === "Parallel" && item.card.altImageUrl ? item.card.altImageUrl : item.card.imageUrl)
+          } 
+          alt={item.card.name}
+          className="w-full h-full"
+          referrerPolicy="no-referrer"
+        />
 
-    <div className="p-1.5 flex flex-col gap-0.5">
-      <h4 className="text-[10px] font-bold truncate leading-tight">{item.card.name}</h4>
-      <div className="flex items-center justify-between">
-        <span className="text-[8px] font-mono text-stone-400">{item.card.cardNumber}</span>
-        {item.artType !== "Base art" && (
-          <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">{item.artType}</span>
+        {/* "(Change icon) ALT" Button on the top right of the card image */}
+        {hasAlt && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onOpenAltModal) onOpenAltModal(item);
+            }}
+            className="absolute top-2 right-2 bg-white/95 hover:bg-white text-stone-700 font-bold text-[9px] px-2 py-1 rounded-md shadow-md border border-stone-200/80 hover:border-amber-400 flex items-center gap-1 transition-all active:scale-95 z-20 group"
+            title="Change Card Art Variant"
+          >
+            <Palette size={10} className="text-amber-500 group-hover:rotate-12 transition-transform" />
+            <span>ALT</span>
+          </button>
         )}
       </div>
-    </div>
-  </motion.div>
-));
+
+      {/* Count Controls - Now below the image */}
+      {!hideControls && (
+        <div className="p-1 bg-white border-b border-stone-100 flex items-center justify-between gap-1">
+          <button 
+            onClick={() => {
+              if (item.count === 1) {
+                onRemove(deckId, item.card.id, item.artType);
+              } else {
+                onUpdateCount(deckId, item.card.id, item.artType, -1);
+              }
+            }}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 text-stone-600 active:scale-90 transition-transform"
+          >
+            <Minus size={14} />
+          </button>
+          <span className={cn(
+            "text-xs font-black transition-colors px-1",
+            item.count >= 4 ? "text-red-500" : "text-[#141414]"
+          )}>
+            {item.count}
+          </span>
+          <button 
+            onClick={() => onUpdateCount(deckId, item.card.id, item.artType, 1)}
+            disabled={item.count >= 4}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#141414] text-white active:scale-90 transition-transform disabled:opacity-30"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      )}
+
+      <div className="p-1.5 flex flex-col gap-0.5">
+        <h4 className="text-[10px] font-bold truncate leading-tight">{item.card.name}</h4>
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-mono text-stone-400">{item.card.cardNumber}</span>
+          {item.artType !== "Base art" && (
+            <span className="text-[8px] font-black text-amber-600 uppercase tracking-tighter">{item.artType}</span>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+});
 
 export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({ 
   deck, 
@@ -211,7 +271,8 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   userPhotoUrl,
   isPreviewMode = false,
   onTogglePreviewMode,
-  prices
+  prices,
+  onUpdateVariant
 }, ref) => {
   const [activeTab, setActiveTab] = React.useState<'cards' | 'stats' | 'play' | 'products'>(initialTab as any || 'cards');
   
@@ -222,6 +283,15 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   }, [initialTab]);
 
   const [showCoverPicker, setShowCoverPicker] = React.useState(false);
+  
+  // Alt Art Variant selector states
+  const [altArtModalItem, setAltArtModalItem] = React.useState<DeckItem | null>(null);
+  const [selectedAltVariant, setSelectedAltVariant] = React.useState<string>("");
+
+  const onOpenAltModal = React.useCallback((item: DeckItem) => {
+    setAltArtModalItem(item);
+    setSelectedAltVariant(item.artType || "Base art");
+  }, []);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isEditingName, setIsEditingName] = React.useState(false);
   const [editName, setEditName] = React.useState(deck.name);
@@ -2059,6 +2129,7 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
                         onRemove={onRemove}
                         onUpdateCount={onUpdateCount}
                         hideControls={isPreviewMode}
+                        onOpenAltModal={onOpenAltModal}
                       />
                     ))
                   }
@@ -2106,6 +2177,7 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
                         onRemove={onRemove}
                         onUpdateCount={onUpdateCount}
                         hideControls={isPreviewMode}
+                        onOpenAltModal={onOpenAltModal}
                       />
                     ))
                   }
@@ -2471,6 +2543,134 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
               </motion.div>
             </div>
           )}
+        </AnimatePresence>
+
+        {/* Change Card Art (ALT) Modal */}
+        <AnimatePresence>
+          {altArtModalItem && (() => {
+            const variantCount = getCardVariants(altArtModalItem.card).length;
+            const modalMaxWidthClass = 
+              variantCount <= 4 ? "max-w-lg" :
+              variantCount === 5 ? "max-w-xl" :
+              variantCount === 6 ? "max-w-2xl" :
+              variantCount === 7 ? "max-w-3xl" :
+              "max-w-4xl";
+
+            return (
+              <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 pb-20 sm:pb-4">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setAltArtModalItem(null)}
+                  className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                  className={cn(
+                    "relative bg-white rounded-3xl p-6 w-full shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-hidden border border-stone-200 transition-all duration-300",
+                    modalMaxWidthClass
+                  )}
+                >
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                    <div>
+                      <h3 className="text-lg font-black uppercase tracking-tight text-stone-900 flex items-center gap-2">
+                        <Palette size={18} className="text-amber-500" />
+                        Select Card Variant
+                      </h3>
+                      <p className="text-stone-500 text-xs">
+                        Choose an art variant for <span className="font-bold text-stone-700">{altArtModalItem.card.name}</span>
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setAltArtModalItem(null)}
+                      className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-700"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 overflow-x-auto pb-3 pt-1 scrollbar-thin">
+                    <div className="flex flex-row gap-3">
+                      {getCardVariants(altArtModalItem.card).map((variant) => {
+                        const isSelected = selectedAltVariant === variant.type;
+                        return (
+                          <button
+                            key={variant.type}
+                            onClick={() => setSelectedAltVariant(variant.type)}
+                            className={cn(
+                              "group text-left border rounded-2xl overflow-hidden transition-all duration-200 bg-stone-50/50 hover:bg-white flex flex-col items-center p-2.5 relative w-[104px] flex-shrink-0",
+                              isSelected 
+                                ? "border-amber-500 shadow-md ring-2 ring-amber-400/20" 
+                                : "border-stone-200 hover:border-stone-400 hover:shadow-sm"
+                            )}
+                          >
+                            <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-stone-100 mb-2 relative">
+                              <ProgressiveImage
+                                src={variant.imageUrl}
+                                alt={variant.type}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+                                referrerPolicy="no-referrer"
+                              />
+                              {isSelected && (
+                                <div className="absolute inset-0 bg-amber-500/10 flex items-center justify-center z-10 pointer-events-none">
+                                  <div className="bg-amber-500 text-white rounded-full p-1 shadow-lg">
+                                    <Check size={14} strokeWidth={3} />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="w-full text-center space-y-0.5 mt-1">
+                              <span className={cn(
+                                "text-[10px] font-black uppercase tracking-wider block truncate",
+                                isSelected ? "text-amber-600" : "text-stone-700"
+                              )}>
+                                {variant.type}
+                              </span>
+                              {variant.artist && (
+                                <span className="text-[8px] text-stone-400 font-medium truncate block" title={`Art by ${variant.artist}`}>
+                                  {variant.artist}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 border-t border-stone-100 pt-4">
+                    <button
+                      onClick={() => setAltArtModalItem(null)}
+                      className="flex-1 py-3 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-2xl font-black uppercase tracking-widest text-xs active:scale-95 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (onUpdateVariant && altArtModalItem) {
+                          onUpdateVariant(
+                            deck.id, 
+                            altArtModalItem.card.id, 
+                            altArtModalItem.artType, 
+                            selectedAltVariant
+                          );
+                          showToast(`Updated to ${selectedAltVariant}!`);
+                        }
+                        setAltArtModalItem(null);
+                      }}
+                      className="flex-[2] py-3 bg-[#141414] hover:bg-stone-800 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg shadow-black/10 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      Confirm Selection
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            );
+          })()}
         </AnimatePresence>
 
         {/* Toast Notification */}

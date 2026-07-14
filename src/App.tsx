@@ -3470,6 +3470,52 @@ function AppContent() {
     }
   }, [decks, user]);
 
+  const updateDeckVariant = React.useCallback(async (deckId: string, cardId: string, currentArtType: ArtVariantType, newArtType: ArtVariantType) => {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck) return;
+
+    const itemToModify = deck.items.find(item => item.card.id === cardId && item.artType === currentArtType);
+    if (!itemToModify) return;
+
+    if (currentArtType === newArtType) return;
+
+    let alreadyMerged = false;
+    let newItems = deck.items.map(item => {
+      if (item.card.id === cardId && item.artType === newArtType) {
+        alreadyMerged = true;
+        return { ...item, count: Math.min(4, item.count + itemToModify.count) };
+      }
+      return item;
+    });
+
+    if (alreadyMerged) {
+      newItems = newItems.filter(item => !(item.card.id === cardId && item.artType === currentArtType));
+    } else {
+      newItems = newItems.map(item => {
+        if (item.card.id === cardId && item.artType === currentArtType) {
+          return { ...item, artType: newArtType };
+        }
+        return item;
+      });
+    }
+
+    if (!user) {
+      const updatedDecks = decks.map(d => d.id === deckId ? { ...d, items: newItems, lastModified: Date.now() } : d);
+      setDecks(updatedDecks);
+      localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'decks', deckId), { 
+        items: newItems, 
+        lastModified: Date.now() 
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error updating deck variant:", error);
+    }
+  }, [decks, user]);
+
   const activeDeck = decks.find(d => d.id === activeDeckId);
   const displayDeckSize = activeDeck ? activeDeck.items.reduce((s, i) => s + i.count, 0) : 0;
 
@@ -6383,6 +6429,7 @@ function AppContent() {
             onRemove={removeFromDeck}
             onPreviewCard={(card) => setSelectedCard(card)}
             onSetCover={setDeckCover}
+            onUpdateVariant={updateDeckVariant}
             onSubmitDeck={(deck) => {
               setSubmissionDeck(deck);
               setCurrentTab('submit-deck');

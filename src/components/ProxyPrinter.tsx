@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Printer, Download, Loader2, Image as ImageIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
+// @ts-ignore
+import { convertToByteArray, writePngDpi, convertToDataURI } from 'png-dpi-reader-writer';
 import { Deck, DeckItem } from '../types';
 import { cn } from '../lib/utils';
 
@@ -49,13 +51,22 @@ export const ProxyPrinter: React.FC<ProxyPrinterProps> = ({ deck, onClose }) => 
           // Wait a bit for images to be fully ready if needed, 
           // though crossOrigin="anonymous" should handle most cases
           const dataUrl = await toPng(pageRef, {
-            pixelRatio: 2, // Higher quality
+            pixelRatio: 3.125, // Exactly 2480x3508 pixels for A4 page at 300 DPI
             backgroundColor: '#ffffff',
           });
           
+          let finalDataUrl = dataUrl;
+          try {
+            const byteArray = convertToByteArray(dataUrl);
+            const dpiBuffer = writePngDpi(byteArray.buffer, 300);
+            finalDataUrl = convertToDataURI(dpiBuffer.buffer);
+          } catch (dpiError) {
+            console.warn('Failed to insert pHYs chunk for 300 DPI, using standard dataUrl', dpiError);
+          }
+          
           const link = document.createElement('a');
           link.download = `${deck.name.replace(/\s+/g, '_')}_Page_${i + 1}.png`;
-          link.href = dataUrl;
+          link.href = finalDataUrl;
           link.click();
           
           // Small delay between downloads to avoid browser throttling

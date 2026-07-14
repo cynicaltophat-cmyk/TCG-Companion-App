@@ -25,6 +25,7 @@
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "png-dpi-reader-writer": "^0.2.4",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
