@@ -40,6 +40,7 @@ interface DeckSubmissionFormProps {
 }
 
 const SEASONS = [
+  { id: "GD05", name: "GD05 - Freedom Ascension" },
   { id: "GD04", name: "GD04 - Phantom Aria" }
 ];
 

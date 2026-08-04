@@ -66,6 +66,12 @@ export interface DeckItem {
   artType: ArtVariantType;
 }
 
+export interface DeckVariation {
+  id: string;
+  name: string;
+  items: DeckItem[];
+}
+
 export interface Deck {
   id: string;
   name: string;
@@ -73,6 +79,8 @@ export interface Deck {
   lastModified: number;
   coverImageUrl?: string;
   folderId?: string | null;
+  variations?: DeckVariation[];
+  activeVariationId?: string;
 }
 
 export interface DeckFolder {

@@ -39,11 +39,12 @@ import {
   Palette,
   Image as ImageIcon,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  Layers
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { DeckImageExport } from './DeckImageExport';
-import { GundamCard, ArtVariantType, Deck, DeckItem } from '../types';
+import { GundamCard, ArtVariantType, Deck, DeckItem, DeckVariation } from '../types';
 import { cn } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
 import { db } from '../firebase';
@@ -77,6 +78,7 @@ interface DeckEditorProps {
   onTogglePreviewMode?: () => void;
   prices?: Record<string, { price: string, url: string }>;
   onUpdateVariant?: (deckId: string, cardId: string, currentArtType: ArtVariantType, newArtType: ArtVariantType) => void;
+  onUpdateDeckVariations?: (deckId: string, variations: DeckVariation[], activeVariationId: string, newItems?: DeckItem[]) => void;
 }
 
 export interface DeckEditorHandle {
@@ -272,9 +274,83 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   isPreviewMode = false,
   onTogglePreviewMode,
   prices,
-  onUpdateVariant
+  onUpdateVariant,
+  onUpdateDeckVariations
 }, ref) => {
   const [activeTab, setActiveTab] = React.useState<'cards' | 'stats' | 'play' | 'products'>(initialTab as any || 'cards');
+
+  // Deck Variations State
+  const [editingVariationId, setEditingVariationId] = React.useState<string | null>(null);
+  const [editingVariationName, setEditingVariationName] = React.useState<string>('');
+  const [isRenameModalOpen, setIsRenameModalOpen] = React.useState<boolean>(false);
+
+  const defaultVariations = React.useMemo<DeckVariation[]>(() => [
+    { id: 'ver-a', name: 'Ver A', items: deck.items || [] },
+    { id: 'ver-b', name: 'Ver B', items: [] },
+    { id: 'ver-c', name: 'Ver C', items: [] },
+  ], [deck.id]);
+
+  const variations = React.useMemo(() => {
+    if (deck.variations && deck.variations.length > 0) {
+      return deck.variations;
+    }
+    return defaultVariations;
+  }, [deck.variations, defaultVariations]);
+
+  const activeVariationId = deck.activeVariationId || variations[0].id;
+  const activeVariation = variations.find(v => v.id === activeVariationId) || variations[0];
+
+  const handleSelectVariation = (targetId: string) => {
+    if (targetId === activeVariationId) return;
+    const targetVar = variations.find(v => v.id === targetId);
+    if (!targetVar) return;
+
+    const updatedVariations = variations.map(v => 
+      v.id === activeVariationId ? { ...v, items: deck.items } : v
+    );
+
+    const targetItems = targetVar.items || [];
+    if (onUpdateDeckVariations) {
+      onUpdateDeckVariations(deck.id, updatedVariations, targetId, targetItems);
+    }
+  };
+
+  const handleOpenRenameVariation = (varId: string, currentName: string) => {
+    setEditingVariationId(varId);
+    setEditingVariationName(currentName);
+    setIsRenameModalOpen(true);
+  };
+
+  const handleSaveVariationName = () => {
+    if (!editingVariationId || !editingVariationName.trim()) return;
+
+    const newName = editingVariationName.trim();
+    const updatedVariations = variations.map(v => 
+      v.id === editingVariationId ? { ...v, name: newName } : v
+    );
+
+    if (onUpdateDeckVariations) {
+      onUpdateDeckVariations(deck.id, updatedVariations, activeVariationId, deck.items);
+    }
+
+    setIsRenameModalOpen(false);
+    setEditingVariationId(null);
+    setEditingVariationName('');
+  };
+
+  const handleCopyVariationItems = (sourceVarId: string) => {
+    const sourceVar = variations.find(v => v.id === sourceVarId);
+    if (!sourceVar) return;
+
+    const copiedItems = JSON.parse(JSON.stringify(sourceVar.items));
+    const updatedVariations = variations.map(v => 
+      v.id === activeVariationId ? { ...v, items: copiedItems } : v
+    );
+
+    if (onUpdateDeckVariations) {
+      onUpdateDeckVariations(deck.id, updatedVariations, activeVariationId, copiedItems);
+    }
+  };
   
   React.useEffect(() => {
     if (initialTab) {
@@ -973,7 +1049,6 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
               <button 
                 onClick={() => {
                   setActiveTab('cards');
-                  onSetBuilderMode?.(true);
                 }}
                 className={cn(
                   "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center",
@@ -985,7 +1060,6 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
               <button 
                 onClick={() => {
                   setActiveTab('stats');
-                  onSetBuilderMode?.(false);
                 }}
                 className={cn(
                   "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center",
@@ -997,7 +1071,6 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
               <button 
                 onClick={() => {
                   setActiveTab('products');
-                  onSetBuilderMode?.(false);
                 }}
                 className={cn(
                   "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center",
@@ -2099,6 +2172,133 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
               exit={{ opacity: 0, x: 20 }}
               className="p-4 lg:px-12 space-y-8 w-full"
             >
+              {/* Deck Variations Bar - Right above Units */}
+              <div id="deck-variations-section" className="bg-stone-100/90 border border-stone-200/90 rounded-2xl p-2.5 shadow-xs space-y-2">
+                {/* 3 Variation Buttons */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-thin">
+                  {variations.map((v) => {
+                    const isSelected = v.id === activeVariation.id;
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => handleSelectVariation(v.id)}
+                        className={cn(
+                          "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all active:scale-95 shrink-0 shadow-2xs",
+                          isSelected 
+                            ? "bg-[#141414] text-white shadow-md ring-2 ring-stone-900/10" 
+                            : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
+                        )}
+                      >
+                        <span className="truncate max-w-[120px]">{v.name}</span>
+                        <span
+                          role="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenRenameVariation(v.id, v.name);
+                          }}
+                          className={cn(
+                            "p-0.5 rounded-md transition-colors",
+                            isSelected 
+                              ? "text-stone-300 hover:text-amber-300 hover:bg-stone-800" 
+                              : "text-stone-400 hover:text-amber-600 hover:bg-stone-100"
+                          )}
+                          title={`Rename ${v.name}`}
+                        >
+                          <Edit2 size={12} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Copy cards button if active variation has 0 cards */}
+                {activeVariation.items.length === 0 && (() => {
+                  const sourceVar = variations.find(v => v.id !== activeVariation.id && v.items.length > 0);
+                  if (!sourceVar) return null;
+                  return (
+                    <div className="pt-0.5">
+                      <button
+                        onClick={() => handleCopyVariationItems(sourceVar.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-2xs active:scale-95 transition-all"
+                      >
+                        <Copy size={13} />
+                        <span>Copy cards from {sourceVar.name}</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Rename Modal */}
+              <AnimatePresence>
+                {isRenameModalOpen && (
+                  <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setIsRenameModalOpen(false)}
+                      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 1, y: 0 }}
+                      className="relative bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 border border-stone-200 z-10"
+                    >
+                      <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <Edit2 size={16} className="text-amber-500" />
+                          <h4 className="text-sm font-black uppercase tracking-tight text-stone-900">
+                            Rename Variation
+                          </h4>
+                        </div>
+                        <button
+                          onClick={() => setIsRenameModalOpen(false)}
+                          className="p-1.5 hover:bg-stone-100 rounded-full transition-colors text-stone-400 hover:text-stone-700"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider block">
+                          Variation Name
+                        </label>
+                        <input
+                          type="text"
+                          value={editingVariationName}
+                          onChange={(e) => setEditingVariationName(e.target.value)}
+                          placeholder="e.g. Ver A, Sidedeck, Budget..."
+                          className="w-full px-4 py-3 rounded-2xl bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 text-stone-900 font-bold text-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveVariationName();
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex gap-2.5 pt-2">
+                        <button
+                          onClick={() => setIsRenameModalOpen(false)}
+                          className="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-2xl font-bold text-xs transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveVariationName}
+                          className="flex-1 py-2.5 bg-[#141414] hover:bg-stone-800 text-white rounded-2xl font-bold text-xs shadow-md transition-all active:scale-95"
+                        >
+                          Save Name
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+
               {/* Units Group */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3 px-1">

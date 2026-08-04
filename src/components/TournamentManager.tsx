@@ -275,7 +275,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({
     return matchesSearch && matchesSeason && isPending;
   });
 
-  const seasons = ["GD04"];
+  const seasons = ["GD05", "GD04"];
 
   return (
     <div className="fixed inset-0 z-50 bg-[#F9F9F7] flex flex-col animate-in fade-in slide-in-from-bottom-5 duration-300">

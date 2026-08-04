@@ -6,6 +6,7 @@ import { cn, getYYTLink } from '../lib/utils';
 
 // Mapping of Set IDs to Names
 const SET_NAMES: Record<string, string> = {
+  'GD05': 'Freedom Ascension',
   'GD04': 'Battle for the Throne',
   'GD03': 'Prophecy of Justice',
   'GD02': 'Shadow of the Moon',

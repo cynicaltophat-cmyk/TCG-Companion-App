@@ -29,27 +29,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          streamRef.current = stream;
-        }
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-      }
-    }
-    startCamera();
-    return () => {
-      streamRef.current?.getTracks().forEach(track => track.stop());
-    };
+    // Live camera stream is disabled. Photo upload handles image scanning.
   }, []);
 
   const [flash, setFlash] = React.useState(false);

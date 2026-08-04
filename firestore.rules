@@ -64,13 +64,15 @@ service cloud.firestore {
     // ===============================================================
     
     function isValidDeck(data) {
-      return hasOnlyAllowedFields(['id', 'name', 'uid', 'items', 'coverImageUrl', 'lastModified', 'folderId']) &&
+      return hasOnlyAllowedFields(['id', 'name', 'uid', 'items', 'coverImageUrl', 'lastModified', 'folderId', 'variations', 'activeVariationId']) &&
              data.id is string &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              data.uid is string && data.uid == request.auth.uid &&
-             data.items is list && data.items.size() <= 100 &&
-             (!('coverImageUrl' in data) || (data.coverImageUrl is string && data.coverImageUrl.size() <= 2000)) &&
+             data.items is list &&
+             (!('coverImageUrl' in data) || data.coverImageUrl == null || (data.coverImageUrl is string && data.coverImageUrl.size() <= 2000)) &&
              (!('folderId' in data) || (data.folderId == null || (data.folderId is string && data.folderId.size() <= 128))) &&
+             (!('variations' in data) || (data.variations is list && data.variations.size() <= 10)) &&
+             (!('activeVariationId' in data) || (data.activeVariationId is string && data.activeVariationId.size() <= 64)) &&
              data.lastModified is int;
     }
 

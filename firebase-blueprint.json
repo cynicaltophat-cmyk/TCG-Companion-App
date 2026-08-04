@@ -21,7 +21,20 @@
         },
         "coverImageUrl": { "type": "string", "description": "The URL of the deck's cover image" },
         "lastModified": { "type": "integer" },
-        "folderId": { "type": "string", "description": "The ID of the folder this deck belongs to" }
+        "folderId": { "type": "string", "description": "The ID of the folder this deck belongs to" },
+        "variations": {
+          "type": "array",
+          "description": "Optional list of deck variations",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "items": { "type": "array" }
+            }
+          }
+        },
+        "activeVariationId": { "type": "string", "description": "ID of the currently active deck variation" }
       },
       "required": ["id", "name", "uid", "items", "lastModified"]
     },

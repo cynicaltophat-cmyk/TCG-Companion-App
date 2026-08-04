@@ -58,7 +58,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import CryptoJS from 'crypto-js';
-import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
+import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, DeckVariation, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
 import { EB01_EXTRA_CARDS } from './data/EB01_new_cards';
 import { ST10_CARDS } from './data/ST10_new_cards';
 import { GD05_EXTRA_CARDS } from './data/GD05_new_cards';
@@ -1090,7 +1090,7 @@ function AppContent() {
   }, [selectedCard?.cardNumber]); // Use cardNumber as it's more stable across variants for the same card
 
   const cardPopularityMap = useMemo(() => {
-    const CURRENT_SEASON = "GD04";
+    const CURRENT_SEASON = "GD05";
     const map: Record<string, number> = {};
     
     approvedSubmissions.forEach(submission => {
@@ -1109,7 +1109,7 @@ function AppContent() {
   const metaStats = useMemo(() => {
     if (!selectedCard || approvedSubmissions.length === 0) return null;
     
-    const CURRENT_SEASON = "GD04";
+    const CURRENT_SEASON = "GD05";
     
     // Filter submissions that contain exactly this card number
     const relevantSubmissions = approvedSubmissions.filter(s => 
@@ -3368,6 +3368,20 @@ function AppContent() {
     }
   }, [user, isAuthReady, allCards, decks, showToast, isDeckEditorOpen, currentTab]);
 
+  const syncDeckVariations = (deck: Deck, newItems: DeckItem[]) => {
+    if (!deck.variations || deck.variations.length === 0) {
+      const defaultVars: DeckVariation[] = [
+        { id: 'ver-a', name: 'Ver A', items: newItems },
+        { id: 'ver-b', name: 'Ver B', items: [] },
+        { id: 'ver-c', name: 'Ver C', items: [] },
+      ];
+      return { variations: defaultVars, activeVariationId: 'ver-a' };
+    }
+    const activeId = deck.activeVariationId || deck.variations[0].id;
+    const updatedVars = deck.variations.map(v => v.id === activeId ? { ...v, items: newItems } : v);
+    return { variations: updatedVars, activeVariationId: activeId };
+  };
+
   const addToDeck = React.useCallback(async (deckId: string, card: GundamCard, artType: ArtVariantType = "Base art") => {
     const deck = decks.find(d => d.id === deckId);
     if (!deck) return false;
@@ -3391,18 +3405,35 @@ function AppContent() {
       newItems = [...deck.items, { card, count: 1, artType }];
     }
 
+    const { variations: updatedVariations, activeVariationId: currentActiveVarId } = syncDeckVariations(deck, newItems);
+
     if (!user) {
-      const updatedDecks = decks.map(d => d.id === deckId ? { ...d, items: newItems, lastModified: Date.now() } : d);
+      const updatedDecks = decks.map(d => d.id === deckId ? { 
+        ...d, 
+        items: newItems, 
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now() 
+      } : d);
       setDecks(updatedDecks);
       localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
       return true;
     }
 
     try {
-      await setDoc(doc(db, 'decks', deckId), { 
-        items: newItems, 
-        lastModified: Date.now() 
-      }, { merge: true });
+      const deckPayload: any = {
+        id: deck.id,
+        name: deck.name,
+        uid: user.uid,
+        items: newItems,
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now()
+      };
+      if (deck.coverImageUrl !== undefined) deckPayload.coverImageUrl = deck.coverImageUrl;
+      if (deck.folderId !== undefined) deckPayload.folderId = deck.folderId;
+
+      await setDoc(doc(db, 'decks', deckId), deckPayload, { merge: true });
       return true;
     } catch (error) {
       console.error("Error adding to deck:", error);
@@ -3415,19 +3446,35 @@ function AppContent() {
     if (!deck) return;
 
     const newItems = deck.items.filter(item => !(item.card.id === cardId && item.artType === artType));
-    
+    const { variations: updatedVariations, activeVariationId: currentActiveVarId } = syncDeckVariations(deck, newItems);
+
     if (!user) {
-      const updatedDecks = decks.map(d => d.id === deckId ? { ...d, items: newItems, lastModified: Date.now() } : d);
+      const updatedDecks = decks.map(d => d.id === deckId ? { 
+        ...d, 
+        items: newItems, 
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now() 
+      } : d);
       setDecks(updatedDecks);
       localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
       return;
     }
 
     try {
-      await setDoc(doc(db, 'decks', deckId), { 
-        items: newItems, 
-        lastModified: Date.now() 
-      }, { merge: true });
+      const deckPayload: any = {
+        id: deck.id,
+        name: deck.name,
+        uid: user.uid,
+        items: newItems,
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now()
+      };
+      if (deck.coverImageUrl !== undefined) deckPayload.coverImageUrl = deck.coverImageUrl;
+      if (deck.folderId !== undefined) deckPayload.folderId = deck.folderId;
+
+      await setDoc(doc(db, 'decks', deckId), deckPayload, { merge: true });
     } catch (error) {
       console.error("Error removing from deck:", error);
     }
@@ -3453,18 +3500,35 @@ function AppContent() {
       return item;
     });
 
+    const { variations: updatedVariations, activeVariationId: currentActiveVarId } = syncDeckVariations(deck, newItems);
+
     if (!user) {
-      const updatedDecks = decks.map(d => d.id === deckId ? { ...d, items: newItems, lastModified: Date.now() } : d);
+      const updatedDecks = decks.map(d => d.id === deckId ? { 
+        ...d, 
+        items: newItems, 
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now() 
+      } : d);
       setDecks(updatedDecks);
       localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
       return;
     }
 
     try {
-      await setDoc(doc(db, 'decks', deckId), { 
-        items: newItems, 
-        lastModified: Date.now() 
-      }, { merge: true });
+      const deckPayload: any = {
+        id: deck.id,
+        name: deck.name,
+        uid: user.uid,
+        items: newItems,
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now()
+      };
+      if (deck.coverImageUrl !== undefined) deckPayload.coverImageUrl = deck.coverImageUrl;
+      if (deck.folderId !== undefined) deckPayload.folderId = deck.folderId;
+
+      await setDoc(doc(db, 'decks', deckId), deckPayload, { merge: true });
     } catch (error) {
       console.error("Error updating deck count:", error);
     }
@@ -3499,20 +3563,82 @@ function AppContent() {
       });
     }
 
+    const { variations: updatedVariations, activeVariationId: currentActiveVarId } = syncDeckVariations(deck, newItems);
+
     if (!user) {
-      const updatedDecks = decks.map(d => d.id === deckId ? { ...d, items: newItems, lastModified: Date.now() } : d);
+      const updatedDecks = decks.map(d => d.id === deckId ? { 
+        ...d, 
+        items: newItems, 
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now() 
+      } : d);
       setDecks(updatedDecks);
       localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
       return;
     }
 
     try {
-      await setDoc(doc(db, 'decks', deckId), { 
-        items: newItems, 
-        lastModified: Date.now() 
-      }, { merge: true });
+      const deckPayload: any = {
+        id: deck.id,
+        name: deck.name,
+        uid: user.uid,
+        items: newItems,
+        variations: updatedVariations,
+        activeVariationId: currentActiveVarId,
+        lastModified: Date.now()
+      };
+      if (deck.coverImageUrl !== undefined) deckPayload.coverImageUrl = deck.coverImageUrl;
+      if (deck.folderId !== undefined) deckPayload.folderId = deck.folderId;
+
+      await setDoc(doc(db, 'decks', deckId), deckPayload, { merge: true });
     } catch (error) {
       console.error("Error updating deck variant:", error);
+    }
+  }, [decks, user]);
+
+  const updateDeckVariations = React.useCallback(async (
+    deckId: string, 
+    variations: DeckVariation[], 
+    activeVariationId: string, 
+    newItems?: DeckItem[]
+  ) => {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck) return;
+
+    const activeVar = variations.find(v => v.id === activeVariationId);
+    const itemsToSet = newItems ?? (activeVar ? activeVar.items : deck.items);
+
+    const updatedDecks = decks.map(d => d.id === deckId ? { 
+      ...d, 
+      variations, 
+      activeVariationId, 
+      items: itemsToSet, 
+      lastModified: Date.now() 
+    } : d);
+    setDecks(updatedDecks);
+
+    if (!user) {
+      localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
+      return;
+    }
+
+    try {
+      const deckPayload: any = {
+        id: deck.id,
+        name: deck.name,
+        uid: user.uid,
+        items: itemsToSet,
+        variations,
+        activeVariationId,
+        lastModified: Date.now()
+      };
+      if (deck.coverImageUrl !== undefined) deckPayload.coverImageUrl = deck.coverImageUrl;
+      if (deck.folderId !== undefined) deckPayload.folderId = deck.folderId;
+
+      await setDoc(doc(db, 'decks', deckId), deckPayload, { merge: true });
+    } catch (error) {
+      console.error("Error updating deck variations:", error);
     }
   }, [decks, user]);
 
@@ -3640,7 +3766,7 @@ function AppContent() {
 
       const matchesMeta = activeFilters.metaCards.length === 0 || 
                          activeFilters.metaCards.some(m => {
-                           const CURRENT_SEASON = "GD04";
+                           const CURRENT_SEASON = "GD05";
                            // Note: approvedSubmissions is available in the component scope
                            const relevantSubmissions = approvedSubmissions.filter(s => 
                              s.deckItems.some(item => item.card.cardNumber === card.cardNumber)
@@ -6430,6 +6556,7 @@ function AppContent() {
             onPreviewCard={(card) => setSelectedCard(card)}
             onSetCover={setDeckCover}
             onUpdateVariant={updateDeckVariant}
+            onUpdateDeckVariations={updateDeckVariations}
             onSubmitDeck={(deck) => {
               setSubmissionDeck(deck);
               setCurrentTab('submit-deck');
