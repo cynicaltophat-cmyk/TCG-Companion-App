@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { HoldPlusButton, HoldMinusButton } from './components/HoldPlusButton';
 import { motion, AnimatePresence } from 'motion/react';
 import debounce from 'lodash.debounce';
 import { VirtuosoGrid } from 'react-virtuoso';
@@ -598,7 +599,7 @@ const GridItem = React.memo(({
   isExpanded: boolean,
   isDeckBuilderMode: boolean,
   activeDeck: Deck | undefined,
-  onAddToDeck: (card: any, artType: ArtVariantType) => void,
+  onAddToDeck: (card: any, artType: ArtVariantType, countToAdd?: number) => void,
   onRemoveFromDeck: (cardId: string, artType: ArtVariantType) => void,
   onUpdateDeckCount: (cardId: string, artType: ArtVariantType, delta: number) => void,
   isBookmarked: boolean,
@@ -675,24 +676,29 @@ const GridItem = React.memo(({
           className="p-2 bg-white border-b border-stone-100 flex items-center justify-center gap-3"
           onClick={(e) => e.stopPropagation()}
         >
-          <button 
-            onClick={() => {
+          <HoldMinusButton 
+            onSingleClick={() => {
               if (count === 1) {
                 onRemoveFromDeck(card.parentId || card.id, card.variantType || "Base art");
               } else if (count > 1) {
                 onUpdateDeckCount(card.parentId || card.id, card.variantType || "Base art", -1);
               }
             }}
+            onHoldTrigger={() => {
+              if (count > 0) {
+                onRemoveFromDeck(card.parentId || card.id, card.variantType || "Base art");
+              }
+            }}
             disabled={count === 0}
             className={cn(
-              "w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90",
+              "w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 select-none touch-none",
               count > 0 
                 ? "bg-white border border-stone-200 text-[#141414] shadow-sm hover:bg-stone-100" 
                 : "text-stone-300 cursor-not-allowed opacity-50"
             )}
           >
             <Minus size={18} />
-          </button>
+          </HoldMinusButton>
           
           <span className={cn(
             "text-base font-black transition-colors min-w-[20px] text-center",
@@ -701,18 +707,19 @@ const GridItem = React.memo(({
             {totalCount}
           </span>
           
-          <button 
-            onClick={() => onAddToDeck(card, card.variantType || "Base art")}
+          <HoldPlusButton 
+            onSingleClick={() => onAddToDeck(card, card.variantType || "Base art", 1)}
+            onMaxOut={() => onAddToDeck(card, card.variantType || "Base art", 4)}
             disabled={totalCount >= 4}
             className={cn(
-              "w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-sm",
+              "w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-sm select-none touch-none",
               totalCount < 4 
                 ? "bg-[#141414] text-white hover:bg-stone-800" 
                 : "bg-stone-200 text-stone-400 cursor-not-allowed"
             )}
           >
             <Plus size={18} />
-          </button>
+          </HoldPlusButton>
         </div>
       )}
       
@@ -3382,7 +3389,7 @@ function AppContent() {
     return { variations: updatedVars, activeVariationId: activeId };
   };
 
-  const addToDeck = React.useCallback(async (deckId: string, card: GundamCard, artType: ArtVariantType = "Base art") => {
+  const addToDeck = React.useCallback(async (deckId: string, card: GundamCard, artType: ArtVariantType = "Base art", countToAdd: number = 1) => {
     const deck = decks.find(d => d.id === deckId);
     if (!deck) return false;
 
@@ -3395,14 +3402,17 @@ function AppContent() {
       return false;
     }
 
+    const maxCanAdd = 4 - totalCount;
+    const actualAdd = Math.min(countToAdd, maxCanAdd);
+
     const existing = deck.items.find(item => item.card.id === card.id && item.artType === artType);
     let newItems;
     if (existing) {
       newItems = deck.items.map(item => 
-        (item.card.id === card.id && item.artType === artType) ? { ...item, count: item.count + 1 } : item
+        (item.card.id === card.id && item.artType === artType) ? { ...item, count: item.count + actualAdd } : item
       );
     } else {
-      newItems = [...deck.items, { card, count: 1, artType }];
+      newItems = [...deck.items, { card, count: actualAdd, artType }];
     }
 
     const { variations: updatedVariations, activeVariationId: currentActiveVarId } = syncDeckVariations(deck, newItems);
@@ -4278,10 +4288,10 @@ function AppContent() {
       isExpanded={expandedCardIds.includes(card.id)}
       isDeckBuilderMode={isDeckBuilderMode}
       activeDeck={activeDeck}
-      onAddToDeck={(c, art) => {
+      onAddToDeck={(c, art, countToAdd = 1) => {
         const originalCard = combinedCards.find(gc => gc.id === (c.parentId || c.id));
         if (originalCard && activeDeckId) {
-          addToDeck(activeDeckId, originalCard, art);
+          addToDeck(activeDeckId, originalCard, art, countToAdd);
         }
       }}
       onRemoveFromDeck={(id, art) => activeDeckId && removeFromDeck(activeDeckId, id, art)}
@@ -5396,25 +5406,29 @@ function AppContent() {
                 <div className="flex items-center gap-2">
                   {isDeckBuilderMode && activeDeckId ? (
                     <div className="flex items-center gap-1 bg-stone-100 rounded-full p-1 border border-stone-200">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
+                      <HoldMinusButton 
+                        onSingleClick={() => {
                           if (selectedCount === 1) {
                             removeFromDeck(activeDeckId, selectedCard!.parentId || selectedCard!.id, selectedArtType);
                           } else if (selectedCount > 1) {
                             updateDeckCount(activeDeckId, selectedCard!.parentId || selectedCard!.id, selectedArtType, -1);
                           }
                         }}
+                        onHoldTrigger={() => {
+                          if (selectedCount > 0) {
+                            removeFromDeck(activeDeckId, selectedCard!.parentId || selectedCard!.id, selectedArtType);
+                          }
+                        }}
                         disabled={selectedCount === 0}
                         className={cn(
-                          "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90",
+                          "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 select-none touch-none",
                           selectedCount > 0 
                             ? "bg-white border border-stone-200 text-[#141414] shadow-sm hover:bg-stone-50" 
                             : "text-stone-300 cursor-not-allowed opacity-50"
                         )}
                       >
                         <Minus size={14} strokeWidth={3} />
-                      </button>
+                      </HoldMinusButton>
                       
                       <div className="flex flex-col items-center justify-center min-w-[32px] px-1">
                         <span className={cn(
@@ -5426,24 +5440,29 @@ function AppContent() {
                         <span className="text-[7px] font-bold text-stone-400 uppercase tracking-tighter">Count</span>
                       </div>
 
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
+                      <HoldPlusButton 
+                        onSingleClick={() => {
                           const originalCard = combinedCards.find(c => c.id === (selectedCard!.parentId || selectedCard!.id));
                           if (originalCard && activeDeckId) {
-                            addToDeck(activeDeckId, originalCard, selectedArtType);
+                            addToDeck(activeDeckId, originalCard, selectedArtType, 1);
+                          }
+                        }}
+                        onMaxOut={() => {
+                          const originalCard = combinedCards.find(c => c.id === (selectedCard!.parentId || selectedCard!.id));
+                          if (originalCard && activeDeckId) {
+                            addToDeck(activeDeckId, originalCard, selectedArtType, 4);
                           }
                         }}
                         disabled={selectedTotalCount >= 4}
                         className={cn(
-                          "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-sm",
+                          "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-sm select-none touch-none",
                           selectedTotalCount < 4 
                             ? "bg-[#141414] text-white hover:bg-stone-800" 
                             : "bg-stone-200 text-stone-400 cursor-not-allowed"
                         )}
                       >
                         <Plus size={14} strokeWidth={3} />
-                      </button>
+                      </HoldPlusButton>
                     </div>
                   ) : (
                     <button 
@@ -6338,24 +6357,29 @@ function AppContent() {
                         </div>
                         
                         <div className="flex items-center gap-3 shrink-0">
-                          <button 
-                            onClick={() => {
+                          <HoldMinusButton 
+                            onSingleClick={() => {
                               if (variantCount === 1) {
                                 removeFromDeck(deck.id, selectedCard.id, selectedArtType);
                               } else if (variantCount > 1) {
                                 updateDeckCount(deck.id, selectedCard.id, selectedArtType, -1);
                               }
                             }}
+                            onHoldTrigger={() => {
+                              if (variantCount > 0) {
+                                removeFromDeck(deck.id, selectedCard.id, selectedArtType);
+                              }
+                            }}
                             disabled={variantCount === 0}
                             className={cn(
-                              "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90",
+                              "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 select-none touch-none",
                               variantCount > 0 
                                 ? "bg-white border border-stone-200 text-[#141414] shadow-sm hover:bg-stone-100" 
                                 : "text-stone-300 cursor-not-allowed opacity-50"
                             )}
                           >
                             <Minus size={14} />
-                          </button>
+                          </HoldMinusButton>
                           
                           <div className="flex flex-col items-center min-w-[24px]">
                             <span className={cn(
@@ -6366,20 +6390,23 @@ function AppContent() {
                             </span>
                           </div>
                           
-                          <button 
-                            onClick={() => {
-                              addToDeck(deck.id, selectedCard, selectedArtType);
+                          <HoldPlusButton 
+                            onSingleClick={() => {
+                              addToDeck(deck.id, selectedCard, selectedArtType, 1);
+                            }}
+                            onMaxOut={() => {
+                              addToDeck(deck.id, selectedCard, selectedArtType, 4);
                             }}
                             disabled={totalCountOfCard >= 4}
                             className={cn(
-                              "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-sm",
+                              "w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-sm select-none touch-none",
                               totalCountOfCard < 4 
                                 ? "bg-[#141414] text-white hover:bg-stone-800" 
                                 : "bg-stone-200 text-stone-400 cursor-not-allowed"
                             )}
                           >
                             <Plus size={14} />
-                          </button>
+                          </HoldPlusButton>
                         </div>
                       </div>
                     );

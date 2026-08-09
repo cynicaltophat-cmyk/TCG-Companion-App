@@ -1,4 +1,5 @@
 import React from 'react';
+import { HoldPlusButton, HoldMinusButton } from './HoldPlusButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Trash2, 
@@ -209,31 +210,33 @@ const CardGridItem = React.memo(({
       {/* Count Controls - Now below the image */}
       {!hideControls && (
         <div className="p-1 bg-white border-b border-stone-100 flex items-center justify-between gap-1">
-          <button 
-            onClick={() => {
+          <HoldMinusButton 
+            onSingleClick={() => {
               if (item.count === 1) {
                 onRemove(deckId, item.card.id, item.artType);
               } else {
                 onUpdateCount(deckId, item.card.id, item.artType, -1);
               }
             }}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 text-stone-600 active:scale-90 transition-transform"
+            onHoldTrigger={() => onRemove(deckId, item.card.id, item.artType)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 text-stone-600 active:scale-90 transition-transform select-none touch-none"
           >
             <Minus size={14} />
-          </button>
+          </HoldMinusButton>
           <span className={cn(
             "text-xs font-black transition-colors px-1",
             item.count >= 4 ? "text-red-500" : "text-[#141414]"
           )}>
             {item.count}
           </span>
-          <button 
-            onClick={() => onUpdateCount(deckId, item.card.id, item.artType, 1)}
+          <HoldPlusButton 
+            onSingleClick={() => onUpdateCount(deckId, item.card.id, item.artType, 1)}
+            onMaxOut={() => onUpdateCount(deckId, item.card.id, item.artType, 4)}
             disabled={item.count >= 4}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#141414] text-white active:scale-90 transition-transform disabled:opacity-30"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-[#141414] text-white active:scale-90 transition-transform disabled:opacity-30 select-none touch-none"
           >
             <Plus size={14} />
-          </button>
+          </HoldPlusButton>
         </div>
       )}
 
