@@ -34,7 +34,12 @@
             }
           }
         },
-        "activeVariationId": { "type": "string", "description": "ID of the currently active deck variation" }
+        "activeVariationId": { "type": "string", "description": "ID of the currently active deck variation" },
+        "matchEvents": {
+          "type": "array",
+          "description": "List of match events recorded for this deck",
+          "items": { "type": "object" }
+        }
       },
       "required": ["id", "name", "uid", "items", "lastModified"]
     },

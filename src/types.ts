@@ -72,6 +72,31 @@ export interface DeckVariation {
   items: DeckItem[];
 }
 
+export interface MatchRecord {
+  id: string;
+  opponentName?: string;
+  opponentKeycardId?: string;
+  opponentKeycardName?: string;
+  opponentKeycardImage?: string;
+  opponentColors?: string[];
+  diceRoll?: 'Won roll' | 'Lost roll';
+  playOrder?: 'First' | 'Second';
+  result: 'win' | 'loss' | 'draw';
+  notes?: string;
+  timestamp: number;
+}
+
+export interface DeckMatchEvent {
+  id: string;
+  name: string;
+  format: 'Best of 1' | 'Best of 3';
+  deckName: string;
+  deckVersion: string;
+  date: string;
+  matches: MatchRecord[];
+  createdAt: number;
+}
+
 export interface Deck {
   id: string;
   name: string;
@@ -81,6 +106,7 @@ export interface Deck {
   folderId?: string | null;
   variations?: DeckVariation[];
   activeVariationId?: string;
+  matchEvents?: DeckMatchEvent[];
 }
 
 export interface DeckFolder {
@@ -156,23 +182,6 @@ export interface Feedback {
   createdAt: number;
   status: FeedbackStatus;
   _collection?: 'feedback' | 'card_feedback';
-}
-
-export interface ProductFeaturedCard {
-  cardId: string;
-  count: number;
-}
-
-export interface Product {
-  id: string;
-  name: string;
-  releaseDate: string;
-  msrp: string;
-  whereToBuy: string[];
-  featuredCards: ProductFeaturedCard[];
-  contents: string[];
-  imageUrl: string;
-  category: "Starter Deck" | "Booster box" | "Other";
 }
 
 export interface Archetype {

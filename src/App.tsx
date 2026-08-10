@@ -59,12 +59,11 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import CryptoJS from 'crypto-js';
-import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, DeckVariation, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
+import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, DeckVariation, DeckMatchEvent, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
 import { EB01_EXTRA_CARDS } from './data/EB01_new_cards';
 import { ST10_CARDS } from './data/ST10_new_cards';
 import { GD05_EXTRA_CARDS } from './data/GD05_new_cards';
 import { AdminCardManager } from './components/AdminCardManager';
-import { AdminProductManager } from './components/AdminProductManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
 import { identifyCard, IdentifiedCard } from './services/geminiService';
 import { cn, getColorBg, getLevenshteinDistance, getYYTLink } from './lib/utils';
@@ -75,7 +74,6 @@ import { ProxyPrinter } from './components/ProxyPrinter';
 import { EventCoverage, TournamentDeckDetail } from './components/EventCoverage';
 import { TournamentManager } from './components/TournamentManager';
 import { DeckSubmissionForm } from './components/DeckSubmissionForm';
-import { ProductsList } from './components/ProductsList';
 import { QuickStartScreen } from './components/QuickStartScreen';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
@@ -1406,18 +1404,17 @@ function AppContent() {
   }, []);
 
   const [deckBuilderView, setDeckBuilderView] = useState<'list' | 'editor'>('list');
-  const [editorInitialTab, setEditorInitialTab] = useState<'cards' | 'stats' | 'play' | 'products'>('cards');
+  const [editorInitialTab, setEditorInitialTab] = useState<'cards' | 'stats' | 'play'>('cards');
   const [isDeckInPlayMode, setIsDeckInPlayMode] = useState(false);
   const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false);
   const [isQuickStartDeckPickerOpen, setIsQuickStartDeckPickerOpen] = useState(false);
   const [quickStartMode, setQuickStartMode] = useState<'play' | 'stats' | null>(null);
-  const [currentTab, setCurrentTab] = useState<'cards' | 'decks' | 'scan' | 'quick-start' | 'profile' | 'coverage' | 'submit-deck' | 'products'>('cards');
+  const [currentTab, setCurrentTab] = useState<'cards' | 'decks' | 'scan' | 'quick-start' | 'profile' | 'coverage' | 'submit-deck'>('cards');
   const [submissionDeck, setSubmissionDeck] = useState<Deck | null>(null);
   const [editingTournamentSubmission, setEditingTournamentSubmission] = useState<DeckSubmission | null>(null);
   const [tournamentManagerContext, setTournamentManagerContext] = useState<{ tab: 'events' | 'submissions' | 'archetypes', eventId: string | null }>({ tab: 'events', eventId: null });
   const [selectedTournamentDeck, setSelectedTournamentDeck] = useState<DeckSubmission | null>(null);
   const [showTournamentManager, setShowTournamentManager] = useState(false);
-  const [showProductManager, setShowProductManager] = useState(false);
   const [sortOption, setSortOption] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'default', direction: 'asc' });
   const [showSortModal, setShowSortModal] = useState(false);
   const [prices, setPrices] = useState<Record<string, { price: string, url: string }>>({});
@@ -3451,6 +3448,26 @@ function AppContent() {
     }
   }, [decks, user]);
 
+  const saveMatchEvents = React.useCallback(async (deckId: string, events: DeckMatchEvent[]) => {
+    const cleanEvents: DeckMatchEvent[] = JSON.parse(JSON.stringify(events));
+
+    setDecks(prevDecks => {
+      const updatedDecks = prevDecks.map(d => d.id === deckId ? { ...d, matchEvents: cleanEvents, lastModified: Date.now() } : d);
+      if (!user) {
+        localStorage.setItem('guest_decks', JSON.stringify(updatedDecks));
+      }
+      return updatedDecks;
+    });
+
+    if (user) {
+      try {
+        await setDoc(doc(db, 'decks', deckId), { matchEvents: cleanEvents, lastModified: Date.now() }, { merge: true });
+      } catch (err) {
+        console.error("Error saving match events:", err);
+      }
+    }
+  }, [user]);
+
   const removeFromDeck = React.useCallback(async (deckId: string, cardId: string, artType: ArtVariantType) => {
     const deck = decks.find(d => d.id === deckId);
     if (!deck) return;
@@ -4465,10 +4482,6 @@ function AppContent() {
           onStartPlayMode={() => {
             setIsQuickSetupOpen(true);
           }}
-          onViewProducts={() => {
-            setIsDeckBuilderMode(false);
-            setCurrentTab('products');
-          }}
         />
       )}
 
@@ -4623,24 +4636,6 @@ function AppContent() {
                         <div className="text-left">
                           <p className="text-sm font-black text-[#141414]">Tournament Decks Manager</p>
                           <p className="text-[10px] text-stone-500 font-medium">Manage events and submissions</p>
-                        </div>
-                      </div>
-                      <ChevronRight size={16} className="text-stone-400" />
-                    </button>
-                  </div>
-
-                  <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-                    <button 
-                      onClick={() => setShowProductManager(true)}
-                      className="w-full p-4 flex items-center justify-between hover:bg-stone-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#141414] text-white rounded-lg flex items-center justify-center">
-                          <Package size={18} />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm font-black text-[#141414]">Product Management</p>
-                          <p className="text-[10px] text-stone-500 font-medium">Manage starter decks and booster boxes</p>
                         </div>
                       </div>
                       <ChevronRight size={16} className="text-stone-400" />
@@ -6584,6 +6579,7 @@ function AppContent() {
             onSetCover={setDeckCover}
             onUpdateVariant={updateDeckVariant}
             onUpdateDeckVariations={updateDeckVariations}
+            onSaveMatchEvents={saveMatchEvents}
             onSubmitDeck={(deck) => {
               setSubmissionDeck(deck);
               setCurrentTab('submit-deck');
@@ -6958,25 +6954,6 @@ function AppContent() {
         />
       )}
 
-      {/* Product Manager */}
-      {showProductManager && isAdmin && (
-        <div className="fixed inset-0 z-[70] bg-[#F5F5F0] flex flex-col overflow-y-auto p-4 sm:p-8">
-          <div className="max-w-4xl mx-auto w-full">
-            <header className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => setShowProductManager(false)}
-                  className="p-3 bg-white rounded-2xl border border-stone-200 text-stone-400 hover:text-stone-900 transition-all shadow-sm"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <h1 className="text-2xl font-black text-[#141414] uppercase tracking-tight">Product Manager</h1>
-              </div>
-            </header>
-            <AdminProductManager cards={allCards} />
-          </div>
-        </div>
-      )}
 
       {/* Share Modal */}
       <AnimatePresence>
@@ -7057,26 +7034,6 @@ function AppContent() {
           </motion.div>
         )}
 
-        {currentTab === 'products' && (
-          <motion.div
-            key="products"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto"
-          >
-            <ProductsList 
-              prices={prices}
-              onSelectSet={(setName) => {
-                resetFilters();
-                setActiveFilters(prev => ({ ...prev, sets: [setName] }));
-                setCurrentTab('cards');
-                setIsDeckBuilderMode(true);
-              }}
-              onClose={() => setCurrentTab('quick-start')}
-            />
-          </motion.div>
-        )}
 
         {currentTab === 'submit-deck' && submissionDeck && (
           <motion.div

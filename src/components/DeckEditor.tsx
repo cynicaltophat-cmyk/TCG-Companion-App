@@ -45,14 +45,13 @@ import {
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { DeckImageExport } from './DeckImageExport';
-import { GundamCard, ArtVariantType, Deck, DeckItem, DeckVariation } from '../types';
+import { GundamCard, ArtVariantType, Deck, DeckItem, DeckVariation, DeckMatchEvent } from '../types';
 import { cn } from '../lib/utils';
 import { ProgressiveImage } from './ProgressiveImage';
 import { db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
-import { ProductsList } from './ProductsList';
-import { DeckProductsBreakdown } from './DeckProductsBreakdown';
+import { DeckMatchHistory } from './DeckMatchHistory';
 
 interface DeckEditorProps {
   deck: Deck;
@@ -71,7 +70,7 @@ interface DeckEditorProps {
   onSetBuilderMode?: (isBuilder: boolean) => void;
   allCards: GundamCard[];
   visible?: boolean;
-  initialTab?: 'cards' | 'stats' | 'play' | 'products';
+  initialTab?: 'cards' | 'stats' | 'play' | 'history';
   isDeckBuilderMode?: boolean;
   userName?: string;
   userPhotoUrl?: string;
@@ -80,6 +79,7 @@ interface DeckEditorProps {
   prices?: Record<string, { price: string, url: string }>;
   onUpdateVariant?: (deckId: string, cardId: string, currentArtType: ArtVariantType, newArtType: ArtVariantType) => void;
   onUpdateDeckVariations?: (deckId: string, variations: DeckVariation[], activeVariationId: string, newItems?: DeckItem[]) => void;
+  onSaveMatchEvents?: (deckId: string, events: DeckMatchEvent[]) => void;
 }
 
 export interface DeckEditorHandle {
@@ -278,9 +278,10 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   onTogglePreviewMode,
   prices,
   onUpdateVariant,
-  onUpdateDeckVariations
+  onUpdateDeckVariations,
+  onSaveMatchEvents
 }, ref) => {
-  const [activeTab, setActiveTab] = React.useState<'cards' | 'stats' | 'play' | 'products'>(initialTab as any || 'cards');
+  const [activeTab, setActiveTab] = React.useState<'cards' | 'stats' | 'play' | 'history'>(initialTab || 'cards');
 
   // Deck Variations State
   const [editingVariationId, setEditingVariationId] = React.useState<string | null>(null);
@@ -1073,14 +1074,14 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
               </button>
               <button 
                 onClick={() => {
-                  setActiveTab('products');
+                  setActiveTab('history');
                 }}
                 className={cn(
-                  "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center",
-                  activeTab === 'products' ? "bg-white text-stone-900 shadow-lg ring-1 ring-black/5" : "text-white/60 hover:text-white"
+                  "flex-1 h-full text-[8.5px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center whitespace-nowrap px-1",
+                  activeTab === 'history' ? "bg-white text-stone-900 shadow-lg ring-1 ring-black/5" : "text-white/60 hover:text-white"
                 )}
               >
-                PRODUCT
+                MATCH HISTORY
               </button>
             </div>
           )}
@@ -1101,17 +1102,18 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
         </div>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'products' ? (
+          {activeTab === 'history' ? (
             <motion.section 
-              key="products"
+              key="history"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="w-full flex-1"
+              className="p-4 lg:px-12 w-full flex-1"
             >
-              <DeckProductsBreakdown 
-                items={deck.items}
-                prices={prices || {}} 
+              <DeckMatchHistory 
+                deck={deck} 
+                allCards={allCards}
+                onSaveMatchEvents={(events) => onSaveMatchEvents?.(deck.id, events)}
               />
             </motion.section>
           ) : activeTab === 'stats' ? (
