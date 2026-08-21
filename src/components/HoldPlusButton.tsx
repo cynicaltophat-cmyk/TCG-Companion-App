@@ -14,7 +14,7 @@ export const HoldActionButton: React.FC<HoldActionButtonProps> = ({
   onSingleClick,
   onHoldTrigger,
   onMaxOut,
-  holdDuration = 200,
+  holdDuration = 400,
   disabled = false,
   children,
   className,
