@@ -59,9 +59,13 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import CryptoJS from 'crypto-js';
-import { GundamCard, ArtVariantType, ALL_SETS, Deck, DeckItem, DeckVariation, DeckMatchEvent, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
+import { GundamCard, ArtVariantType, ALL_SETS, SET_NAMES, Deck, DeckItem, DeckVariation, DeckMatchEvent, Feedback, FeedbackCategory, CardType, DeckSubmission, DeckFolder } from './types';
 import { EB01_EXTRA_CARDS } from './data/EB01_new_cards';
 import { ST10_CARDS } from './data/ST10_new_cards';
+import { ST11_CARDS } from './data/ST11_new_cards';
+import { ST12_CARDS } from './data/ST12_new_cards';
+import { ST13_CARDS } from './data/ST13_new_cards';
+import { ST14_CARDS } from './data/ST14_new_cards';
 import { GD05_EXTRA_CARDS } from './data/GD05_new_cards';
 import { AdminCardManager } from './components/AdminCardManager';
 import { CardFeedbackPopup } from './components/CardFeedbackPopup';
@@ -1017,6 +1021,26 @@ function AppContent() {
   // Use Firestore cards directly
   const combinedCards = useMemo(() => {
     const list = [...allCards];
+    ST14_CARDS.forEach(card => {
+      if (!list.some(c => c.id === card.id)) {
+        list.push(card);
+      }
+    });
+    ST13_CARDS.forEach(card => {
+      if (!list.some(c => c.id === card.id)) {
+        list.push(card);
+      }
+    });
+    ST12_CARDS.forEach(card => {
+      if (!list.some(c => c.id === card.id)) {
+        list.push(card);
+      }
+    });
+    ST11_CARDS.forEach(card => {
+      if (!list.some(c => c.id === card.id)) {
+        list.push(card);
+      }
+    });
     if (!list.some(c => c.id === "gd05-001")) {
       list.push(GD05_001_CARD);
     }
@@ -1224,6 +1248,10 @@ function AppContent() {
         const pilotNameMatch = card.ability.match(/Pilot:\s*([^.\n]+)/i);
         if (pilotNameMatch) {
           namesToCheck.push(pilotNameMatch[1].trim());
+        }
+        const alsoTreatedAs = card.ability.match(/treated as \[([^\]]+)\]/i);
+        if (alsoTreatedAs) {
+          namesToCheck.push(alsoTreatedAs[1].trim());
         }
       }
 
@@ -2239,10 +2267,78 @@ function AppContent() {
     }
   }, [isAdmin, cardsLoading, allCards.length]);
 
-  // Auto-import EB01 and GD05 cards if missing or stale (Admin only)
+  // Auto-import EB01, GD05, ST11, ST12, ST13, and ST14 cards if missing or stale (Admin only)
   useEffect(() => {
     if (!isAdmin || cardsLoading || allCards.length === 0) return;
     
+    // Seeding/updates for ST14 cards
+    ST14_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard || dbCard.color !== card.color || dbCard.ability !== card.ability;
+      if (needsUpdate) {
+        console.log(`Seeding or updating ${card.id}...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+
+    // Seeding/updates for ST13 cards
+    ST13_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard || dbCard.color !== card.color || dbCard.ability !== card.ability;
+      if (needsUpdate) {
+        console.log(`Seeding or updating ${card.id}...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+
+    // Seeding/updates for ST12 cards
+    ST12_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard || dbCard.color !== card.color || dbCard.ability !== card.ability;
+      if (needsUpdate) {
+        console.log(`Seeding or updating ${card.id}...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+
+    // Seeding/updates for ST11 cards
+    ST11_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard;
+      if (needsUpdate) {
+        console.log(`Seeding or updating ${card.id}...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+
     const gd05Card1 = allCards.find(c => c.id === "gd05-001");
     const needsUpdateGd05_1 = !gd05Card1 || (gd05Card1.traits && gd05Card1.traits.includes("Space"));
     
@@ -6719,6 +6815,7 @@ function AppContent() {
                       <button
                         key={setName}
                         onClick={() => toggleFilter('sets', setName)}
+                        title={SET_NAMES[setName] ? `${setName}: ${SET_NAMES[setName]}` : setName}
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
                           activeFilters.sets.includes(setName)

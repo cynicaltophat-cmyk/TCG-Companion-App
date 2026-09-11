@@ -41,7 +41,34 @@ export interface GundamCard {
   isVariant?: boolean;
 }
 
+export const SET_NAMES: Record<string, string> = {
+  ST14: "Heavy Dominion",
+  ST13: "Silent Barrage",
+  ST12: "Raging Onslaught",
+  ST11: "Aquatic Assault",
+  GD05: "Beyond the Horizon",
+  EB01: "Extra Booster 01",
+  GD04: "Crossroads of Destiny",
+  GD03: "Steel Requiem",
+  GD02: "Dual Impact",
+  GD01: "New Dawn",
+  ST10: "G-Generation",
+  ST09: "Sword of the Dawn",
+  ST08: "Wings of Freedom",
+  ST07: "Celestial Being",
+  ST06: "Iron Bloom",
+  ST05: "Witch from Mercury",
+  ST04: "Zeon's Roar",
+  ST03: "Earth Federation",
+  ST02: "Operation Meteor",
+  ST01: "Heroic Beginnings"
+};
+
 export const ALL_SETS = [
+  "ST14",
+  "ST13",
+  "ST12",
+  "ST11",
   "GD05",
   "EB01",
   "GD04",

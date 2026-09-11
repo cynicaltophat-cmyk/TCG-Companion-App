@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
-import { GundamCard, ALL_SETS, ArtVariantType, ArtVariant, Feedback } from '../types';
+import { GundamCard, ALL_SETS, SET_NAMES, ArtVariantType, ArtVariant, Feedback } from '../types';
 import { analyzeCardImage } from '../services/geminiService';
 import { 
   Plus, 
@@ -643,7 +643,7 @@ export const AdminCardManager: React.FC<AdminCardManagerProps> = ({ onClose, adm
                         }}
                         className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500"
                       >
-                        {ALL_SETS.map(s => <option key={s} value={s}>{s}</option>)}
+                        {ALL_SETS.map(s => <option key={s} value={s}>{s}{SET_NAMES[s] ? ` (${SET_NAMES[s]})` : ''}</option>)}
                       </select>
                     </div>
                     <div className="space-y-1">
