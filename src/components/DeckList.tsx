@@ -392,10 +392,7 @@ export const DeckList: React.FC<DeckListProps> = ({
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <div 
       className="fixed inset-0 z-50 bg-[#F5F5F0] flex flex-col min-h-0"
     >
       {/* Delete mode notification */}
@@ -1199,6 +1196,6 @@ export const DeckList: React.FC<DeckListProps> = ({
         )}
       </AnimatePresence>
     </div>
-  </motion.div>
+  </div>
   );
 };

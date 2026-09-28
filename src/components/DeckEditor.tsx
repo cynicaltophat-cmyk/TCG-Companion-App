@@ -753,12 +753,9 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <div 
       className={cn(
-        "fixed inset-0 z-[55] bg-[#F5F5F0] flex flex-col transition-all duration-300 ease-in-out",
+        "fixed inset-0 z-[55] bg-[#F5F5F0] flex flex-col",
         isDeckBuilderMode && !isPreviewMode && "landscape:left-[35%] landscape:w-[65%] landscape:bottom-[64px] landscape:border-l landscape:border-stone-200 landscape:shadow-[-8px_0_24px_rgba(0,0,0,0.05)]",
         !visible && !isDeckBuilderMode && "hidden",
         !visible && isDeckBuilderMode && "hidden landscape:flex"
@@ -2956,6 +2953,6 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </div>
   );
 });

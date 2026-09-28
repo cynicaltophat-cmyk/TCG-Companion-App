@@ -567,19 +567,26 @@ const QuickSliderDropdown: React.FC<QuickSliderDropdownProps> = ({ label, value,
   );
 };
 
-const ListContainer = React.forwardRef(({ style, children, isDeckBuilderMode, ...props }: any, ref: any) => (
-  <div
-    ref={ref}
-    {...props}
-    style={{ ...style }}
-    className={cn(
-      "grid gap-2 sm:gap-2.5 lg:gap-3 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 pb-32",
-      isDeckBuilderMode ? "landscape:grid-cols-3 landscape:gap-3" : "landscape:grid-cols-6"
-    )}
-  >
-    {children}
-  </div>
-));
+const ListContainer = React.forwardRef(({ style, children, context, isDeckBuilderMode: propMode, ...props }: any, ref: any) => {
+  const isBuilder = propMode !== undefined ? propMode : context?.isDeckBuilderMode;
+  return (
+    <div
+      ref={ref}
+      {...props}
+      style={{ ...style }}
+      className={cn(
+        "grid gap-2 sm:gap-2.5 lg:gap-3 grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 pb-32",
+        isBuilder ? "landscape:grid-cols-3 landscape:gap-3" : "landscape:grid-cols-6"
+      )}
+    >
+      {children}
+    </div>
+  );
+});
+
+const virtuosoComponents = {
+  List: ListContainer
+};
 
 const GridItem = React.memo(({ 
   card, 
@@ -3025,7 +3032,7 @@ function AppContent() {
     // or if we are in a mode that requires a locked background.
     const isEditorEffectivelyOpen = isDeckEditorOpen && currentTab === 'decks' && (!isDeckBuilderMode || deckBuilderView === 'editor');
     
-    if (selectedCard || isScanning || showDeckList || isEditorEffectivelyOpen || isFilterOpen) {
+    if (isScanning || showDeckList || isEditorEffectivelyOpen || isFilterOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -3033,7 +3040,7 @@ function AppContent() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [selectedCard, isScanning, showDeckList, isDeckEditorOpen, isFilterOpen, currentTab, isDeckBuilderMode, deckBuilderView]);
+  }, [isScanning, showDeckList, isDeckEditorOpen, isFilterOpen, currentTab, isDeckBuilderMode, deckBuilderView]);
 
   const login = async () => {
     const provider = new GoogleAuthProvider();
@@ -4382,10 +4389,6 @@ function AppContent() {
     }
   }, [gridData]);
 
-  const virtuosoComponents = React.useMemo(() => ({
-    List: (props: any) => <ListContainer {...props} isDeckBuilderMode={isDeckBuilderMode} />
-  }), [isDeckBuilderMode]);
-
   const renderGridItem = React.useCallback((index: number, card: GundamCard) => (
     <GridItem 
       key={card.id}
@@ -4416,14 +4419,14 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#141414] font-sans selection:bg-amber-200">
       <div className={cn(
-        "transition-all duration-300", 
+        "transition-[filter] duration-300", 
         isFilterOpen && "blur-[2px] brightness-95",
         isDeckBuilderMode && "landscape:h-screen landscape:flex landscape:flex-col"
       )}>
       {/* Header */}
-      {(currentTab === 'cards' || (isDeckBuilderMode && currentTab === 'decks')) && (
+      {(currentTab === 'cards' || currentTab === 'coverage' || (isDeckBuilderMode && currentTab === 'decks')) && (
         <header className={cn(
-          "sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200 transition-all duration-300",
+          "sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200",
           isDeckBuilderMode && "landscape:w-[35%]"
         )}>
           <div className={cn(
@@ -4774,15 +4777,15 @@ function AppContent() {
       )}
 
       <main className={cn(
-        "max-w-md landscape:max-w-none lg:max-w-none mx-auto px-4 landscape:px-20 lg:px-56 xl:px-[18%] 2xl:px-[28%] pt-4 pb-32 transition-all duration-300 min-h-screen", 
+        "max-w-md landscape:max-w-none lg:max-w-none mx-auto px-4 landscape:px-20 lg:px-56 xl:px-[18%] 2xl:px-[28%] pt-4 pb-32 min-h-screen", 
         isDeckBuilderMode 
           ? (deckBuilderView === 'list' ? "block" : "hidden landscape:block")
-          : (currentTab !== 'cards' ? "hidden" : "block"),
+          : (currentTab !== 'cards' && currentTab !== 'coverage' ? "hidden" : "block"),
         isDeckBuilderMode && "landscape:w-[35%] landscape:ml-0 landscape:max-w-none landscape:px-4 landscape:pb-[40px] builder-mode landscape:flex-1 landscape:flex landscape:flex-col landscape:h-full landscape:overflow-hidden landscape:min-h-0",
         isPreviewMode && "hidden"
       )}>
         {/* Filters */}
-        {(currentTab === 'cards' || (isDeckBuilderMode && currentTab === 'decks')) && (
+        {(currentTab === 'cards' || currentTab === 'coverage' || (isDeckBuilderMode && currentTab === 'decks')) && (
           <>
             <div className={cn(isDeckBuilderMode && "landscape:shrink-0")}>
               {(activeFilterList.length > 0 || debouncedSearchQuery) && (
@@ -4912,6 +4915,7 @@ function AppContent() {
             style={isDeckBuilderMode && isLandscape ? { height: '100%' } : {}}
             data={gridData}
             overscan={400}
+            context={{ isDeckBuilderMode }}
             components={virtuosoComponents}
             itemContent={renderGridItem}
           />
@@ -4926,130 +4930,124 @@ function AppContent() {
       {true && (
         <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col pointer-events-none">
         {/* Sticky Deck Builder Bar */}
-        <AnimatePresence>
-          {isDeckBuilderMode && !isPreviewMode && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="pointer-events-auto bg-white flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-stone-200"
-            >
-              {/* Stats Bar */}
-              <div className="px-4 landscape:px-20 lg:px-56 py-2 landscape:h-10 border-b border-stone-100 flex items-center justify-between bg-stone-50/30">
-                <div className="flex items-center gap-4">
+        {isDeckBuilderMode && !isPreviewMode && (
+          <div 
+            className="pointer-events-auto bg-white flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-stone-200"
+          >
+            {/* Stats Bar */}
+            <div className="px-4 landscape:px-20 lg:px-56 py-2 landscape:h-10 border-b border-stone-100 flex items-center justify-between bg-stone-50/30">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Units</span>
+                  <span className="text-[10px] font-black text-[#141414]">{deckStats.units}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Pilots</span>
+                  <span className="text-[10px] font-black text-[#141414]">{deckStats.pilots}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Command</span>
+                  <span className="text-[10px] font-black text-[#141414]">{deckStats.commands}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Base</span>
+                  <span className="text-[10px] font-black text-[#141414]">{deckStats.bases}</span>
+                </div>
+                {(deckStats as any).tokens > 0 && (
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Units</span>
-                    <span className="text-[10px] font-black text-[#141414]">{deckStats.units}</span>
+                    <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest text-amber-600">Tokens</span>
+                    <span className="text-[10px] font-black text-[#141414]">{(deckStats as any).tokens}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Pilots</span>
-                    <span className="text-[10px] font-black text-[#141414]">{deckStats.pilots}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Command</span>
-                    <span className="text-[10px] font-black text-[#141414]">{deckStats.commands}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Base</span>
-                    <span className="text-[10px] font-black text-[#141414]">{deckStats.bases}</span>
-                  </div>
-                  {(deckStats as any).tokens > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest text-amber-600">Tokens</span>
-                      <span className="text-[10px] font-black text-[#141414]">{(deckStats as any).tokens}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full border border-stone-200">
+                <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Total</span>
+                <span className={cn(
+                  "text-[10px] font-black",
+                  deckStats.total === 50 ? "text-emerald-600" : deckStats.total > 50 ? "text-red-500" : "text-[#141414]"
+                )}>
+                  {deckStats.total}/50
+                </span>
+              </div>
+            </div>
+
+            {/* View Toggle row */}
+            <div className="flex border-b border-stone-100 flex-col bg-white landscape:hidden">
+              <div className="px-4 py-2 bg-[#F5F5F0]/50">
+                <div className="flex items-center relative">
+                  <button 
+                    onClick={() => {
+                      setDeckBuilderView('list');
+                      setIsDeckBuilderMode(true);
+                      setIsDeckEditorOpen(false);
+                    }}
+                    className="flex-1 py-1.5 relative z-10"
+                  >
+                    <div className={cn(
+                      "text-[10px] font-black uppercase tracking-widest transition-all text-center",
+                      deckBuilderView === 'list' ? "text-stone-900" : "text-stone-400"
+                    )}>
+                      Add cards
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-full border border-stone-200">
-                  <span className="text-[7px] font-black text-stone-400 uppercase tracking-widest">Total</span>
-                  <span className={cn(
-                    "text-[10px] font-black",
-                    deckStats.total === 50 ? "text-emerald-600" : deckStats.total > 50 ? "text-red-500" : "text-[#141414]"
-                  )}>
-                    {deckStats.total}/50
-                  </span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setDeckBuilderView('editor');
+                      setIsDeckEditorOpen(true);
+                      setIsDeckBuilderMode(true);
+                      setEditorInitialTab('cards');
+                      // Reset tab to cards
+                      setOpenedEditorFromList(true); // This might trigger initialTab reset if we set it up
+                    }}
+                    className="flex-1 py-1.5 relative z-10"
+                  >
+                    <div className={cn(
+                      "text-[10px] font-black uppercase tracking-widest transition-all text-center",
+                      deckBuilderView === 'editor' ? "text-stone-900" : "text-stone-400"
+                    )}>
+                      Deck Editor
+                    </div>
+                  </button>
+                  
+                  {/* Active Tab Highlight Card */}
+                  <motion.div 
+                    layoutId="builder-tab-pill"
+                    className="absolute inset-y-0 bg-white rounded-xl shadow-sm border border-stone-200"
+                    style={{
+                      width: 'calc(50%)',
+                      left: deckBuilderView === 'list' ? '0%' : '50%',
+                    }}
+                    transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+                  />
                 </div>
               </div>
 
-              {/* View Toggle row */}
-              <div className="flex border-b border-stone-100 flex-col bg-white landscape:hidden">
-                <div className="px-4 py-2 bg-[#F5F5F0]/50">
-                  <div className="flex items-center relative">
-                    <button 
-                      onClick={() => {
-                        setDeckBuilderView('list');
-                        setIsDeckBuilderMode(true);
-                        setIsDeckEditorOpen(false);
-                      }}
-                      className="flex-1 py-1.5 relative z-10"
-                    >
-                      <div className={cn(
-                        "text-[10px] font-black uppercase tracking-widest transition-all text-center",
-                        deckBuilderView === 'list' ? "text-stone-900" : "text-stone-400"
-                      )}>
-                        Add cards
-                      </div>
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setDeckBuilderView('editor');
-                        setIsDeckEditorOpen(true);
-                        setIsDeckBuilderMode(true);
-                        setEditorInitialTab('cards');
-                        // Reset tab to cards
-                        setOpenedEditorFromList(true); // This might trigger initialTab reset if we set it up
-                      }}
-                      className="flex-1 py-1.5 relative z-10"
-                    >
-                      <div className={cn(
-                        "text-[10px] font-black uppercase tracking-widest transition-all text-center",
-                        deckBuilderView === 'editor' ? "text-stone-900" : "text-stone-400"
-                      )}>
-                        Deck Editor
-                      </div>
-                    </button>
-                    
-                    {/* Active Tab Highlight Card */}
-                    <motion.div 
-                      layoutId="builder-tab-pill"
-                      className="absolute inset-y-0 bg-white rounded-xl shadow-sm border border-stone-200"
-                      style={{
-                        width: 'calc(50%)',
-                        left: deckBuilderView === 'list' ? '0%' : '50%',
-                      }}
-                      transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+              {/* Deck Color Indicator Bar */}
+              <div className="h-1 w-full flex">
+                {deckStats.colors.length === 0 ? (
+                  <div className="flex-1 bg-stone-200" />
+                ) : (
+                  deckStats.colors.map(color => (
+                    <div 
+                      key={color} 
+                      className={cn(
+                        "flex-1",
+                        color === 'Red' && "bg-red-500",
+                        color === 'Blue' && "bg-blue-500",
+                        color === 'Green' && "bg-emerald-500",
+                        color === 'White' && "bg-amber-100/50",
+                        color === 'Purple' && "bg-purple-500"
+                      )} 
                     />
-                  </div>
-                </div>
-
-                {/* Deck Color Indicator Bar */}
-                <div className="h-1 w-full flex">
-                  {deckStats.colors.length === 0 ? (
-                    <div className="flex-1 bg-stone-200" />
-                  ) : (
-                    deckStats.colors.map(color => (
-                      <div 
-                        key={color} 
-                        className={cn(
-                          "flex-1",
-                          color === 'Red' && "bg-red-500",
-                          color === 'Blue' && "bg-blue-500",
-                          color === 'Green' && "bg-emerald-500",
-                          color === 'White' && "bg-amber-100/50",
-                          color === 'Purple' && "bg-purple-500"
-                        )} 
-                      />
-                    ))
-                  )}
-                </div>
+                  ))
+                )}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        )}
 
         <div className={cn(
-          "pointer-events-auto bg-[#F5F5F0] border-t border-stone-200/60 pb-2 pt-1 transition-all"
+          "pointer-events-auto bg-[#F5F5F0] border-t border-stone-200/60 pb-2 pt-1"
         )}>
           <div className="max-w-md mx-auto flex items-center justify-around px-4">
             <button 
@@ -5079,6 +5077,7 @@ function AppContent() {
                 }
                 if (currentTab === 'scan') setIsScanning(false);
                 setCurrentTab('quick-start');
+                setSelectedTournamentDeck(null);
                 setShowFeedback(false);
                 setShowAdminPanel(false);
                 setShowTournamentManager(false);
@@ -5124,6 +5123,12 @@ function AppContent() {
                   setIsPreviewMode(false);
                   setDeckBuilderView('list');
                   setCurrentTab('cards');
+                  setSelectedTournamentDeck(null);
+                  setShowFeedback(false);
+                  setShowAdminPanel(false);
+                  setShowTournamentManager(false);
+                  setShowDeckList(false);
+                  setIsScanning(false);
                   return;
                 }
                 if (isDeckEditorOpen && deckEditorRef.current && !isDeckInPlayMode) {
@@ -5132,6 +5137,7 @@ function AppContent() {
                 }
                 if (currentTab === 'scan') setIsScanning(false);
                 setCurrentTab('cards');
+                setSelectedTournamentDeck(null);
                 setShowFeedback(false);
                 setShowAdminPanel(false);
                 setShowTournamentManager(false);
@@ -5170,6 +5176,7 @@ function AppContent() {
                   setIsPreviewMode(rememberedDeckState.isPreviewMode);
                   setShowDeckList(!rememberedDeckState.isDeckEditorOpen && !rememberedDeckState.isDeckBuilderMode);
                   setCurrentTab('decks');
+                  setSelectedTournamentDeck(null);
                   setShowFeedback(false);
                   setShowAdminPanel(false);
                   setShowTournamentManager(false);
@@ -5180,6 +5187,7 @@ function AppContent() {
                 if (isDeckBuilderMode) {
                   setDeckBuilderView('editor');
                   setIsDeckEditorOpen(true);
+                  setSelectedTournamentDeck(null);
                   return;
                 }
                 if (isDeckEditorOpen && deckEditorRef.current && !isDeckInPlayMode) {
@@ -5191,6 +5199,7 @@ function AppContent() {
                 if (isDeckInPlayMode) {
                   setCurrentTab('decks');
                   setIsDeckEditorOpen(true);
+                  setSelectedTournamentDeck(null);
                   setShowFeedback(false);
                   setShowAdminPanel(false);
                   setShowTournamentManager(false);
@@ -5198,6 +5207,7 @@ function AppContent() {
                   setIsDeckEditorOpen(true);
                   setShowDeckList(false);
                   setCurrentTab('decks');
+                  setSelectedTournamentDeck(null);
                   setShowFeedback(false);
                   setShowAdminPanel(false);
                   setShowTournamentManager(false);
@@ -5205,6 +5215,7 @@ function AppContent() {
                   setShowDeckList(true);
                   setIsDeckEditorOpen(false);
                   setCurrentTab('decks');
+                  setSelectedTournamentDeck(null);
                   setShowFeedback(false);
                   setShowAdminPanel(false);
                   setShowTournamentManager(false);
@@ -5262,6 +5273,7 @@ function AppContent() {
                 }
                 if (currentTab === 'scan') setIsScanning(false);
                 setCurrentTab('coverage');
+                setSelectedTournamentDeck(null);
                 setShowFeedback(false);
                 setShowAdminPanel(false);
                 setShowTournamentManager(false);
@@ -5364,6 +5376,7 @@ function AppContent() {
                     setDeckBuilderView('list');
                   }
                   setCurrentTab('profile');
+                  setSelectedTournamentDeck(null);
                   setShowFeedback(false);
                   setShowAdminPanel(false);
                   setShowTournamentManager(false);
@@ -5462,17 +5475,16 @@ function AppContent() {
       */}
 
       {/* Card Detail Modal */}
-      <AnimatePresence>
-        {selectedCard && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={cn(
-              "fixed inset-0 z-[60] bg-[#F5F5F0] overflow-y-auto overscroll-contain landscape:overflow-hidden transition-all duration-300",
-              isDeckBuilderMode && "lg:right-[65%] lg:w-[35%] lg:border-r lg:border-stone-200 lg:bg-white lg:landscape:overflow-y-auto"
-            )}
-          >
+      {selectedCard && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className={cn(
+            "fixed inset-0 z-[60] bg-[#F5F5F0] overflow-y-auto overscroll-contain landscape:overflow-hidden",
+            isDeckBuilderMode && "lg:right-[65%] lg:w-[35%] lg:border-r lg:border-stone-200 lg:bg-white lg:landscape:overflow-y-auto transition-[width,right] duration-300"
+          )}
+        >
             <div className={cn(
               "max-w-md mx-auto min-h-screen flex flex-col landscape:max-w-none landscape:h-screen landscape:overflow-hidden",
               isDeckBuilderMode ? "lg:max-w-none lg:pb-12 lg:h-auto lg:overflow-visible landscape:lg:h-auto landscape:lg:overflow-visible" : "pb-24 landscape:pb-12"
@@ -5598,7 +5610,7 @@ function AppContent() {
                     {currentIndex > 0 && (
                       <div 
                         key={`peek-prev-${gridData[currentIndex - 1].id}`}
-                        className="absolute left-0 -translate-x-[60%] w-[264px] md:w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] transition-transform duration-500 landscape:w-auto landscape:h-[75%] landscape:-translate-x-[3%] landscape:scale-115"
+                        className="absolute left-0 -translate-x-[60%] w-[264px] md:w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] landscape:w-auto landscape:h-[75%] landscape:-translate-x-[3%] landscape:scale-115"
                       >
                         <img 
                           src={gridData[currentIndex - 1].imageUrl} 
@@ -5616,8 +5628,8 @@ function AppContent() {
                         variants={{
                           enter: (direction: number) => ({
                             x: direction > 0 ? 500 : direction < 0 ? -500 : 0,
-                            opacity: 0,
-                            scale: 0.9
+                            opacity: direction === 0 ? 1 : 0,
+                            scale: direction === 0 ? 1 : 0.9
                           }),
                           center: {
                             x: 0,
@@ -5627,8 +5639,8 @@ function AppContent() {
                           },
                           exit: (direction: number) => ({
                             x: direction < 0 ? 500 : direction > 0 ? -500 : 0,
-                            opacity: 0,
-                            scale: 0.9,
+                            opacity: direction === 0 ? 1 : 0,
+                            scale: direction === 0 ? 1 : 0.9,
                             zIndex: 0
                           })
                         }}
@@ -5637,7 +5649,7 @@ function AppContent() {
                         exit="exit"
                         transition={{
                           x: { type: "spring", stiffness: 300, damping: 30 },
-                          opacity: { duration: 0.2 }
+                          opacity: { duration: 0.15 }
                         }}
                         drag="x"
                         dragConstraints={{ left: 0, right: 0 }}
@@ -5717,6 +5729,7 @@ function AppContent() {
                             } 
                             alt={selectedCard.name}
                             className="w-full h-full"
+                            priority={true}
                           />
                         </div>
                       </motion.div>
@@ -5726,7 +5739,7 @@ function AppContent() {
                     {currentIndex < gridData.length - 1 && currentIndex !== -1 && (
                       <div 
                         key={`peek-next-${gridData[currentIndex + 1].id}`}
-                        className="absolute right-0 translate-x-[60%] w-[264px] md:w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] transition-transform duration-500 landscape:w-auto landscape:h-[75%] landscape:translate-x-[3%] landscape:scale-115"
+                        className="absolute right-0 translate-x-[60%] w-[264px] md:w-[240px] aspect-[5/7] rounded-3xl overflow-hidden opacity-30 scale-90 z-0 grayscale-[0.2] landscape:w-auto landscape:h-[75%] landscape:translate-x-[3%] landscape:scale-115"
                       >
                         <img 
                           src={gridData[currentIndex + 1].imageUrl} 
@@ -6149,7 +6162,6 @@ function AppContent() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
 
       {/* Maximized Card View */}
       <AnimatePresence>
@@ -6521,36 +6533,34 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Deck List Overlay */}
-      <AnimatePresence>
-        {showDeckList && (
-          <DeckList 
-            decks={decks}
-            allCards={combinedCards}
-            onSelectDeck={(id) => {
-              setActiveDeckId(id);
-              setIsDeckBuilderMode(true);
-              setDeckBuilderView('editor');
-              setIsDeckEditorOpen(true);
-              setShowDeckList(false);
-            }}
-            onCreateDeck={createDeck}
-            onDeleteDeck={deleteDeck}
-            onRenameDeck={renameDeck}
-            onSetCover={setDeckCover}
-            folders={folders}
-            onCreateFolder={createFolder}
-            onDeleteFolder={deleteFolder}
-            onRenameFolder={renameFolder}
-            onMoveToFolder={moveDeckToFolder}
-            onClose={() => {
-              setShowDeckList(false);
-              setDeckListAutoCreate(false);
-              setCurrentTab('cards');
-            }}
-            autoStartCreate={deckListAutoCreate}
-          />
-        )}
-      </AnimatePresence>
+      {showDeckList && (
+        <DeckList 
+          decks={decks}
+          allCards={combinedCards}
+          onSelectDeck={(id) => {
+            setActiveDeckId(id);
+            setIsDeckBuilderMode(true);
+            setDeckBuilderView('editor');
+            setIsDeckEditorOpen(true);
+            setShowDeckList(false);
+          }}
+          onCreateDeck={createDeck}
+          onDeleteDeck={deleteDeck}
+          onRenameDeck={renameDeck}
+          onSetCover={setDeckCover}
+          folders={folders}
+          onCreateFolder={createFolder}
+          onDeleteFolder={deleteFolder}
+          onRenameFolder={renameFolder}
+          onMoveToFolder={moveDeckToFolder}
+          onClose={() => {
+            setShowDeckList(false);
+            setDeckListAutoCreate(false);
+            setCurrentTab('cards');
+          }}
+          autoStartCreate={deckListAutoCreate}
+        />
+      )}
 
       {/* Quick Setup Overlay */}
       <QuickSetup 
@@ -6661,77 +6671,75 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Deck Editor Overlay */}
-      <AnimatePresence>
-        {isDeckEditorOpen && activeDeckId && activeDeck && (
-          <DeckEditor 
-            ref={deckEditorRef}
-            deck={activeDeck}
-            visible={isDeckBuilderMode ? deckBuilderView === 'editor' : currentTab === 'decks'}
-            initialTab={isDeckInPlayMode ? 'play' : editorInitialTab}
-            allCards={combinedCards}
-            onUpdateCount={updateDeckCount}
-            onRemove={removeFromDeck}
-            onPreviewCard={(card) => setSelectedCard(card)}
-            onSetCover={setDeckCover}
-            onUpdateVariant={updateDeckVariant}
-            onUpdateDeckVariations={updateDeckVariations}
-            onSaveMatchEvents={saveMatchEvents}
-            onSubmitDeck={(deck) => {
-              setSubmissionDeck(deck);
-              setCurrentTab('submit-deck');
-              setIsDeckEditorOpen(false);
+      {isDeckEditorOpen && activeDeckId && activeDeck && (
+        <DeckEditor 
+          ref={deckEditorRef}
+          deck={activeDeck}
+          visible={isDeckBuilderMode ? deckBuilderView === 'editor' : currentTab === 'decks'}
+          initialTab={isDeckInPlayMode ? 'play' : editorInitialTab}
+          allCards={combinedCards}
+          onUpdateCount={updateDeckCount}
+          onRemove={removeFromDeck}
+          onPreviewCard={(card) => setSelectedCard(card)}
+          onSetCover={setDeckCover}
+          onUpdateVariant={updateDeckVariant}
+          onUpdateDeckVariations={updateDeckVariations}
+          onSaveMatchEvents={saveMatchEvents}
+          onSubmitDeck={(deck) => {
+            setSubmissionDeck(deck);
+            setCurrentTab('submit-deck');
+            setIsDeckEditorOpen(false);
+            setIsDeckBuilderMode(false);
+            setDeckBuilderView('list');
+          }}
+          isDeckBuilderMode={isDeckBuilderMode}
+          onClose={() => {
+            if (isDeckBuilderMode) {
               setIsDeckBuilderMode(false);
-              setDeckBuilderView('list');
-            }}
-            isDeckBuilderMode={isDeckBuilderMode}
-            onClose={() => {
-              if (isDeckBuilderMode) {
-                setIsDeckBuilderMode(false);
-                setIsDeckEditorOpen(false);
-                setIsPreviewMode(false);
-                setDeckBuilderView('list');
-                setCurrentTab('decks');
-                setShowDeckList(true);
-                return;
-              }
               setIsDeckEditorOpen(false);
               setIsPreviewMode(false);
-              if (openedEditorFromList) {
-                setShowDeckList(true);
-                setOpenedEditorFromList(false);
-              } else {
-                setShowDeckList(false);
-              }
-            }}
-            onPlayModeChange={setIsDeckInPlayMode}
-            onRenameDeck={renameDeck}
-            userName={user?.displayName || undefined}
-            userPhotoUrl={user?.photoURL || undefined}
-            onPrintProxy={(deck) => setPrintingDeck(deck)}
-            onDuplicateDeck={duplicateDeck}
-            onImportDeck={importDeckFromText}
-            isPreviewMode={isPreviewMode}
-            onTogglePreviewMode={() => setIsPreviewMode(!isPreviewMode)}
-            onSetBuilderMode={(active) => setIsDeckBuilderMode(active)}
-            prices={prices}
-            onEnterBuilderMode={(types, setName) => {
-              setIsDeckBuilderMode(true);
-              setIsDeckEditorOpen(true); // Keep open but hidden
-              setShowDeckList(false);
-              setIsFilterOpen(false);
-              setCurrentTab('cards');
               setDeckBuilderView('list');
-              if (types || setName) {
-                setActiveFilters(prev => ({
-                  ...prev,
-                  types: types || prev.types,
-                  sets: setName ? [setName] : prev.sets
-                }));
-              }
-            }}
-          />
-        )}
-      </AnimatePresence>
+              setCurrentTab('decks');
+              setShowDeckList(true);
+              return;
+            }
+            setIsDeckEditorOpen(false);
+            setIsPreviewMode(false);
+            if (openedEditorFromList) {
+              setShowDeckList(true);
+              setOpenedEditorFromList(false);
+            } else {
+              setShowDeckList(false);
+            }
+          }}
+          onPlayModeChange={setIsDeckInPlayMode}
+          onRenameDeck={renameDeck}
+          userName={user?.displayName || undefined}
+          userPhotoUrl={user?.photoURL || undefined}
+          onPrintProxy={(deck) => setPrintingDeck(deck)}
+          onDuplicateDeck={duplicateDeck}
+          onImportDeck={importDeckFromText}
+          isPreviewMode={isPreviewMode}
+          onTogglePreviewMode={() => setIsPreviewMode(!isPreviewMode)}
+          onSetBuilderMode={(active) => setIsDeckBuilderMode(active)}
+          prices={prices}
+          onEnterBuilderMode={(types, setName) => {
+            setIsDeckBuilderMode(true);
+            setIsDeckEditorOpen(true); // Keep open but hidden
+            setShowDeckList(false);
+            setIsFilterOpen(false);
+            setCurrentTab('cards');
+            setDeckBuilderView('list');
+            if (types || setName) {
+              setActiveFilters(prev => ({
+                ...prev,
+                types: types || prev.types,
+                sets: setName ? [setName] : prev.sets
+              }));
+            }
+          }}
+        />
+      )}
       {/* Filter Drawer */}
       <AnimatePresence>
         {isFilterOpen && (
@@ -7106,72 +7114,70 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence mode="wait">
-        {currentTab === 'coverage' && (
-          <motion.div
-            key="coverage"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto"
-          >
-            <EventCoverage 
-              allCards={combinedCards}
-              onBack={() => setCurrentTab('cards')} 
-              onSelectSubmission={(deck) => setSelectedTournamentDeck(deck)}
-            />
-            {selectedTournamentDeck && (
-              <TournamentDeckDetail 
-                allCards={combinedCards}
-                submission={selectedTournamentDeck} 
-                onClose={() => setSelectedTournamentDeck(null)} 
-                onDuplicateDeck={duplicateDeck}
-              />
-            )}
-          </motion.div>
+      <div
+        key="coverage"
+        className={cn(
+          "fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto transition-opacity duration-200 ease-out",
+          currentTab === 'coverage'
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none invisible"
         )}
-
-
-        {currentTab === 'submit-deck' && submissionDeck && (
-          <motion.div
-            key="submit-deck"
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto"
-          >
-            <DeckSubmissionForm 
-              deck={submissionDeck} 
-              initialSubmission={editingTournamentSubmission || undefined}
-              allCards={allCards}
-              onClose={() => {
-                if (editingTournamentSubmission) {
-                  setShowTournamentManager(true);
-                  setCurrentTab('cards'); // Just to clear the submit-deck tab
-                } else {
-                  setCurrentTab('cards');
-                }
-                setSubmissionDeck(null);
-                setEditingTournamentSubmission(null);
-                setIsScanning(false);
-                setShowDeckList(false);
-              }} 
-              onSuccess={() => {
-                if (editingTournamentSubmission) {
-                  setShowTournamentManager(true);
-                  setCurrentTab('cards');
-                } else {
-                  setCurrentTab('cards');
-                }
-                setSubmissionDeck(null);
-                setEditingTournamentSubmission(null);
-                setIsScanning(false);
-                setShowDeckList(false);
-                showToast(editingTournamentSubmission ? "Deck updated successfully!" : "Deck submitted for review!");
-              }}
-            />
-          </motion.div>
+      >
+        <EventCoverage 
+          allCards={combinedCards}
+          onBack={() => {
+            setSelectedTournamentDeck(null);
+            setCurrentTab('cards');
+          }} 
+          onSelectSubmission={(deck) => setSelectedTournamentDeck(deck)}
+        />
+        {selectedTournamentDeck && (
+          <TournamentDeckDetail 
+            allCards={combinedCards}
+            submission={selectedTournamentDeck} 
+            onClose={() => setSelectedTournamentDeck(null)} 
+            onDuplicateDeck={duplicateDeck}
+          />
         )}
-      </AnimatePresence>
+      </div>
+
+      {currentTab === 'submit-deck' && submissionDeck && (
+        <div
+          key="submit-deck"
+          className="fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto"
+        >
+          <DeckSubmissionForm 
+            deck={submissionDeck} 
+            initialSubmission={editingTournamentSubmission || undefined}
+            allCards={allCards}
+            onClose={() => {
+              if (editingTournamentSubmission) {
+                setShowTournamentManager(true);
+                setCurrentTab('cards'); // Just to clear the submit-deck tab
+              } else {
+                setCurrentTab('cards');
+              }
+              setSubmissionDeck(null);
+              setEditingTournamentSubmission(null);
+              setIsScanning(false);
+              setShowDeckList(false);
+            }} 
+            onSuccess={() => {
+              if (editingTournamentSubmission) {
+                setShowTournamentManager(true);
+                setCurrentTab('cards');
+              } else {
+                setCurrentTab('cards');
+              }
+              setSubmissionDeck(null);
+              setEditingTournamentSubmission(null);
+              setIsScanning(false);
+              setShowDeckList(false);
+              showToast(editingTournamentSubmission ? "Deck updated successfully!" : "Deck submitted for review!");
+            }}
+          />
+        </div>
+      )}
 
       {/* Card Feedback Popup */}
       <AnimatePresence>

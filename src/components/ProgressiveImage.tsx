@@ -35,6 +35,11 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     if (!loadedImageCache.has(src)) {
       const img = new Image();
       img.src = src;
+      if (img.complete && img.naturalWidth > 0) {
+        setIsLoaded(true);
+        loadedImageCache.add(src);
+        return;
+      }
       img.onload = () => {
         setIsLoaded(true);
         loadedImageCache.add(src);
@@ -72,7 +77,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
           }}
           loading={priority ? "eager" : "lazy"}
           className={cn(
-            "w-full h-full transition-opacity duration-300 ease-out",
+            "w-full h-full",
+            !loadedImageCache.has(src) && "transition-opacity duration-200 ease-out",
             imageClassName,
             isLoaded ? "opacity-100" : "opacity-0"
           )}

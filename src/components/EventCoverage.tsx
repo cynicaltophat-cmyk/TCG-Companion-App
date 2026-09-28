@@ -166,11 +166,15 @@ const getRankStyle = (rank: number) => {
   return "from-[#C4C4C4] to-[#D8D8D8] text-white";
 };
 
+// Module-level caches per season so switching tabs never flashes loading or empty states
+const cachedEventsBySeason: Record<string, TournamentEvent[]> = {};
+const cachedSubmissionsBySeason: Record<string, DeckSubmission[]> = {};
+
 export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onSelectSubmission, onBack }) => {
-  const [events, setEvents] = useState<TournamentEvent[]>([]);
-  const [submissions, setSubmissions] = useState<DeckSubmission[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedSeason, setSelectedSeason] = useState(SEASONS[0].id);
+  const [events, setEvents] = useState<TournamentEvent[]>(() => cachedEventsBySeason[SEASONS[0].id] || []);
+  const [submissions, setSubmissions] = useState<DeckSubmission[]>(() => cachedSubmissionsBySeason[SEASONS[0].id] || []);
+  const [loading, setLoading] = useState(() => !cachedSubmissionsBySeason[SEASONS[0].id]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [countryFilter, setCountryFilter] = useState<'Global' | 'Singapore'>('Global');
   const [showCountryMenu, setShowCountryMenu] = useState(false);
@@ -397,7 +401,9 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
   };
 
   useEffect(() => {
-    setLoading(true);
+    if (!cachedSubmissionsBySeason[selectedSeason]) {
+      setLoading(true);
+    }
     // Fetch all events for the selected season
     const qEvents = query(collection(db, 'tournament_events'), where('season', '==', selectedSeason), orderBy('date', 'desc'));
     const unsubscribeEvents = onSnapshot(qEvents, (snapshot) => {
@@ -405,6 +411,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
       snapshot.forEach((doc) => {
         eventsData.push(doc.data() as TournamentEvent);
       });
+      cachedEventsBySeason[selectedSeason] = eventsData;
       setEvents(eventsData);
     }, (err) => console.error(err));
 
@@ -420,6 +427,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
       snapshot.forEach((doc) => {
         subsData.push(doc.data() as DeckSubmission);
       });
+      cachedSubmissionsBySeason[selectedSeason] = subsData;
       setSubmissions(subsData);
       setLoading(false);
     }, (err) => {
@@ -573,15 +581,12 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
         <div className="px-3 py-6 max-w-2xl mx-auto space-y-3">
           {sortedDecks.length > 0 ? (
             <div className="flex flex-col gap-2 sm:gap-3">
-              {sortedDecks.map((deck, index) => {
+              {sortedDecks.map((deck) => {
                 const deckColors = getSubmissionColors(deck, allCards);
                 const rank = getPlacementRank(deck.placement);
                 return (
-                  <motion.div 
+                  <div 
                     key={deck.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.03 }}
                     onClick={() => onSelectSubmission?.(deck)}
                     className="relative flex items-center bg-white rounded-xl sm:rounded-[1.25rem] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-stone-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group h-16 sm:h-20"
                   >
@@ -651,7 +656,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                         ))}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -668,8 +673,8 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F9F9F7] animate-in fade-in duration-500 pb-24">
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200 transition-all duration-300">
+    <div className="flex-1 overflow-y-auto bg-[#F9F9F7] pb-24">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200">
         <div className="w-full px-4 flex flex-col">
           <div className="flex items-center gap-2 w-full pt-3.5 pb-2">
             <div className="relative flex-1">
@@ -1596,15 +1601,12 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
               );
             }
 
-            return sortedDecks.map((deck, index) => {
+            return sortedDecks.map((deck) => {
               const deckColors = getSubmissionColors(deck, allCards);
               const rank = getPlacementRank(deck.placement);
               return (
-                <motion.div 
+                <div 
                   key={deck.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
                   onClick={() => onSelectSubmission?.(deck)}
                   className="relative flex items-center bg-white rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] border border-stone-100 overflow-hidden hover:shadow-md transition-all cursor-pointer group h-16 sm:h-20"
                 >
@@ -1670,7 +1672,7 @@ export const EventCoverage: React.FC<EventCoverageProps> = ({ allCards = [], onS
                       ))}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             });
           })()}
