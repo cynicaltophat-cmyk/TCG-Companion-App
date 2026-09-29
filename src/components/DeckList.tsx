@@ -542,7 +542,7 @@ export const DeckList: React.FC<DeckListProps> = ({
         </div>
       )}
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-40 border-b border-stone-200">
+      <header className="bg-white/95 sticky top-0 z-40 border-b border-stone-200 shadow-xs">
         <div className="w-full px-4 landscape:px-20 lg:px-56 xl:px-[18%] 2xl:px-[28%] flex flex-col">
           <div className="flex items-center gap-2 w-full pt-3.5 pb-2">
             <button 

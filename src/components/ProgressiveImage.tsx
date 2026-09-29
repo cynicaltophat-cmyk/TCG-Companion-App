@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Layout, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Layout } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-// Simple global cache to track loaded image URLs across component remounts
+// Global cache to track loaded image URLs across component remounts
 const loadedImageCache = new Set<string>();
 
 interface ProgressiveImageProps {
@@ -25,43 +24,17 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
   showIcon = true,
   priority = false
 }) => {
-  const [isLoaded, setIsLoaded] = useState(loadedImageCache.has(src));
+  const cached = loadedImageCache.has(src);
+  const [isLoaded, setIsLoaded] = useState(cached);
   const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (!src) return;
-    
-    // If not in cache, start loading
-    if (!loadedImageCache.has(src)) {
-      const img = new Image();
-      img.src = src;
-      if (img.complete && img.naturalWidth > 0) {
-        setIsLoaded(true);
-        loadedImageCache.add(src);
-        return;
-      }
-      img.onload = () => {
-        setIsLoaded(true);
-        loadedImageCache.add(src);
-      };
-      img.onerror = () => {
-        setError(true);
-      };
-    } else {
-      setIsLoaded(true);
-      setError(false);
-    }
-  }, [src]);
 
   return (
     <div className={cn("relative overflow-hidden w-full h-full bg-stone-100", className)}>
-      {/* Placeholder - Simple CSS visibility instead of Framer Motion */}
+      {/* Lightweight static placeholder without CPU-draining continuous animations */}
       {!isLoaded && !error && (
         <div className="absolute inset-0 flex items-center justify-center bg-stone-100 z-0">
-          {showIcon ? (
-            <Layout className="text-stone-300 animate-pulse" size={className?.includes('w-9') ? 16 : 24} strokeWidth={1} />
-          ) : (
-            <Loader2 className="text-stone-300 animate-spin" size={className?.includes('w-9') ? 16 : 24} />
+          {showIcon && (
+            <Layout className="text-stone-300/60" size={className?.includes('w-9') ? 16 : 24} strokeWidth={1} />
           )}
         </div>
       )}
@@ -71,14 +44,18 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
           src={src}
           alt={alt}
           referrerPolicy={referrerPolicy}
+          decoding="async"
+          loading={priority ? "eager" : "lazy"}
           onLoad={() => {
             setIsLoaded(true);
             loadedImageCache.add(src);
           }}
-          loading={priority ? "eager" : "lazy"}
+          onError={() => {
+            setError(true);
+          }}
           className={cn(
             "w-full h-full",
-            !loadedImageCache.has(src) && "transition-opacity duration-200 ease-out",
+            !cached && "transition-opacity duration-150 ease-out",
             imageClassName,
             isLoaded ? "opacity-100" : "opacity-0"
           )}

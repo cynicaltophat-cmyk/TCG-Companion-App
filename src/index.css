@@ -7,8 +7,10 @@
 }
 
 @layer base {
-  body {
+  html, body {
     @apply antialiased;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
   }
   
   /* Hide Scrollbar Globally */

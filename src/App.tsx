@@ -615,23 +615,23 @@ const GridItem = React.memo(({
   price?: string,
   showPrice?: boolean
 }) => {
-  const deckItem = activeDeck?.items.find(i => i.card.id === (card.parentId || card.id) && i.artType === (card.variantType || "Base art"));
+  const deckItem = isDeckBuilderMode && activeDeck ? activeDeck.items.find(i => i.card.id === (card.parentId || card.id) && i.artType === (card.variantType || "Base art")) : undefined;
   const count = deckItem ? deckItem.count : 0;
-  const totalCount = activeDeck?.items
+  const totalCount = isDeckBuilderMode && activeDeck ? activeDeck.items
     .filter(i => i.card.id === (card.parentId || card.id))
-    .reduce((sum, i) => sum + i.count, 0) || 0;
+    .reduce((sum, i) => sum + i.count, 0) : 0;
 
   return (
     <div
       onClick={() => onSelect(card)}
       className={cn(
-        "bg-white rounded-[5px] overflow-hidden shadow-sm border cursor-pointer transition-all duration-300 hover:shadow-md hover:-translate-y-0.5",
+        "bg-white rounded-[5px] overflow-hidden shadow-xs border cursor-pointer active:scale-[0.98] transition-transform duration-100",
         card.variantType === "LR++" || (card.isVariant && card.variantType?.includes("LR++"))
-          ? "border-red-400/40 bg-gradient-to-b from-white to-red-50/10 shadow-[0_4px_12px_-4px_rgba(239,68,68,0.12)] hover:shadow-[0_8px_20px_-6px_rgba(239,68,68,0.2)]"
+          ? "border-red-400/50 bg-gradient-to-b from-white to-red-50/10"
           : card.variantType === "LR+" || (card.isVariant && card.variantType?.includes("LR+"))
-            ? "border-amber-400/40 bg-gradient-to-b from-white to-amber-50/15 shadow-[0_4px_12px_-4px_rgba(245,158,11,0.12)] hover:shadow-[0_8px_20px_-6px_rgba(245,158,11,0.2)]"
+            ? "border-amber-400/50 bg-gradient-to-b from-white to-amber-50/15"
             : card.rarity === "LR"
-              ? "border-amber-500/30 bg-gradient-to-b from-white to-amber-50/5 shadow-sm hover:shadow-md"
+              ? "border-amber-500/40 bg-gradient-to-b from-white to-amber-50/5"
               : card.isVariant
                 ? "border-amber-200 bg-amber-50/10"
                 : "border-stone-200"
@@ -4053,13 +4053,16 @@ function AppContent() {
     return suggestions;
   }, [filteredCards.length, debouncedSearchQuery, combinedCards]);
 
+  const expandedSet = useMemo(() => new Set(expandedCardIds), [expandedCardIds]);
+  const bookmarkSet = useMemo(() => new Set(bookmarks), [bookmarks]);
+
   const gridData = useMemo(() => {
     const result: (GundamCard & { isVariant?: boolean; parentId?: string; variantType?: ArtVariantType })[] = [];
     filteredCards.forEach(card => {
       result.push(card);
       
       const activeVariantFilters = activeFilters.variants;
-      const isExpanded = showAllAltArts || expandedCardIds.includes(card.id);
+      const isExpanded = showAllAltArts || expandedSet.has(card.id);
       
       if (isExpanded || activeVariantFilters.length > 0) {
         if (card.variants && card.variants.length > 0) {
@@ -4096,13 +4099,13 @@ function AppContent() {
       }
     });
     return result;
-  }, [filteredCards, expandedCardIds, activeFilters.variants, showAllAltArts]);
+  }, [filteredCards, expandedSet, activeFilters.variants, showAllAltArts]);
 
-  const toggleExpanded = (id: string) => {
+  const toggleExpanded = React.useCallback((id: string) => {
     setExpandedCardIds(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
-  };
+  }, []);
 
   const gridDataIndices = useMemo(() => {
     const map = new Map<string, number>();
@@ -4376,57 +4379,54 @@ function AppContent() {
     }
   };
 
-  // Preload first batch of images
-  useEffect(() => {
-    if (gridData.length > 0) {
-      const firstBatch = gridData.slice(0, 20);
-      firstBatch.forEach(item => {
-        if (item.imageUrl) {
-          const img = new Image();
-          img.src = item.imageUrl;
-        }
-      });
+  const handleSelectCard = React.useCallback((c: GundamCard) => {
+    setSelectedCard(c);
+    setSelectedArtType(c.variantType || "Base art");
+    setSwipeDirection(0);
+  }, []);
+
+  const handleAddToDeck = React.useCallback((c: any, art: ArtVariantType, countToAdd = 1) => {
+    const originalCard = combinedCards.find(gc => gc.id === (c.parentId || c.id));
+    if (originalCard && activeDeckId) {
+      addToDeck(activeDeckId, originalCard, art, countToAdd);
     }
-  }, [gridData]);
+  }, [combinedCards, activeDeckId, addToDeck]);
+
+  const handleRemoveFromDeck = React.useCallback((id: string, art: ArtVariantType) => {
+    if (activeDeckId) removeFromDeck(activeDeckId, id, art);
+  }, [activeDeckId, removeFromDeck]);
+
+  const handleUpdateDeckCount = React.useCallback((id: string, art: ArtVariantType, delta: number) => {
+    if (activeDeckId) updateDeckCount(activeDeckId, id, art, delta);
+  }, [activeDeckId, updateDeckCount]);
 
   const renderGridItem = React.useCallback((index: number, card: GundamCard) => (
     <GridItem 
       key={card.id}
       card={card}
-      price={getCardPriceInfo(card.cardNumber, card.rarity, card.variantType)?.price || "0"}
+      price={priceMode ? (getCardPriceInfo(card.cardNumber, card.rarity, card.variantType)?.price || "0") : undefined}
       showPrice={priceMode}
-      onSelect={(c) => {
-        setSelectedCard(c);
-        setSelectedArtType(c.variantType || "Base art");
-        setSwipeDirection(0);
-      }}
+      onSelect={handleSelectCard}
       onToggleExpanded={toggleExpanded}
-      isExpanded={expandedCardIds.includes(card.id)}
+      isExpanded={expandedSet.has(card.id)}
       isDeckBuilderMode={isDeckBuilderMode}
       activeDeck={activeDeck}
-      onAddToDeck={(c, art, countToAdd = 1) => {
-        const originalCard = combinedCards.find(gc => gc.id === (c.parentId || c.id));
-        if (originalCard && activeDeckId) {
-          addToDeck(activeDeckId, originalCard, art, countToAdd);
-        }
-      }}
-      onRemoveFromDeck={(id, art) => activeDeckId && removeFromDeck(activeDeckId, id, art)}
-      onUpdateDeckCount={(id, art, delta) => activeDeckId && updateDeckCount(activeDeckId, id, art, delta)}
-      isBookmarked={bookmarks.includes(card.id)}
+      onAddToDeck={handleAddToDeck}
+      onRemoveFromDeck={handleRemoveFromDeck}
+      onUpdateDeckCount={handleUpdateDeckCount}
+      isBookmarked={bookmarkSet.has(card.id)}
     />
-  ), [isDeckBuilderMode, activeDeck, activeDeckId, addToDeck, removeFromDeck, updateDeckCount, expandedCardIds, toggleExpanded, combinedCards, bookmarks]);
+  ), [priceMode, handleSelectCard, toggleExpanded, expandedSet, isDeckBuilderMode, activeDeck, handleAddToDeck, handleRemoveFromDeck, handleUpdateDeckCount, bookmarkSet]);
 
   return (
     <div className="min-h-screen bg-[#F5F5F0] text-[#141414] font-sans selection:bg-amber-200">
       <div className={cn(
-        "transition-[filter] duration-300", 
-        isFilterOpen && "blur-[2px] brightness-95",
         isDeckBuilderMode && "landscape:h-screen landscape:flex landscape:flex-col"
       )}>
       {/* Header */}
       {(currentTab === 'cards' || currentTab === 'coverage' || (isDeckBuilderMode && currentTab === 'decks')) && (
         <header className={cn(
-          "sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200",
+          "sticky top-0 z-30 bg-white/95 border-b border-stone-200 shadow-xs",
           isDeckBuilderMode && "landscape:w-[35%]"
         )}>
           <div className={cn(
@@ -4914,7 +4914,7 @@ function AppContent() {
             useWindowScroll={!(isDeckBuilderMode && isLandscape)}
             style={isDeckBuilderMode && isLandscape ? { height: '100%' } : {}}
             data={gridData}
-            overscan={400}
+            overscan={200}
             context={{ isDeckBuilderMode }}
             components={virtuosoComponents}
             itemContent={renderGridItem}
@@ -5491,8 +5491,8 @@ function AppContent() {
             )}>
               {/* Modal Header */}
               <div className={cn(
-                "sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200 px-4 py-3 flex items-center justify-between landscape:w-full landscape:shrink-0",
-                isDeckBuilderMode && "lg:bg-white lg:backdrop-blur-none"
+                "sticky top-0 z-50 bg-white/95 border-b border-stone-200 px-4 py-3 flex items-center justify-between landscape:w-full landscape:shrink-0",
+                isDeckBuilderMode && "lg:bg-white"
               )}>
                 <button 
                   onClick={() => {
