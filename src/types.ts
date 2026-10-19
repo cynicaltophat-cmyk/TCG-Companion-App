@@ -42,6 +42,7 @@ export interface GundamCard {
 }
 
 export const SET_NAMES: Record<string, string> = {
+  GD06: "Stardust Trails",
   ST14: "Heavy Dominion",
   ST13: "Silent Barrage",
   ST12: "Raging Onslaught",
@@ -65,6 +66,7 @@ export const SET_NAMES: Record<string, string> = {
 };
 
 export const ALL_SETS = [
+  "GD06",
   "ST14",
   "ST13",
   "ST12",

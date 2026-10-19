@@ -132,6 +132,7 @@
           }
         },
         "traits": { "type": "array", "items": { "type": "string" } },
+        "zones": { "type": "array", "items": { "type": "string" } },
         "link": { "type": "string" },
         "relatedCards": { "type": "array", "items": { "type": "string" }, "description": "IDs of cards related to this one" },
         "faq": {

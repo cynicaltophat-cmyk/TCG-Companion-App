@@ -282,6 +282,2761 @@ const GD05_001_CARD: GundamCard = {
   faq: []
 };
 
+const GD06_001_CARD: GundamCard = {
+  id: "gd06-001",
+  name: "Gundam GP01Fb",
+  set: "GD06",
+  cardNumber: "GD06-001",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "LR",
+  cost: 4,
+  level: 5,
+  ap: 3,
+  hp: 5,
+  ability: "【Once per Turn】 When this Unit is attacked, draw 1.\n【During Pair】 This Unit gains 【High-Maneuver】.\n(This Unit can't be blocked.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-001.png",
+  baseArtist: "Re.Ru.Ru.",
+  traits: ["(Earth Federation)", "(Albion Squad)"],
+  link: "[Kou Uraki]",
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_002_CARD: GundamCard = {
+  id: "gd06-002",
+  name: "Infinite Justice Gundam",
+  set: "GD06",
+  cardNumber: "GD06-002",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "LR",
+  cost: 6,
+  level: 7,
+  ap: 5,
+  hp: 5,
+  ability: "【Once per Turn】 During your turn, when this Unit destroys an enemy card with battle damage, choose 1 of your (Orb) Units. It recovers 3 HP.\n【Deploy】 You may choose 3 Unit cards from your trash. Exile them from the game. If you do, choose 1 active enemy Unit. Return it to its owner's hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-002.png",
+  baseArtist: "As'Maria",
+  traits: ["(Orb)"],
+  link: "[Athrun Zala]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_003_CARD: GundamCard = {
+  id: "gd06-003",
+  name: "GQuuuuuuX (Omega Psycommu Released)",
+  set: "GD06",
+  cardNumber: "GD06-003",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "LR",
+  cost: 4,
+  level: 6,
+  ap: 2,
+  hp: 5,
+  ability: "Increase this Unit's AP by an amount equal to the number of cards in your hand.\n【Attack】 If another friendly (Alphacide) Unit is in play and you have 5 or less cards in your hand, draw 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-003.png",
+  baseArtist: "Soezy",
+  traits: ["(Alphacide)"],
+  link: "[Amate Yuzuriha (Machu)]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_004_CARD: GundamCard = {
+  id: "gd06-004",
+  name: "Gundam GP01",
+  set: "GD06",
+  cardNumber: "GD06-004",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "R",
+  cost: 2,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【During Link】 【Destroyed】 If it is your turn, return this Unit's paired Pilot to its owner's hand. Then, discard 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-004.png",
+  baseArtist: "Kinaco Amatsu",
+  traits: ["(Earth Federation)", "(Albion Squad)"],
+  link: "[Kou Uraki]",
+  zones: ["Earth"],
+  faq: []
+};
+
+const GD06_005_CARD: GundamCard = {
+  id: "gd06-005",
+  name: "Akatsuki (Shiranui)",
+  set: "GD06",
+  cardNumber: "GD06-005",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "R",
+  cost: 5,
+  level: 6,
+  ap: 5,
+  hp: 4,
+  ability: "【Attack】 You may choose 1 damaged enemy Unit that is Lv.5 or lower. Return it to its owner's hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-005.png",
+  baseArtist: "amasaki",
+  traits: ["(Orb)"],
+  link: "(Orb) Trait / [Mu La Flaga]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_006_CARD: GundamCard = {
+  id: "gd06-006",
+  name: "GQuuuuuuX (Omega Psycommu)",
+  set: "GD06",
+  cardNumber: "GD06-006",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "R",
+  cost: 3,
+  level: 5,
+  ap: 4,
+  hp: 2,
+  ability: "【Deploy】 If another friendly (Alphacide) Unit is in play, you may choose 1 enemy Unit with 3 or less HP. Return it to its owner's hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-006.png",
+  baseArtist: "deraken",
+  traits: ["(Alphacide)"],
+  link: "[Amate Yuzuriha (Machu)] / [Nyaan]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_007_CARD: GundamCard = {
+  id: "gd06-007",
+  name: "Kikeroga (MS Mode) (GQ)",
+  set: "GD06",
+  cardNumber: "GD06-007",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "R",
+  cost: 5,
+  level: 7,
+  ap: 4,
+  hp: 6,
+  ability: "【Repair 2】 (At the end of your turn, this Unit recovers the specified number of HP.)\n【Deploy】 Choose 1 rested enemy Unit. Deal 2 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-007.png",
+  baseArtist: "sakusaku sakurai",
+  traits: ["(Zeon)"],
+  link: "[Challia Bull]",
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_008_CARD: GundamCard = {
+  id: "gd06-008",
+  name: "Powered GM",
+  set: "GD06",
+  cardNumber: "GD06-008",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "U",
+  cost: 2,
+  level: 3,
+  ap: 2,
+  hp: 4,
+  ability: "【Attack】 If a friendly (Earth Federation) Base is in play, this Unit gets AP+2 during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-008.png",
+  baseArtist: "Kinaco Amatsu",
+  traits: ["(Earth Federation)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_009_CARD: GundamCard = {
+  id: "gd06-009",
+  name: "GM Custom",
+  set: "GD06",
+  cardNumber: "GD06-009",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "U",
+  cost: 2,
+  level: 3,
+  ap: 2,
+  hp: 4,
+  ability: "【Deploy】 You may choose 1 enemy Unit with 1 HP. Return it to its owner's hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-009.png",
+  baseArtist: "Nagikeze",
+  traits: ["(Earth Federation)", "(Albion Squad)"],
+  link: "(Albion Squad) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_010_CARD: GundamCard = {
+  id: "gd06-010",
+  name: "GM Cannon II",
+  set: "GD06",
+  cardNumber: "GD06-010",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "U",
+  cost: 2,
+  level: 3,
+  ap: 2,
+  hp: 3,
+  ability: "【When Linked】 Draw 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-010.png",
+  baseArtist: "85neko",
+  traits: ["(Earth Federation)", "(Albion Squad)"],
+  link: "(Albion Squad) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_011_CARD: GundamCard = {
+  id: "gd06-011",
+  name: "Red Gundam",
+  set: "GD06",
+  cardNumber: "GD06-011",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "U",
+  cost: 4,
+  level: 5,
+  ap: 4,
+  hp: 4,
+  ability: "【When Linked】 All your Units gain 【Repair 1】 during this turn.\n(At the end of your turn, this Unit recovers the specified number of HP.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-011.png",
+  baseArtist: "ZB",
+  traits: [],
+  link: "(Newtype) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_012_CARD: GundamCard = {
+  id: "gd06-012",
+  name: "Z'Gok",
+  set: "GD06",
+  cardNumber: "GD06-012",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "C",
+  cost: 2,
+  level: 4,
+  ap: 3,
+  hp: 4,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-012.png",
+  baseArtist: "Soezy",
+  traits: ["(Zeon)", "(Marine)"],
+  link: "(Zeon) Trait",
+  zones: ["Earth"],
+  faq: []
+};
+
+const GD06_013_CARD: GundamCard = {
+  id: "gd06-013",
+  name: "Zaku II F2 (EFSF)",
+  set: "GD06",
+  cardNumber: "GD06-013",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "C",
+  cost: 1,
+  level: 1,
+  ap: 1,
+  hp: 2,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-013.png",
+  baseArtist: "haru",
+  traits: ["(Earth Federation)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_014_CARD: GundamCard = {
+  id: "gd06-014",
+  name: "GM Type C",
+  set: "GD06",
+  cardNumber: "GD06-014",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "C",
+  cost: 1,
+  level: 2,
+  ap: 2,
+  hp: 1,
+  ability: "While 3 or more enemy Units are in play, this Unit gains 【Blocker】.\n(Rest this Unit to change the attack target to it.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-014.png",
+  baseArtist: "Aidle Co., Ltd.",
+  traits: ["(Earth Federation)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_015_CARD: GundamCard = {
+  id: "gd06-015",
+  name: "Waldfeld's Gaia Gundam",
+  set: "GD06",
+  cardNumber: "GD06-015",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "C",
+  cost: 3,
+  level: 5,
+  ap: 3,
+  hp: 5,
+  ability: "【During Pair · (Orb) Pilot】 This Unit gains 【Blocker】.\n(Rest this Unit to change the attack target to it.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-015.png",
+  baseArtist: "MOROTYAN!!",
+  traits: ["(Orb)"],
+  link: "[Andrew Waldfeld]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_016_CARD: GundamCard = {
+  id: "gd06-016",
+  name: "Dom Trooper",
+  set: "GD06",
+  cardNumber: "GD06-016",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 3,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-016.png",
+  baseArtist: "K2 Shoukai",
+  traits: ["(Orb)"],
+  link: "(Orb) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_017_CARD: GundamCard = {
+  id: "gd06-017",
+  name: "GQuuuuuuX",
+  set: "GD06",
+  cardNumber: "GD06-017",
+  type: ["Unit"],
+  color: "Blue",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 2,
+  hp: 4,
+  ability: "While another friendly (Alphacide) Unit is in play, this Unit gains 【Blocker】.\n(Rest this Unit to change the attack target to it.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-017.png",
+  baseArtist: "Moyasi",
+  traits: ["(Alphacide)"],
+  link: "[Amate Yuzuriha (Machu)]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_018_CARD: GundamCard = {
+  id: "gd06-018",
+  name: "Elpeo Ple's Qubeley Mk-II",
+  set: "GD06",
+  cardNumber: "GD06-018",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "LR",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 2,
+  ability: "【Breach 1】 (During your turn, when this Unit destroys an enemy Unit with battle damage, deal the specified amount of damage to the first card in that opponent's shield area.)\n【During Pair】 【Activate · Action】 【Once per Turn】 Choose 1 of your (Neo Zeon)/(Long-Range Weapon) Units or 1 of your (Neo Zeon) Bases. During this battle, battle damage this Unit would receive is dealt to that Unit/Base instead.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-018.png",
+  baseArtist: "toriyufu",
+  traits: ["(Neo Zeon)"],
+  link: "[Elpeo Ple]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_019_CARD: GundamCard = {
+  id: "gd06-019",
+  name: "Turn X",
+  set: "GD06",
+  cardNumber: "GD06-019",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "LR",
+  cost: 7,
+  level: 8,
+  ap: 5,
+  hp: 6,
+  ability: "Enemy Units choose one of your rested Unit tokens as their attack target if possible when attacking.\n【Attack】 If you have no (Ghingnham Fleet) Unit tokens in play, deploy 1 rested [Turn X (Arms)]((Ghingnham Fleet) (Long-Range Weapon) · AP2 · HP3) Unit token and 1 rested [Turn X (Legs)]((Ghingnham Fleet) (Long-Range Weapon) · AP3 · HP2) Unit token.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-019.png",
+  baseArtist: "Re.Ru.Ru.",
+  traits: ["(Ghingnham Fleet)"],
+  link: "[Gym Ghingnham]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_020_CARD: GundamCard = {
+  id: "gd06-020",
+  name: "Hamma-Hamma",
+  set: "GD06",
+  cardNumber: "GD06-020",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "R",
+  cost: 3,
+  level: 3,
+  ap: 3,
+  hp: 4,
+  ability: "During your turn, when one of your (Neo Zeon) Units destroys an enemy card with damage, this Unit recovers 1 HP.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-020.png",
+  baseArtist: "denjo",
+  traits: ["(Neo Zeon)"],
+  link: "[Mashymre Cello]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_021_CARD: GundamCard = {
+  id: "gd06-021",
+  name: "Turn X (Top)",
+  set: "GD06",
+  cardNumber: "GD06-021",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "R",
+  cost: 3,
+  level: 4,
+  ap: 2,
+  hp: 2,
+  ability: "【Deploy】 Choose 1 of your Unit tokens. Deploy 1 rested Unit token of the same kind.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-021.png",
+  baseArtist: "Takuya Io",
+  traits: ["(Ghingnham Fleet)"],
+  link: "[Gym Ghingnham]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_022_CARD: GundamCard = {
+  id: "gd06-022",
+  name: "Merrybell's Bandit",
+  set: "GD06",
+  cardNumber: "GD06-022",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "R",
+  cost: 4,
+  level: 6,
+  ap: 4,
+  hp: 4,
+  ability: "【When Linked】 Choose 1 enemy Unit with 3 or less AP. Begin a battle between this Unit and it and only perform the damage step.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-022.png",
+  baseArtist: "denjo",
+  traits: ["(Ghingnham Fleet)"],
+  link: "(Moonrace) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_023_CARD: GundamCard = {
+  id: "gd06-023",
+  name: "Galluss J",
+  set: "GD06",
+  cardNumber: "GD06-023",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "U",
+  cost: 1,
+  level: 1,
+  ap: 2,
+  hp: 1,
+  ability: "【Deploy】 Rest this Unit. Then, choose 1 of your (Neo Zeon) Units that is Lv.3 or higher. It gets AP+1 during this turn. If you increase a Link Unit's AP with this effect, set this Unit as active.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-023.png",
+  baseArtist: "kenko",
+  traits: ["(Neo Zeon)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_024_CARD: GundamCard = {
+  id: "gd06-024",
+  name: "R-Jarja",
+  set: "GD06",
+  cardNumber: "GD06-024",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "U",
+  cost: 4,
+  level: 5,
+  ap: 4,
+  hp: 4,
+  ability: "【Destroyed】 Choose 1 enemy Unit with 【Blocker】 and 3 or less AP. Destroy it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-024.png",
+  baseArtist: "kaeru DX",
+  traits: ["(Neo Zeon)"],
+  link: "[Chara Soon]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_025_CARD: GundamCard = {
+  id: "gd06-025",
+  name: "Re-GZ",
+  set: "GD06",
+  cardNumber: "GD06-025",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 3,
+  hp: 4,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-025.png",
+  baseArtist: "Ges1",
+  traits: ["(Earth Federation)", "(Londo Bell)"],
+  link: "(Londo Bell) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_026_CARD: GundamCard = {
+  id: "gd06-026",
+  name: "Stero's Mahiroo",
+  set: "GD06",
+  cardNumber: "GD06-026",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "U",
+  cost: 3,
+  level: 4,
+  ap: 3,
+  hp: 4,
+  ability: "【Attack】 If you have 3 or more other (Ghingnham Fleet)/(Long-Range Weapon) Units in play, choose 1 of your Units. It gets AP+1 and 【Repair 2】 during this turn.\n(At the end of your turn, this Unit recovers the specified number of HP.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-026.png",
+  baseArtist: "Mganzy",
+  traits: ["(Ghingnham Fleet)"],
+  link: "(Moonrace) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_027_CARD: GundamCard = {
+  id: "gd06-027",
+  name: "Mashymre's Zssa",
+  set: "GD06",
+  cardNumber: "GD06-027",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 2,
+  ability: "【Deploy】 Choose 1 of your (Neo Zeon) Units. During this turn, it may choose an active enemy Unit with 4 or less AP as its attack target.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-027.png",
+  baseArtist: "ToMo",
+  traits: ["(Neo Zeon)"],
+  link: "[Mashymre Cello]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_028_CARD: GundamCard = {
+  id: "gd06-028",
+  name: "Gaza D",
+  set: "GD06",
+  cardNumber: "GD06-028",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 2,
+  ap: 2,
+  hp: 2,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-028.png",
+  baseArtist: "kaeru DX",
+  traits: ["(Neo Zeon)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_029_CARD: GundamCard = {
+  id: "gd06-029",
+  name: "Elpeo Ple's Qubeley Mk-II",
+  set: "GD06",
+  cardNumber: "GD06-029",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "C",
+  cost: 3,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【Breach 3】 (During your turn, when this Unit destroys an enemy Unit with battle damage, deal the specified amount of damage to the first card in that opponent's shield area.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-029.png",
+  baseArtist: "kenko",
+  traits: ["(Neo Zeon)"],
+  link: "[Elpeo Ple]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_030_CARD: GundamCard = {
+  id: "gd06-030",
+  name: "Mahiroo",
+  set: "GD06",
+  cardNumber: "GD06-030",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 2,
+  hp: 4,
+  ability: "While you have 3 or more other (Ghingnham Fleet)/(Long-Range Weapon) Units in play, this Unit gets AP+2.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-030.png",
+  baseArtist: "kuroiwa cookie",
+  traits: ["(Ghingnham Fleet)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_031_CARD: GundamCard = {
+  id: "gd06-031",
+  name: "Zssan",
+  set: "GD06",
+  cardNumber: "GD06-031",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "C",
+  cost: 2,
+  level: 2,
+  ap: 3,
+  hp: 2,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-031.png",
+  baseArtist: "Robographer",
+  traits: ["(Ghingnham Fleet)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_032_CARD: GundamCard = {
+  id: "gd06-032",
+  name: "Bellona",
+  set: "GD06",
+  cardNumber: "GD06-032",
+  type: ["Unit"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 1,
+  ap: 0,
+  hp: 1,
+  ability: "【Destroyed】 Look at the top 2 cards of your deck. You may reveal 1 (Ghingnham Fleet)/(Dianna Counter) Unit card among them and add it to your hand. Return the remaining cards randomly to the bottom of your deck.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-032.png",
+  baseArtist: "HI-GO!",
+  traits: ["(Ghingnham Fleet)"],
+  link: "",
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_033_CARD: GundamCard = {
+  id: "gd06-033",
+  name: "ZZ Gundam",
+  set: "GD06",
+  cardNumber: "GD06-033",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "LR",
+  cost: 8,
+  level: 9,
+  ap: 7,
+  hp: 7,
+  ability: "When your (AEUG) cards deal damage to enemy Units, increase the damage dealt by 1.\n【Deploy】 Deal 2 damage to all enemy Units.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-033.png",
+  baseArtist: "Eske yoshinob",
+  traits: ["(AEUG)", "(Gundam Team)"],
+  link: "[Judau Ashta]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_034_CARD: GundamCard = {
+  id: "gd06-034",
+  name: "Gundam Bael",
+  set: "GD06",
+  cardNumber: "GD06-034",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "LR",
+  cost: 6,
+  level: 7,
+  ap: 5,
+  hp: 5,
+  ability: "【High-Maneuver】 (This Unit can't be blocked.)\n【Deploy】 If there are 4 or more (Gjallarhorn) cards in your trash, look at the top 4 cards of your deck. You may deploy 1 (Gjallarhorn)/(Tekkadan) Unit card that is Lv.6 or lower among them. Return the remaining cards randomly to the bottom of your deck.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-034.png",
+  baseArtist: "As'Maria",
+  traits: ["(Gjallarhorn)", "(Gundam Frame)"],
+  link: "[McGillis Fareed]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_035_CARD: GundamCard = {
+  id: "gd06-035",
+  name: "Zeta Gundam",
+  set: "GD06",
+  cardNumber: "GD06-035",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "R",
+  cost: 4,
+  level: 5,
+  ap: 4,
+  hp: 4,
+  ability: "【Once per Turn】 During your turn, when this Unit destroys an enemy Unit with battle damage, choose 1 enemy Unit with 3 or less AP. Deal 2 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-035.png",
+  baseArtist: "MAEKO",
+  traits: ["(AEUG)", "(Gundam Team)"],
+  link: "(AEUG) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_036_CARD: GundamCard = {
+  id: "gd06-036",
+  name: "Gundam Vidar",
+  set: "GD06",
+  cardNumber: "GD06-036",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "R",
+  cost: 2,
+  level: 4,
+  ap: 3,
+  hp: 4,
+  ability: "【When Linked】 Choose 1 enemy Unit. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-036.png",
+  baseArtist: "amasaki",
+  traits: ["(Gjallarhorn)", "(Gundam Frame)"],
+  link: "[Gaelio Bauduin]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_037_CARD: GundamCard = {
+  id: "gd06-037",
+  name: "Reginlaze Julia",
+  set: "GD06",
+  cardNumber: "GD06-037",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "R",
+  cost: 4,
+  level: 6,
+  ap: 4,
+  hp: 4,
+  ability: "During your turn, while this Unit is battling a damaged enemy Unit, it gains 【First Strike】.\n(While this Unit is attacking, it deals damage before the enemy Unit.)\n【During Pair】 Enemy Units can't be set as active by enemy effects.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-037.png",
+  baseArtist: "kuroiwa cookie",
+  traits: ["(Gjallarhorn)"],
+  link: "[Julieta Juris]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_038_CARD: GundamCard = {
+  id: "gd06-038",
+  name: "Gundam Kimaris Vidar",
+  set: "GD06",
+  cardNumber: "GD06-038",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "R",
+  cost: 6,
+  level: 7,
+  ap: 5,
+  hp: 5,
+  ability: "【Breach 3】 (During your turn, when this Unit destroys an enemy Unit with battle damage, deal the specified amount of damage to the first card in that opponent's shield area.)\n【When Paired】 Choose 1 enemy Unit with the highest Lv. Deal 3 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-038.png",
+  baseArtist: "MOROTYAN!!",
+  traits: ["(Gjallarhorn)", "(Gundam Frame)"],
+  link: "[Gaelio Bauduin]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_039_CARD: GundamCard = {
+  id: "gd06-039",
+  name: "Neo Core Fighter",
+  set: "GD06",
+  cardNumber: "GD06-039",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 2,
+  level: 2,
+  ap: 1,
+  hp: 2,
+  ability: "【Activate · Main】 Destroy 2 of your (Gundam Team) Units with unique card names that are Lv.3 and this Unit: Deploy 1 (Gundam Team) Unit card that is Lv.8 or higher from your hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-039.png",
+  baseArtist: "S Kei",
+  traits: ["(AEUG)", "(Gundam Team)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_040_CARD: GundamCard = {
+  id: "gd06-040",
+  name: "Gundam Mk-II",
+  set: "GD06",
+  cardNumber: "GD06-040",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 3,
+  hp: 4,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-040.png",
+  baseArtist: "Aidle Co., Ltd.",
+  traits: ["(AEUG)", "(Gundam Team)"],
+  link: "(AEUG) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_041_CARD: GundamCard = {
+  id: "gd06-041",
+  name: "Neo Lorrnoke's Windam (Jet Striker)",
+  set: "GD06",
+  cardNumber: "GD06-041",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 3,
+  level: 4,
+  ap: 3,
+  hp: 4,
+  ability: "【Deploy】 Choose 1 enemy Unit with 5 or less AP. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-041.png",
+  baseArtist: "Takamaru Zyuukou",
+  traits: ["(Earth Alliance)", "(Phantom Pain)"],
+  link: "[Neo Lorrnoke]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_042_CARD: GundamCard = {
+  id: "gd06-042",
+  name: "Destroy Gundam (MA Mode)",
+  set: "GD06",
+  cardNumber: "GD06-042",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 6,
+  level: 6,
+  ap: 4,
+  hp: 6,
+  ability: "【Deploy】 Look at the top 4 cards of your deck. You may pair 1 (Biological CPU) Pilot card among them with this Unit. Return the remaining cards randomly to the bottom of your deck.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-042.png",
+  baseArtist: "i820",
+  traits: ["(Earth Alliance)", "(Phantom Pain)"],
+  link: "(Biological CPU) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_043_CARD: GundamCard = {
+  id: "gd06-043",
+  name: "Julieta's Reginlaze",
+  set: "GD06",
+  cardNumber: "GD06-043",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 3,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【During Link】 During your turn, all other (Gjallarhorn) Units get AP+1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-043.png",
+  baseArtist: "Takuya Io",
+  traits: ["(Gjallarhorn)"],
+  link: "(Gjallarhorn) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_044_CARD: GundamCard = {
+  id: "gd06-044",
+  name: "Core Top",
+  set: "GD06",
+  cardNumber: "GD06-044",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 3,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-044.png",
+  baseArtist: "S Kei",
+  traits: ["(AEUG)", "(Gundam Team)"],
+  link: "(Gundam Team) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_045_CARD: GundamCard = {
+  id: "gd06-045",
+  name: "Core Base",
+  set: "GD06",
+  cardNumber: "GD06-045",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 2,
+  ability: "【Destroyed】 Choose 1 enemy Unit that is Lv.5 or lower. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-045.png",
+  baseArtist: "S Kei",
+  traits: ["(AEUG)", "(Gundam Team)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_046_CARD: GundamCard = {
+  id: "gd06-046",
+  name: "Hyaku-Shiki",
+  set: "GD06",
+  cardNumber: "GD06-046",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 3,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【Attack】 Choose 1 of your other (Gundam Team) Units. It gets AP+2 during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-046.png",
+  baseArtist: "amasaki",
+  traits: ["(AEUG)", "(Gundam Team)"],
+  link: "(Gundam Team) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_047_CARD: GundamCard = {
+  id: "gd06-047",
+  name: "Windam",
+  set: "GD06",
+  cardNumber: "GD06-047",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 1,
+  level: 2,
+  ap: 2,
+  hp: 2,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-047.png",
+  baseArtist: "Takuya Io",
+  traits: ["(Earth Alliance)", "(Phantom Pain)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_048_CARD: GundamCard = {
+  id: "gd06-048",
+  name: "Helmwige Reincar",
+  set: "GD06",
+  cardNumber: "GD06-048",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 2,
+  hp: 3,
+  ability: "【Deploy】 Choose 1 enemy Unit that is Lv.2 or lower. Deal 1 damage to it. If there are 4 or more (Gjallarhorn) cards in your trash, choose 1 enemy Unit instead.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-048.png",
+  baseArtist: "i820",
+  traits: ["(Gjallarhorn)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_049_CARD: GundamCard = {
+  id: "gd06-049",
+  name: "Gundam GP02A",
+  set: "GD06",
+  cardNumber: "GD06-049",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "LR",
+  cost: 4,
+  level: 5,
+  ap: 4,
+  hp: 3,
+  ability: "【When Paired】 If there are 10 or more (Zeon) Unit cards in your trash, destroy every enemy player's Base.\n【Destroyed】 Look at the top 3 cards of your deck. You may reveal 1 (Delaz Fleet) Unit card among them and add it to your hand. Place the remaining cards into your trash.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-049.png",
+  baseArtist: "Re.Ru.Ru.",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "[Anavel Gato]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_050_CARD: GundamCard = {
+  id: "gd06-050",
+  name: "Legend Gundam",
+  set: "GD06",
+  cardNumber: "GD06-050",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "LR",
+  cost: 5,
+  level: 6,
+  ap: 4,
+  hp: 5,
+  ability: "While you have a (ZAFT) Link Unit in play, this card in your trash gets Lv. -3 and cost -3.\n【Deploy】 Choose 1 enemy Unit that is Lv.3 or lower. Destroy it. If you deploy this Unit from your trash, choose 1 to 2 enemy Units that are Lv.3 or lower instead.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-050.png",
+  baseArtist: "As'Maria",
+  traits: ["(ZAFT)", "(Minerva Squad)"],
+  link: "[Rey Za Burrel]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_051_CARD: GundamCard = {
+  id: "gd06-051",
+  name: "GFreD",
+  set: "GD06",
+  cardNumber: "GD06-051",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "LR",
+  cost: 5,
+  level: 6,
+  ap: 5,
+  hp: 4,
+  ability: "【Activate · Main】 【Once per Turn】 ②, rest this Unit: Choose 1 (Alphacide) Unit card that is Lv.5 or lower from your trash. Deploy it.\n【Deploy】 If another friendly (Alphacide) Unit is in play, this Unit gains the following effect during this turn:\n■ At the end of the turn, choose 2 of your Resources. Set them as active.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-051.png",
+  baseArtist: "kenko",
+  traits: ["(Zeon)", "(Alphacide)"],
+  link: "[Nyaan]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_052_CARD: GundamCard = {
+  id: "gd06-052",
+  name: "Val Walo",
+  set: "GD06",
+  cardNumber: "GD06-052",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "R",
+  cost: 4,
+  level: 5,
+  ap: 4,
+  hp: 4,
+  ability: "While there are 5 or more (Zeon) Unit cards in your trash, this Unit gains 【High-Maneuver】.\n(This Unit can't be blocked.)\n【Deploy】 Place the top card of your deck into your trash. If you place a (Zeon) card with this effect, choose 1 enemy Unit with 4 or less AP. Rest it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-052.png",
+  baseArtist: "S Kei",
+  traits: ["(Zeon)", "(Civilian)"],
+  link: "[Kelley Layzner]",
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_053_CARD: GundamCard = {
+  id: "gd06-053",
+  name: "Xavier's Gyan Hakuji-Packs (GQ)",
+  set: "GD06",
+  cardNumber: "GD06-053",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "R",
+  cost: 3,
+  level: 5,
+  ap: 4,
+  hp: 4,
+  ability: "【Blocker】 (Rest this Unit to change the attack target to it.)\n【Destroyed】 Choose 1 of your Resources. Set it as active.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-053.png",
+  baseArtist: "MOROTYAN!!",
+  traits: ["(Zeon)"],
+  link: "[Xavier Olivette]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_054_CARD: GundamCard = {
+  id: "gd06-054",
+  name: "GFreD",
+  set: "GD06",
+  cardNumber: "GD06-054",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "R",
+  cost: 6,
+  level: 7,
+  ap: 6,
+  hp: 5,
+  ability: "【Suppression】 (Damage to Shields by an attack is dealt to the first 2 cards simultaneously.)\n【Deploy】 You may choose 1 of your Units and 1 enemy Unit. Deal 1 damage to them.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-054.png",
+  baseArtist: "ZB",
+  traits: ["(Zeon)", "(Alphacide)"],
+  link: "[Nyaan]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_055_CARD: GundamCard = {
+  id: "gd06-055",
+  name: "Gundam GP02A",
+  set: "GD06",
+  cardNumber: "GD06-055",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【During Pair】 【Attack】 You may deal 1 damage to this Unit. If you do, this Unit gains 【Breach 2】 during this battle.\n(During your turn, when this Unit destroys an enemy Unit with battle damage, deal the specified amount of damage to the first card in that opponent's shield area.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-055.png",
+  baseArtist: "MAEKO",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "[Anavel Gato]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_056_CARD: GundamCard = {
+  id: "gd06-056",
+  name: "Xamel",
+  set: "GD06",
+  cardNumber: "GD06-056",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 3,
+  level: 4,
+  ap: 3,
+  hp: 4,
+  ability: "【Attack】 You may pay ②. If you do, choose 1 enemy Unit that is Lv.2 or lower. Destroy it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-056.png",
+  baseArtist: "yuuiguchi",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "",
+  zones: ["Earth"],
+  faq: []
+};
+
+const GD06_057_CARD: GundamCard = {
+  id: "gd06-057",
+  name: "Karius' Rick Dom II",
+  set: "GD06",
+  cardNumber: "GD06-057",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 3,
+  ability: "While you have another (Delaz Fleet) Unit in play, this Unit gains 【Blocker】.\n(Rest this Unit to change the attack target to it.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-057.png",
+  baseArtist: "J.YUZURU(willow_works)",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "[Karius]",
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_058_CARD: GundamCard = {
+  id: "gd06-058",
+  name: "Blast Impulse Gundam",
+  set: "GD06",
+  cardNumber: "GD06-058",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 3,
+  hp: 2,
+  ability: "On the turn this Unit is deployed, it may choose a rested enemy Unit as its attack target and attack it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-058.png",
+  baseArtist: "haru",
+  traits: ["(ZAFT)", "(Minerva Squad)"],
+  link: "[Lunamaria Hawke]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_059_CARD: GundamCard = {
+  id: "gd06-059",
+  name: "Dom Tropen",
+  set: "GD06",
+  cardNumber: "GD06-059",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 3,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-059.png",
+  baseArtist: "yuuiguchi",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "(Delaz Fleet) Trait",
+  zones: ["Earth"],
+  faq: []
+};
+
+const GD06_060_CARD: GundamCard = {
+  id: "gd06-060",
+  name: "Zaku II F2",
+  set: "GD06",
+  cardNumber: "GD06-060",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 1,
+  level: 2,
+  ap: 2,
+  hp: 1,
+  ability: "While there are 4 or more (Zeon) Unit cards in your trash, this Unit gets AP+1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-060.png",
+  baseArtist: "MAEKO",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_061_CARD: GundamCard = {
+  id: "gd06-061",
+  name: "Dra-C",
+  set: "GD06",
+  cardNumber: "GD06-061",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 1,
+  level: 1,
+  ap: 1,
+  hp: 1,
+  ability: "【Activate・Main】 【Support 1】 (Rest this Unit. 1 other friendly Unit gets AP+(specified amount) during this turn.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-061.png",
+  baseArtist: "Robographer",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "",
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_062_CARD: GundamCard = {
+  id: "gd06-062",
+  name: "Gyan Hakuji-Packs (GQ)",
+  set: "GD06",
+  cardNumber: "GD06-062",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 4,
+  hp: 3,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-062.png",
+  baseArtist: "Nagikeze",
+  traits: ["(Zeon)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_063_CARD: GundamCard = {
+  id: "gd06-063",
+  name: "GFreD",
+  set: "GD06",
+  cardNumber: "GD06-063",
+  type: ["Unit"],
+  color: "Purple",
+  rarity: "C",
+  cost: 1,
+  level: 2,
+  ap: 2,
+  hp: 2,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-063.png",
+  baseArtist: "Nagikeze",
+  traits: ["(Zeon)", "(Alphacide)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_064_CARD: GundamCard = {
+  id: "gd06-064",
+  name: "Altron Gundam (EW)",
+  set: "GD06",
+  cardNumber: "GD06-064",
+  type: ["Unit"],
+  color: "White",
+  rarity: "LR",
+  cost: 3,
+  level: 3,
+  ap: 3,
+  hp: 4,
+  ability: "【Blocker】 (Rest this Unit to change the attack target to it.)\nWhile an enemy Unit that is Lv.5 or higher is in play, this Unit gets AP+3.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-064.png",
+  baseArtist: "Hokuyuu",
+  traits: ["(G Team)", "(Mariemaia Army)"],
+  link: "[Chang Wufei]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_065_CARD: GundamCard = {
+  id: "gd06-065",
+  name: "SUMO Gold Type",
+  set: "GD06",
+  cardNumber: "GD06-065",
+  type: ["Unit"],
+  color: "White",
+  rarity: "LR",
+  cost: 4,
+  level: 6,
+  ap: 4,
+  hp: 5,
+  ability: "【Blocker】 (Rest this Unit to change the attack target to it.)\n【Activate・Main】 【Once per Turn】 ④: Set all your (Dianna Counter)/(Militia) Units with 【Blocker】 as active. They can't attack during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-065.png",
+  baseArtist: "Gas1",
+  traits: ["(Dianna Counter)"],
+  link: "[Harry Ord]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_066_CARD: GundamCard = {
+  id: "gd06-066",
+  name: "Shadow Gundam",
+  set: "GD06",
+  cardNumber: "GD06-066",
+  type: ["Unit"],
+  color: "White",
+  rarity: "R",
+  cost: 4,
+  level: 6,
+  ap: 5,
+  hp: 4,
+  ability: "【Blocker】 (Rest this Unit to change the attack target to it.)\n【During Link】 【Attack】 Activate 【Action】 on the card paired with this Unit.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-066.png",
+  baseArtist: "yuuiguchi",
+  traits: ["(MF)"],
+  link: "(Gundam Fighter) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_067_CARD: GundamCard = {
+  id: "gd06-067",
+  name: "Gundam Sandrock Custom (EW)",
+  set: "GD06",
+  cardNumber: "GD06-067",
+  type: ["Unit"],
+  color: "White",
+  rarity: "R",
+  cost: 4,
+  level: 5,
+  ap: 3,
+  hp: 5,
+  ability: "【Blocker】 (Rest this Unit to change the attack target to it.)\n【When Paired・Lv.4 or Higher Pilot】 Choose 1 rested enemy Unit with 3 or less HP. It won't be set as active during the start phase of your opponent's next turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-067.png",
+  baseArtist: "TSUBASA KOYAMA_Aidle Co., Ltd.",
+  traits: ["(G Team)"],
+  link: "[Quatre Raberba Winner]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_068_CARD: GundamCard = {
+  id: "gd06-068",
+  name: "Gundam Heavyarms Custom (EW)",
+  set: "GD06",
+  cardNumber: "GD06-068",
+  type: ["Unit"],
+  color: "White",
+  rarity: "R",
+  cost: 3,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【Deploy】 Choose 1 enemy Unit that is Lv.3 or lower. Rest it. If you have another (G Team)/(Preventer) Unit in play, that enemy Unit gets AP-2 during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-068.png",
+  baseArtist: "TSUBASA KOYAMA_Aidle Co., Ltd.",
+  traits: ["(G Team)"],
+  link: "[Trowa Barton]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_069_CARD: GundamCard = {
+  id: "gd06-069",
+  name: "SUMO Silver Type",
+  set: "GD06",
+  cardNumber: "GD06-069",
+  type: ["Unit"],
+  color: "White",
+  rarity: "R",
+  cost: 3,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【Blocker】 (Rest this Unit to change the attack target to it.)\n【Activate・Action】 【Once per Turn】 ①: Choose 1 of your damaged (Dianna Counter) Units. It recovers 1 HP.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-069.png",
+  baseArtist: "kenko",
+  traits: ["(Dianna Counter)"],
+  link: "(Moonrace) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_070_CARD: GundamCard = {
+  id: "gd06-070",
+  name: "Eagail",
+  set: "GD06",
+  cardNumber: "GD06-070",
+  type: ["Unit"],
+  color: "White",
+  rarity: "R",
+  cost: 5,
+  level: 6,
+  ap: 5,
+  hp: 3,
+  ability: "【Deploy】 Deploy 1 [Gozzo] ((Dianna Counter)・AP0・HP3・【Blocker】) Unit token.\n【Attack】 If you have paid a total of 3 or more for your Units' effects this turn, choose 1 enemy Unit. It gets AP-5 during this battle.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-070.png",
+  baseArtist: "Mganzy",
+  traits: ["(Dianna Counter)"],
+  link: "[Corin Nander]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_071_CARD: GundamCard = {
+  id: "gd06-071",
+  name: "Shining Gundam (Meikyo Shisui)",
+  set: "GD06",
+  cardNumber: "GD06-071",
+  type: ["Unit"],
+  color: "White",
+  rarity: "U",
+  cost: 5,
+  level: 6,
+  ap: 4,
+  hp: 4,
+  ability: "【Once per Turn】 During your turn, when you activate a (Special Move) Command's 【Main】 / 【Action】, choose 1 enemy Unit. It gets AP-2 during this turn. If you do, this Unit gets AP+2.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-071.png",
+  baseArtist: "wasabi",
+  traits: ["(MF)", "(Shuffle Alliance)"],
+  link: "[Domon Kasshu]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_072_CARD: GundamCard = {
+  id: "gd06-072",
+  name: "Gundam Deathscythe Hell (EW)",
+  set: "GD06",
+  cardNumber: "GD06-072",
+  type: ["Unit"],
+  color: "White",
+  rarity: "U",
+  cost: 3,
+  level: 5,
+  ap: 5,
+  hp: 3,
+  ability: "【During Pair】 【Destroyed】 If you have another (G Team)/(Preventer) Unit in play, you may choose 1 Command card that is Lv.5 or lower from your trash. Add it to your hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-072.png",
+  baseArtist: "Kinaco Amatsu",
+  traits: ["(G Team)"],
+  link: "[Duo Maxwell]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_073_CARD: GundamCard = {
+  id: "gd06-073",
+  name: "Wing Gundam Zero (EW)",
+  set: "GD06",
+  cardNumber: "GD06-073",
+  type: ["Unit"],
+  color: "White",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "【During Pair】 【Once per Turn】 When this Unit destroys an enemy shield area card with battle damage, choose 1 enemy Unit that is Lv.3 or lower. Rest it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-073.png",
+  baseArtist: "Hayaken-sarena",
+  traits: ["(G Team)"],
+  link: "[Heero Yuy]",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_074_CARD: GundamCard = {
+  id: "gd06-074",
+  name: "Flat",
+  set: "GD06",
+  cardNumber: "GD06-074",
+  type: ["Unit"],
+  color: "White",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 4,
+  hp: 3,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-074.png",
+  baseArtist: "denjo",
+  traits: ["(Dianna Counter)"],
+  link: "(Moonrace) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_075_CARD: GundamCard = {
+  id: "gd06-075",
+  name: "Serpent",
+  set: "GD06",
+  cardNumber: "GD06-075",
+  type: ["Unit"],
+  color: "White",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 4,
+  hp: 3,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-075.png",
+  baseArtist: "TSUBASA KOYAMA_Aidle Co., Ltd.",
+  traits: ["(Mariemaia Army)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_076_CARD: GundamCard = {
+  id: "gd06-076",
+  name: "WaDom",
+  set: "GD06",
+  cardNumber: "GD06-076",
+  type: ["Unit"],
+  color: "White",
+  rarity: "C",
+  cost: 4,
+  level: 5,
+  ap: 4,
+  hp: 4,
+  ability: "【Deploy】 Choose 1 enemy Unit with 4 or less HP. Rest it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-076.png",
+  baseArtist: "Mganzy",
+  traits: ["(Dianna Counter)"],
+  link: "(Moonrace) Trait",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_077_CARD: GundamCard = {
+  id: "gd06-077",
+  name: "Cannon Illfuto",
+  set: "GD06",
+  cardNumber: "GD06-077",
+  type: ["Unit"],
+  color: "White",
+  rarity: "C",
+  cost: 2,
+  level: 3,
+  ap: 3,
+  hp: 3,
+  ability: "【Blocker】 (Rest this Unit to change the attack target to it.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-077.png",
+  baseArtist: "J.YUZURU(willow_works)",
+  traits: ["(Dianna Counter)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_078_CARD: GundamCard = {
+  id: "gd06-078",
+  name: "WaD",
+  set: "GD06",
+  cardNumber: "GD06-078",
+  type: ["Unit"],
+  color: "White",
+  rarity: "C",
+  cost: 1,
+  level: 1,
+  ap: 1,
+  hp: 1,
+  ability: "【Activate・Main】 ③, rest this Unit: If you have another (Dianna Counter) Unit in play, choose 1 enemy Unit that is Lv.4 or lower. Rest it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-078.png",
+  baseArtist: "K2 Shoukai",
+  traits: ["(Dianna Counter)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_079_CARD: GundamCard = {
+  id: "gd06-079",
+  name: "Muttowooo",
+  set: "GD06",
+  cardNumber: "GD06-079",
+  type: ["Unit"],
+  color: "White",
+  rarity: "C",
+  cost: 2,
+  level: 2,
+  ap: 3,
+  hp: 2,
+  ability: "",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-079.png",
+  baseArtist: "Robographer",
+  traits: ["(Dianna Counter)"],
+  link: "",
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_080_CARD: GundamCard = {
+  id: "gd06-080",
+  name: "Kou Uraki",
+  set: "GD06",
+  cardNumber: "GD06-080",
+  type: ["Pilot"],
+  color: "Blue",
+  rarity: "R",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\n【Activate・Action】 【Once per Turn】 If you have drawn with an effect during this turn, choose 1 of your Units. It recovers 2 HP.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-080.png",
+  baseArtist: "BANILIZO",
+  traits: ["(Earth Federation)", "(Albion Squad)"],
+  faq: []
+};
+
+const GD06_081_CARD: GundamCard = {
+  id: "gd06-081",
+  name: "Amate Yuzuriha (Machu)",
+  set: "GD06",
+  cardNumber: "GD06-081",
+  type: ["Pilot"],
+  color: "Blue",
+  rarity: "R",
+  cost: 1,
+  level: 4,
+  ap: "+1",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\nWhile this Unit is (Alphacide), it gains 【Repair 2】. (At the end of your turn, this Unit recovers the specified number of HP.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-081.png",
+  baseArtist: "Ryuda",
+  traits: ["(Alphacide)", "(Newtype)"],
+  faq: []
+};
+
+const GD06_082_CARD: GundamCard = {
+  id: "gd06-082",
+  name: "Athrun Zala",
+  set: "GD06",
+  cardNumber: "GD06-082",
+  type: ["Pilot"],
+  color: "Blue",
+  rarity: "U",
+  cost: 1,
+  level: 5,
+  ap: "+2",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\n【When Paired】 Choose 1 rested enemy Unit. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-082.png",
+  baseArtist: "Kota",
+  traits: ["(Orb)", "(Coordinator)"],
+  faq: []
+};
+
+const GD06_083_CARD: GundamCard = {
+  id: "gd06-083",
+  name: "Challia Bull (GQ)",
+  set: "GD06",
+  cardNumber: "GD06-083",
+  type: ["Pilot"],
+  color: "Blue",
+  rarity: "C",
+  cost: 1,
+  level: 5,
+  ap: "+2",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\n【During Link】 While this Unit has 【Repair】, it gains 【High-Maneuver】. (This Unit can't be blocked.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-083.png",
+  baseArtist: "Kota",
+  traits: ["(Zeon)", "(Newtype)"],
+  faq: []
+};
+
+const GD06_084_CARD: GundamCard = {
+  id: "gd06-084",
+  name: "Elpeo Ple",
+  set: "GD06",
+  cardNumber: "GD06-084",
+  type: ["Pilot"],
+  color: "Green",
+  rarity: "R",
+  cost: 1,
+  level: 3,
+  ap: "+2",
+  hp: "+0",
+  ability: "【Burst】 Add this card to your hand.\n【When Paired】 During this turn, this Unit gains the same number of 【Breach 1】 as the number of (Neo Zeon)/(Long-Range Weapon) Units you have in play. (During your turn, when this Unit destroys an enemy Unit with battle damage, deal the specified amount of damage to the first card in that opponent's shield area.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-084.png",
+  baseArtist: "malo",
+  traits: ["(Neo Zeon)", "(Newtype)"],
+  faq: []
+};
+
+const GD06_085_CARD: GundamCard = {
+  id: "gd06-085",
+  name: "Gym Ghingnham",
+  set: "GD06",
+  cardNumber: "GD06-085",
+  type: ["Pilot"],
+  color: "Green",
+  rarity: "U",
+  cost: 1,
+  level: 5,
+  ap: "+2",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\n【During Link】 All your (Ghingnham Fleet) Units get AP+1 during your opponent's turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-085.png",
+  baseArtist: "BANILIZO",
+  traits: ["(Ghingnham Fleet)", "(Moonrace)"],
+  faq: []
+};
+
+const GD06_086_CARD: GundamCard = {
+  id: "gd06-086",
+  name: "Mashymre Cello",
+  set: "GD06",
+  cardNumber: "GD06-086",
+  type: ["Pilot"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: "+0",
+  hp: "+2",
+  ability: "When playing this card from your hand and pairing it with a Unit with the [Mashymre Cello] link condition, it gets cost -1.\n【Burst】 Add this card to your hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-086.png",
+  baseArtist: "NAKANORYO",
+  traits: ["(Neo Zeon)"],
+  faq: []
+};
+
+const GD06_087_CARD: GundamCard = {
+  id: "gd06-087",
+  name: "Merrybell Gadget",
+  set: "GD06",
+  cardNumber: "GD06-087",
+  type: ["Pilot"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\n【Attack】 Choose 1 of your (Ghingnham Fleet) Units. During this turn, it may choose an active enemy Unit that is Lv.4 or lower as its attack target.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-087.png",
+  baseArtist: "Kakeshinokaketo",
+  traits: ["(Ghingnham Fleet)", "(Moonrace)"],
+  faq: []
+};
+
+const GD06_088_CARD: GundamCard = {
+  id: "gd06-088",
+  name: "Judau Ashta",
+  set: "GD06",
+  cardNumber: "GD06-088",
+  type: ["Pilot"],
+  color: "Red",
+  rarity: "R",
+  cost: 1,
+  level: 5,
+  ap: "+2",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\n【During Link】 【Destroyed】 Choose 1 (Gundam Team) Unit card that is Lv.2 or lower from your trash. Add it to your hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-088.png",
+  baseArtist: "PEPERON",
+  traits: ["(AEUG)", "(Gundam Team)", "(Newtype)"],
+  faq: []
+};
+
+const GD06_089_CARD: GundamCard = {
+  id: "gd06-089",
+  name: "McGillis Fareed",
+  set: "GD06",
+  cardNumber: "GD06-089",
+  type: ["Pilot"],
+  color: "Red",
+  rarity: "U",
+  cost: 1,
+  level: 4,
+  ap: "+1",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\n【During Link】 When this Unit destroys an enemy shield area card with battle damage, choose 1 of your (Gjallarhorn) Units. During this turn, it may choose an active enemy Unit that is Lv.5 or lower as its attack target.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-089.png",
+  baseArtist: "ikuyoan",
+  traits: ["(Gjallarhorn)", "(Alaya-Vijnana)"],
+  faq: []
+};
+
+const GD06_090_CARD: GundamCard = {
+  id: "gd06-090",
+  name: "Vidar",
+  set: "GD06",
+  cardNumber: "GD06-090",
+  type: ["Pilot"],
+  color: "Red",
+  rarity: "U",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "This card's name is also treated as [Gaelio Bauduin].\n【Burst】 Add this card to your hand.\n【Attack】 If you have 2 or more (Gjallarhorn) Units in play, choose 1 enemy Unit with 5 or less AP. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-090.png",
+  baseArtist: "ikuyoan",
+  traits: ["(Gjallarhorn)", "(Alaya-Vijnana)"],
+  faq: []
+};
+
+const GD06_091_CARD: GundamCard = {
+  id: "gd06-091",
+  name: "Roux Louka",
+  set: "GD06",
+  cardNumber: "GD06-091",
+  type: ["Pilot"],
+  color: "Red",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\nWhile this Unit is (AEUG), it gains 【Breach 1】. (During your turn, when this Unit destroys an enemy Unit with battle damage, deal the specified amount of damage to the first card in that opponent's shield area.)",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-091.png",
+  baseArtist: "malo",
+  traits: ["(AEUG)", "(Gundam Team)", "(Newtype)"],
+  faq: []
+};
+
+const GD06_092_CARD: GundamCard = {
+  id: "gd06-092",
+  name: "Neo Lorrnoke",
+  set: "GD06",
+  cardNumber: "GD06-092",
+  type: ["Pilot"],
+  color: "Red",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ap: "+1",
+  hp: "+2",
+  ability: "This card's name is also treated as [Mu La Flaga].\n【Burst】 Add this card to your hand.\n【When Paired】 If this is a (Phantom Pain)/(Orb) Unit, choose 1 enemy Unit whose AP is equal to or less than this Unit. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-092.png",
+  baseArtist: "Kamome Shibuki",
+  traits: ["(Earth Alliance)", "(Phantom Pain)", "(Orb)"],
+  faq: []
+};
+
+const GD06_093_CARD: GundamCard = {
+  id: "gd06-093",
+  name: "Anavel Gato",
+  set: "GD06",
+  cardNumber: "GD06-093",
+  type: ["Pilot"],
+  color: "Purple",
+  rarity: "R",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\n【Attack】 During this battle, when this Unit receives battle damage from an enemy Unit whose Lv. is equal to or lower than it, reduce it by 2.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-093.png",
+  baseArtist: "BANILIZO",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  faq: []
+};
+
+const GD06_094_CARD: GundamCard = {
+  id: "gd06-094",
+  name: "Nyaan",
+  set: "GD06",
+  cardNumber: "GD06-094",
+  type: ["Pilot"],
+  color: "Purple",
+  rarity: "R",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\n【When Paired】 Choose 1 friendly Unit. It gains the following effect during this turn:\n■ When this Unit deals battle damage to an enemy Unit that is Lv.4 or lower, destroy that enemy Unit.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-094.png",
+  baseArtist: "Ryuda",
+  traits: ["(Zeon)", "(Alphacide)", "(Newtype)"],
+  faq: []
+};
+
+const GD06_095_CARD: GundamCard = {
+  id: "gd06-095",
+  name: "Kelley Layzner",
+  set: "GD06",
+  cardNumber: "GD06-095",
+  type: ["Pilot"],
+  color: "Purple",
+  rarity: "U",
+  cost: 1,
+  level: 3,
+  ap: "+1",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\n【Attack】 You may deal 1 damage to this Unit. If you do, choose 1 of your (Zeon) Units. It gets AP+2 during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-095.png",
+  baseArtist: "Aneseki Dynamic",
+  traits: ["(Zeon)", "(Civilian)"],
+  faq: []
+};
+
+const GD06_096_CARD: GundamCard = {
+  id: "gd06-096",
+  name: "Xavier Olivette",
+  set: "GD06",
+  cardNumber: "GD06-096",
+  type: ["Pilot"],
+  color: "Purple",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\n【During Link】 【Attack】 Place the top card of your deck into your trash. If you place a (Zeon)/(Alphacide) card with this effect, all enemy Units get AP-1 during this battle.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-096.png",
+  baseArtist: "R.Hert",
+  traits: ["(Zeon)", "(Newtype)"],
+  faq: []
+};
+
+const GD06_097_CARD: GundamCard = {
+  id: "gd06-097",
+  name: "Harry Ord",
+  set: "GD06",
+  cardNumber: "GD06-097",
+  type: ["Pilot"],
+  color: "White",
+  rarity: "R",
+  cost: 1,
+  level: 5,
+  ap: "+2",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\n【Once per Turn】 When this Unit activates 【Blocker】, set it as active.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-097.png",
+  baseArtist: "R.Hert",
+  traits: ["(Dianna Counter)", "(Moonrace)"],
+  faq: []
+};
+
+const GD06_098_CARD: GundamCard = {
+  id: "gd06-098",
+  name: "Duo Maxwell",
+  set: "GD06",
+  cardNumber: "GD06-098",
+  type: ["Pilot"],
+  color: "White",
+  rarity: "U",
+  cost: 1,
+  level: 4,
+  ap: "+1",
+  hp: "+2",
+  ability: "【Burst】 Add this card to your hand.\n【During Link】 While this Unit is rested, friendly Bases can't receive damage from enemy Units whose Lv. are equal to or lower than this Unit.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-098.png",
+  baseArtist: "BANILIZO",
+  traits: ["(G Team)", "(Operation Meteor)"],
+  faq: []
+};
+
+const GD06_099_CARD: GundamCard = {
+  id: "gd06-099",
+  name: "Chang Wufei",
+  set: "GD06",
+  cardNumber: "GD06-099",
+  type: ["Pilot"],
+  color: "White",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Burst】 Add this card to your hand.\n【Attack】 Choose 1 enemy Unit that is Lv.5 or higher. It gets AP-3 during this battle.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-099.png",
+  baseArtist: "BANILIZO",
+  traits: ["(G Team)", "(Operation Meteor)", "(Mariemaia Army)"],
+  faq: []
+};
+
+const GD06_100_CARD: GundamCard = {
+  id: "gd06-100",
+  name: "Corin Nander",
+  set: "GD06",
+  cardNumber: "GD06-100",
+  type: ["Pilot"],
+  color: "White",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ap: "+3",
+  hp: "+0",
+  ability: "When playing this card from your hand and pairing it with a (Dianna Counter) Unit that is Lv.5 or higher, it gets cost -1.\n【Burst】 Add this card to your hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-100.png",
+  baseArtist: "Kakeshinokaketo",
+  traits: ["(Dianna Counter)", "(Moonrace)"],
+  faq: []
+};
+
+const GD06_101_CARD: GundamCard = {
+  id: "gd06-101",
+  name: "The Gundam Says",
+  set: "GD06",
+  cardNumber: "GD06-101",
+  type: ["Command"],
+  color: "Blue",
+  rarity: "R",
+  cost: 2,
+  level: 6,
+  ability: "【Burst】 Choose 1 enemy Unit with 5 or less HP. Return it to its owner's hand.\n【Main / Action】 Choose 1 enemy Unit with 5 or less HP. Return it to its owner's hand. Then, if a friendly (Alphacide) Link Unit is in play, draw 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-101.png",
+  baseArtist: "NAKANORYO",
+  traits: ["(Alphacide)"],
+  faq: []
+};
+
+const GD06_102_CARD: GundamCard = {
+  id: "gd06-102",
+  name: "A Miracle",
+  set: "GD06",
+  cardNumber: "GD06-102",
+  type: ["Command"],
+  color: "Blue",
+  rarity: "U",
+  cost: 3,
+  level: 3,
+  ability: "【Burst】 Add this card to your hand.\n【Action】 If it is your opponent's turn and no enemy Units have attacked this turn, draw 2.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-102.png",
+  baseArtist: "sakusaku sakurai",
+  traits: [],
+  faq: []
+};
+
+const GD06_103_CARD: GundamCard = {
+  id: "gd06-103",
+  name: "Restore the Front Line",
+  set: "GD06",
+  cardNumber: "GD06-103",
+  type: ["Command", "Pilot"],
+  color: "Blue",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: "+2",
+  hp: "+0",
+  ability: "【Main】 Choose 1 rested enemy Unit. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-103.png",
+  baseArtist: "BANILIZO",
+  traits: ["(Earth Federation)", "(Albion Squad)"],
+  link: "South Burning",
+  faq: []
+};
+
+const GD06_104_CARD: GundamCard = {
+  id: "gd06-104",
+  name: "Steady Support",
+  set: "GD06",
+  cardNumber: "GD06-104",
+  type: ["Command", "Pilot"],
+  color: "Blue",
+  rarity: "C",
+  cost: 1,
+  level: 2,
+  ap: "+1",
+  hp: "+0",
+  ability: "【Main / Action】 Choose 1 enemy Unit with 3 or less HP. Return it to its owner's hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-104.png",
+  baseArtist: "BANILIZO",
+  traits: ["(Earth Federation)", "(Albion Squad)"],
+  link: "Chuck Keith",
+  faq: []
+};
+
+const GD06_105_CARD: GundamCard = {
+  id: "gd06-105",
+  name: "Grace Under Pressure",
+  set: "GD06",
+  cardNumber: "GD06-105",
+  type: ["Command"],
+  color: "Green",
+  rarity: "R",
+  cost: 3,
+  level: 5,
+  ability: "【Main】 Deploy 1 [Gundam Calibarn]((Academy)・AP5・HP3・【High-Maneuver】) Unit token or 1 [Gundam Aerial Rebuild]((Quiet Zero)・AP3・HP5・【Breach 3】) Unit token.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-105.png",
+  baseArtist: "Ryuta Yanagi",
+  traits: [],
+  faq: []
+};
+
+const GD06_106_CARD: GundamCard = {
+  id: "gd06-106",
+  name: "Presence Detected",
+  set: "GD06",
+  cardNumber: "GD06-106",
+  type: ["Command"],
+  color: "Green",
+  rarity: "U",
+  cost: 1,
+  level: 4,
+  ability: "【Action】 During this battle, your shield area cards can't receive damage from enemy Units with 6 or less AP.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-106.png",
+  baseArtist: "Sunohara",
+  traits: [],
+  faq: []
+};
+
+const GD06_107_CARD: GundamCard = {
+  id: "gd06-107",
+  name: "Wheel Spoke Formation",
+  set: "GD06",
+  cardNumber: "GD06-107",
+  type: ["Command", "Pilot"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: "+1",
+  hp: "+0",
+  ability: "【Main】 If you have a (Ghingnham Fleet) Unit in play, choose 1 enemy Unit with 【Blocker】 and 3 or less AP. Destroy it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-107.png",
+  baseArtist: "Kakeshinokaketo",
+  traits: ["(Ghingnham Fleet)", "(Moonrace)"],
+  link: "Sweatson Stero",
+  faq: []
+};
+
+const GD06_108_CARD: GundamCard = {
+  id: "gd06-108",
+  name: "On Edge",
+  set: "GD06",
+  cardNumber: "GD06-108",
+  type: ["Command", "Pilot"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ap: "+1",
+  hp: "+1",
+  ability: "【Main】 All friendly (Neo Zeon) Units that are Lv.4 or lower get AP+2 during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-108.png",
+  baseArtist: "Aneseki Dynamic",
+  traits: ["(Neo Zeon)"],
+  link: "Chara Soon",
+  faq: []
+};
+
+const GD06_109_CARD: GundamCard = {
+  id: "gd06-109",
+  name: "God of War Ghingnham",
+  set: "GD06",
+  cardNumber: "GD06-109",
+  type: ["Command"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ability: "【Main】 Deploy 1 rested [Turn X (Arms)]((Ghingnham Fleet)(Long-Range Weapon)・AP2・HP3) Unit token or 1 rested [Turn X (Legs)]((Ghingnham Fleet)(Long-Range Weapon)・AP3・HP2) Unit token.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-109.png",
+  baseArtist: "sakusaku sakurai",
+  traits: ["(Ghingnham Fleet)"],
+  faq: []
+};
+
+const GD06_110_CARD: GundamCard = {
+  id: "gd06-110",
+  name: "Familial Love",
+  set: "GD06",
+  cardNumber: "GD06-110",
+  type: ["Command"],
+  color: "Red",
+  rarity: "R",
+  cost: 1,
+  level: 2,
+  ability: "【Burst】 Add this card to your hand.\n【Action】 Choose 1 of your Units. It gets AP+2 during this battle. Then, if you have 3 or less cards in your hand, draw 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-110.png",
+  baseArtist: "nekonokedama",
+  traits: [],
+  faq: []
+};
+
+const GD06_111_CARD: GundamCard = {
+  id: "gd06-111",
+  name: "Steely Loyalty",
+  set: "GD06",
+  cardNumber: "GD06-111",
+  type: ["Command", "Pilot"],
+  color: "Red",
+  rarity: "R",
+  cost: 1,
+  level: 5,
+  ap: "+2",
+  hp: "+1",
+  ability: "【Action】 If there are 4 or more (Gjallarhorn) cards in your trash, choose 1 enemy Unit. Deal 2 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-111.png",
+  baseArtist: "Ishibashi Yosuke",
+  traits: ["(Gjallarhorn)"],
+  link: "Julieta Juris",
+  faq: []
+};
+
+const GD06_112_CARD: GundamCard = {
+  id: "gd06-112",
+  name: "Rivalry with Roux",
+  set: "GD06",
+  cardNumber: "GD06-112",
+  type: ["Command", "Pilot"],
+  color: "Red",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: "+1",
+  hp: "+1",
+  ability: "【Action】 Choose 1 enemy Unit battling a friendly (AEUG) Unit. Deal 2 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-112.png",
+  baseArtist: "Kamome Shibuki",
+  traits: ["(AEUG)", "(Gundam Team)", "(Newtype)"],
+  link: "Elle Vianno",
+  faq: []
+};
+
+const GD06_113_CARD: GundamCard = {
+  id: "gd06-113",
+  name: "Unsanctioned Ordnance",
+  set: "GD06",
+  cardNumber: "GD06-113",
+  type: ["Command"],
+  color: "Red",
+  rarity: "C",
+  cost: 4,
+  level: 5,
+  ability: "【Burst】 Choose 1 enemy Unit. Deal 2 damage to it.\n【Main / Action】 Choose 1 damaged enemy Unit. Deal 5 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-113.png",
+  baseArtist: "kuroiwa cookie",
+  traits: [],
+  faq: []
+};
+
+const GD06_114_CARD: GundamCard = {
+  id: "gd06-114",
+  name: "Alphaciders",
+  set: "GD06",
+  cardNumber: "GD06-114",
+  type: ["Command"],
+  color: "Purple",
+  rarity: "R",
+  cost: 1,
+  level: 4,
+  ability: "【Action】 When playing this card, choose 1 of the following effects and activate it:\n■ Choose 1 friendly (Alphacide) Unit. During this battle, when it receives enemy battle damage, reduce it by 3.\n■ Choose 1 enemy Unit that is Lv.2 or lower. Destroy it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-114.png",
+  baseArtist: "Sunohara",
+  traits: ["(Alphacide)"],
+  faq: []
+};
+
+const GD06_115_CARD: GundamCard = {
+  id: "gd06-115",
+  name: "Teaching New Techniques",
+  set: "GD06",
+  cardNumber: "GD06-115",
+  type: ["Command"],
+  color: "Purple",
+  rarity: "U",
+  cost: 3,
+  level: 4,
+  ability: "【Main】 Choose 1 enemy Unit that is Lv.4 or lower. Destroy it. Then, deploy 1 [Sazabi]((Neo Zeon)・AP4・HP4) Unit token. The destroyed Unit's owner deploys 1 [Nu Gundam]((Londo Bell)・AP3・HP3・【First Strike】) Unit token.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-115.png",
+  baseArtist: "phima",
+  traits: [],
+  faq: []
+};
+
+const GD06_116_CARD: GundamCard = {
+  id: "gd06-116",
+  name: "Afterglow of Zeon",
+  set: "GD06",
+  cardNumber: "GD06-116",
+  type: ["Command"],
+  color: "Purple",
+  rarity: "C",
+  cost: 5,
+  level: 5,
+  ability: "【Burst】 Add this card to your hand.\n【Main】 Choose 1 purple (Zeon) Unit card that is Lv.5 or lower from your trash. Deploy it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-116.png",
+  baseArtist: "kankurou",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  faq: []
+};
+
+const GD06_117_CARD: GundamCard = {
+  id: "gd06-117",
+  name: "Veterans Joining Forces",
+  set: "GD06",
+  cardNumber: "GD06-117",
+  type: ["Command", "Pilot"],
+  color: "Purple",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: "+1",
+  hp: "+1",
+  ability: "【Action】 Choose 1 rested friendly (Delaz Fleet) Unit. Change a battling enemy Unit's attack target to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-117.png",
+  baseArtist: "nekonokedama",
+  traits: ["(Zeon)", "(Delaz Fleet)"],
+  link: "Karius",
+  faq: []
+};
+
+const GD06_118_CARD: GundamCard = {
+  id: "gd06-118",
+  name: "Infinite Variations",
+  set: "GD06",
+  cardNumber: "GD06-118",
+  type: ["Command"],
+  color: "White",
+  rarity: "R",
+  cost: 2,
+  level: 5,
+  ability: "【Main / Action】 Choose a number of enemy Units up to the number of white Units with 【Blocker】 you have in play. They get AP-2 during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-118.png",
+  baseArtist: "Kamome Shibuki",
+  traits: [],
+  faq: []
+};
+
+const GD06_119_CARD: GundamCard = {
+  id: "gd06-119",
+  name: "Sturm und Drang",
+  set: "GD06",
+  cardNumber: "GD06-119",
+  type: ["Command", "Pilot"],
+  color: "White",
+  rarity: "U",
+  cost: 1,
+  level: 5,
+  ap: "+1",
+  hp: "+2",
+  ability: "【Action】 Choose 1 enemy Unit with 3 or less HP. Rest it. After activating this card's 【Action】, you may pair this card from your trash with one of your (MF) Units.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-119.png",
+  baseArtist: "KISUKE",
+  traits: ["(Gundam Fighter)", "(Special Move)", "(DG Cells)"],
+  link: "Schwarz Bruder",
+  faq: []
+};
+
+const GD06_120_CARD: GundamCard = {
+  id: "gd06-120",
+  name: "Hoping for Peace",
+  set: "GD06",
+  cardNumber: "GD06-120",
+  type: ["Command"],
+  color: "White",
+  rarity: "C",
+  cost: 1,
+  level: 4,
+  ability: "【Burst】 Choose 1 enemy Unit with 5 or less HP. Rest it.\n【Main / Action】 Choose 1 enemy Unit. Rest it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-120.png",
+  baseArtist: "BANILIZO",
+  traits: [],
+  faq: []
+};
+
+const GD06_121_CARD: GundamCard = {
+  id: "gd06-121",
+  name: "Crybaby Poe",
+  set: "GD06",
+  cardNumber: "GD06-121",
+  type: ["Command", "Pilot"],
+  color: "White",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: "+1",
+  hp: "+0",
+  ability: "【Action】 Choose 1 enemy Unit. It gets AP-2 during this battle. If it has 【High-Maneuver】, AP-6 instead.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-121.png",
+  baseArtist: "yuki takino",
+  traits: ["(Dianna Counter)", "(Moonrace)"],
+  link: "Poe Aijee",
+  faq: []
+};
+
+const GD06_122_CARD: GundamCard = {
+  id: "gd06-122",
+  name: "Albion",
+  set: "GD06",
+  cardNumber: "GD06-122",
+  type: ["Base"],
+  color: "Blue",
+  rarity: "U",
+  cost: 1,
+  level: 2,
+  ap: 0,
+  hp: 4,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand. Then, choose 1 enemy Unit that is Lv.2 or lower. Return it to its owner's hand.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-122.png",
+  baseArtist: "RX@Y admiral",
+  traits: ["(Earth Federation)", "(Albion Squad)", "(Warship)"],
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_123_CARD: GundamCard = {
+  id: "gd06-123",
+  name: "Endra",
+  set: "GD06",
+  cardNumber: "GD06-123",
+  type: ["Base"],
+  color: "Green",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 0,
+  hp: 5,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand. Then, if it is your turn and you have a (Neo Zeon) Unit paired with a Pilot that is Lv.3 or lower in play, choose 1 enemy Unit with 【Blocker】 and 3 or less AP. Destroy it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-123.png",
+  baseArtist: "HI-GO!",
+  traits: ["(Neo Zeon)", "(Warship)"],
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_124_CARD: GundamCard = {
+  id: "gd06-124",
+  name: "Aspite",
+  set: "GD06",
+  cardNumber: "GD06-124",
+  type: ["Base"],
+  color: "Green",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: 0,
+  hp: 5,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand.\n【Activate・Main】 Rest this Base: If you have 3 or more (Ghingnham Fleet)/(Long-Range Weapon) Units in play, all your (Ghingnham Fleet) Units get AP+1 during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-124.png",
+  baseArtist: "Kazuyuki Hayashi",
+  traits: ["(Ghingnham Fleet)", "(Warship)"],
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_125_CARD: GundamCard = {
+  id: "gd06-125",
+  name: "Argama",
+  set: "GD06",
+  cardNumber: "GD06-125",
+  type: ["Base"],
+  color: "Red",
+  rarity: "U",
+  cost: 1,
+  level: 5,
+  ap: 0,
+  hp: 6,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand.\n【Once per Turn】 When this Base receives battle damage while you have a rested (AEUG) Unit in play, choose 1 enemy Unit. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-125.png",
+  baseArtist: "Kazuyuki Hayashi",
+  traits: ["(AEUG)", "(Warship)"],
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_126_CARD: GundamCard = {
+  id: "gd06-126",
+  name: "Skipjack-class Warship",
+  set: "GD06",
+  cardNumber: "GD06-126",
+  type: ["Base"],
+  color: "Red",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: 0,
+  hp: 5,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand. Then, if a friendly (Gjallarhorn) Unit is in play, choose 1 damaged enemy Unit. Deal 1 damage to it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-126.png",
+  baseArtist: "Shima(178cm)",
+  traits: ["(Gjallarhorn)", "(Warship)"],
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_127_CARD: GundamCard = {
+  id: "gd06-127",
+  name: "Yomagn'tho",
+  set: "GD06",
+  cardNumber: "GD06-127",
+  type: ["Base"],
+  color: "Purple",
+  rarity: "U",
+  cost: 2,
+  level: 4,
+  ap: 0,
+  hp: 5,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand. Then, if it is your turn, place the top 2 cards of your deck into your trash. If you place an (Alphacide) card with this effect, choose 1 enemy Unit with 2 or less AP. Destroy it.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-127.png",
+  baseArtist: "Robographer",
+  traits: ["(Zeon)", "(Stronghold)"],
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_128_CARD: GundamCard = {
+  id: "gd06-128",
+  name: "Gwaden",
+  set: "GD06",
+  cardNumber: "GD06-128",
+  type: ["Base"],
+  color: "Purple",
+  rarity: "C",
+  cost: 1,
+  level: 3,
+  ap: 0,
+  hp: 5,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand.\n【Activate・Main】 Rest this Base: Choose 1 friendly (Zeon) Unit. During this turn, when it receives enemy battle damage, reduce it by 1.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-128.png",
+  baseArtist: "RX@Y admiral",
+  traits: ["(Zeon)", "(Delaz Fleet)", "(Warship)"],
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_129_CARD: GundamCard = {
+  id: "gd06-129",
+  name: "5th Luna",
+  set: "GD06",
+  cardNumber: "GD06-129",
+  type: ["Base"],
+  color: "Purple",
+  rarity: "C",
+  cost: 3,
+  level: 4,
+  ap: 0,
+  hp: 2,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand.\n【Destroyed】 If you have any Shields in play, deploy 1 [Axis]((Neo Zeon)・AP0・HP5) Base token.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-129.png",
+  baseArtist: "Hayaken-sarena",
+  traits: ["(Stronghold)"],
+  zones: ["Space"],
+  faq: []
+};
+
+const GD06_130_CARD: GundamCard = {
+  id: "gd06-130",
+  name: "Soleil",
+  set: "GD06",
+  cardNumber: "GD06-130",
+  type: ["Base"],
+  color: "White",
+  rarity: "U",
+  cost: 1,
+  level: 5,
+  ap: 0,
+  hp: 6,
+  ability: "【Burst】 Deploy this card.\n【Deploy】 Add 1 of your Shields to your hand. Then, choose 1 enemy Unit with no paired Pilot. Reduce its AP by an amount equal to the number of friendly (Dianna Counter)/(Militia) Units during this turn.",
+  imageUrl: "https://images.gundam-tcg.com/cards/GD06-130.png",
+  baseArtist: "Kazuyuki Hayashi",
+  traits: ["(Dianna Counter)", "(Warship)"],
+  zones: ["Space", "Earth"],
+  faq: []
+};
+
+const GD06_CARDS: GundamCard[] = [
+  GD06_001_CARD,
+  GD06_002_CARD,
+  GD06_003_CARD,
+  GD06_004_CARD,
+  GD06_005_CARD,
+  GD06_006_CARD,
+  GD06_007_CARD,
+  GD06_008_CARD,
+  GD06_009_CARD,
+  GD06_010_CARD,
+  GD06_011_CARD,
+  GD06_012_CARD,
+  GD06_013_CARD,
+  GD06_014_CARD,
+  GD06_015_CARD,
+  GD06_016_CARD,
+  GD06_017_CARD,
+  GD06_018_CARD,
+  GD06_019_CARD,
+  GD06_020_CARD,
+  GD06_021_CARD,
+  GD06_022_CARD,
+  GD06_023_CARD,
+  GD06_024_CARD,
+  GD06_025_CARD,
+  GD06_026_CARD,
+  GD06_027_CARD,
+  GD06_028_CARD,
+  GD06_029_CARD,
+  GD06_030_CARD,
+  GD06_031_CARD,
+  GD06_032_CARD,
+  GD06_033_CARD,
+  GD06_034_CARD,
+  GD06_035_CARD,
+  GD06_036_CARD,
+  GD06_037_CARD,
+  GD06_038_CARD,
+  GD06_039_CARD,
+  GD06_040_CARD,
+  GD06_041_CARD,
+  GD06_042_CARD,
+  GD06_043_CARD,
+  GD06_044_CARD,
+  GD06_045_CARD,
+  GD06_046_CARD,
+  GD06_047_CARD,
+  GD06_048_CARD,
+  GD06_049_CARD,
+  GD06_050_CARD,
+  GD06_051_CARD,
+  GD06_052_CARD,
+  GD06_053_CARD,
+  GD06_054_CARD,
+  GD06_055_CARD,
+  GD06_056_CARD,
+  GD06_057_CARD,
+  GD06_058_CARD,
+  GD06_059_CARD,
+  GD06_060_CARD,
+  GD06_061_CARD,
+  GD06_062_CARD,
+  GD06_063_CARD,
+  GD06_064_CARD,
+  GD06_065_CARD,
+  GD06_066_CARD,
+  GD06_067_CARD,
+  GD06_068_CARD,
+  GD06_069_CARD,
+  GD06_070_CARD,
+  GD06_071_CARD,
+  GD06_072_CARD,
+  GD06_073_CARD,
+  GD06_074_CARD,
+  GD06_075_CARD,
+  GD06_076_CARD,
+  GD06_077_CARD,
+  GD06_078_CARD,
+  GD06_079_CARD,
+  GD06_080_CARD,
+  GD06_081_CARD,
+  GD06_082_CARD,
+  GD06_083_CARD,
+  GD06_084_CARD,
+  GD06_085_CARD,
+  GD06_086_CARD,
+  GD06_087_CARD,
+  GD06_088_CARD,
+  GD06_089_CARD,
+  GD06_090_CARD,
+  GD06_091_CARD,
+  GD06_092_CARD,
+  GD06_093_CARD,
+  GD06_094_CARD,
+  GD06_095_CARD,
+  GD06_096_CARD,
+  GD06_097_CARD,
+  GD06_098_CARD,
+  GD06_099_CARD,
+  GD06_100_CARD,
+  GD06_101_CARD,
+  GD06_102_CARD,
+  GD06_103_CARD,
+  GD06_104_CARD,
+  GD06_105_CARD,
+  GD06_106_CARD,
+  GD06_107_CARD,
+  GD06_108_CARD,
+  GD06_109_CARD,
+  GD06_110_CARD,
+  GD06_111_CARD,
+  GD06_112_CARD,
+  GD06_113_CARD,
+  GD06_114_CARD,
+  GD06_115_CARD,
+  GD06_116_CARD,
+  GD06_117_CARD,
+  GD06_118_CARD,
+  GD06_119_CARD,
+  GD06_120_CARD,
+  GD06_121_CARD,
+  GD06_122_CARD,
+  GD06_123_CARD,
+  GD06_124_CARD,
+  GD06_125_CARD,
+  GD06_126_CARD,
+  GD06_127_CARD,
+  GD06_128_CARD,
+  GD06_129_CARD,
+  GD06_130_CARD
+];
+
 // --- Components ---
 
 const CardBadge = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -1027,7 +3782,23 @@ function AppContent() {
 
   // Use Firestore cards directly
   const combinedCards = useMemo(() => {
-    const list = [...allCards];
+    const list = allCards.filter(c => {
+      if (c.set === 'GD06' || c.cardNumber?.startsWith('GD06-')) {
+        const canonical = GD06_CARDS.find(card => card.id === c.id || card.cardNumber === c.cardNumber);
+        if (canonical && c.name !== canonical.name) return false;
+      }
+      return true;
+    });
+    GD06_CARDS.forEach(card => {
+      const idx = list.findIndex(c => c.id === card.id);
+      if (idx !== -1) {
+        if (list[idx].name !== card.name || (Boolean(card.zones && card.zones.length > 0) && (!list[idx].zones || list[idx].zones.length === 0))) {
+          list[idx] = card;
+        }
+      } else {
+        list.push(card);
+      }
+    });
     ST14_CARDS.forEach(card => {
       if (!list.some(c => c.id === card.id)) {
         list.push(card);
@@ -2339,6 +5110,23 @@ function AppContent() {
         setDoc(cardRef, card)
           .then(() => {
             console.log(`Auto-import of ${card.id} successful!`);
+          })
+          .catch(err => {
+            console.error(`Auto-import ${card.id} failed:`, err);
+          });
+      }
+    });
+
+    // Seeding/updates for all official GD06 cards (GD06-001 through GD06-011)
+    GD06_CARDS.forEach(card => {
+      const dbCard = allCards.find(c => c.id === card.id);
+      const needsUpdate = !dbCard || dbCard.name !== card.name || (Boolean(card.zones && card.zones.length > 0) && (!dbCard.zones || dbCard.zones.length === 0));
+      if (needsUpdate) {
+        console.log(`Seeding or updating GD06 card: ${card.id} (${card.name})...`);
+        const cardRef = doc(db, 'cards', card.id);
+        setDoc(cardRef, card)
+          .then(() => {
+            console.log(`Auto-import of ${card.id} (${card.name}) successful!`);
           })
           .catch(err => {
             console.error(`Auto-import ${card.id} failed:`, err);
@@ -4424,7 +7212,7 @@ function AppContent() {
         isDeckBuilderMode && "landscape:h-screen landscape:flex landscape:flex-col"
       )}>
       {/* Header */}
-      {(currentTab === 'cards' || currentTab === 'coverage' || (isDeckBuilderMode && currentTab === 'decks')) && (
+      {(currentTab === 'cards' || (isDeckBuilderMode && currentTab === 'decks')) && (
         <header className={cn(
           "sticky top-0 z-30 bg-white/95 border-b border-stone-200 shadow-xs",
           isDeckBuilderMode && "landscape:w-[35%]"
@@ -4780,12 +7568,12 @@ function AppContent() {
         "max-w-md landscape:max-w-none lg:max-w-none mx-auto px-4 landscape:px-20 lg:px-56 xl:px-[18%] 2xl:px-[28%] pt-4 pb-32 min-h-screen", 
         isDeckBuilderMode 
           ? (deckBuilderView === 'list' ? "block" : "hidden landscape:block")
-          : (currentTab !== 'cards' && currentTab !== 'coverage' ? "hidden" : "block"),
+          : (currentTab !== 'cards' ? "hidden" : "block"),
         isDeckBuilderMode && "landscape:w-[35%] landscape:ml-0 landscape:max-w-none landscape:px-4 landscape:pb-[40px] builder-mode landscape:flex-1 landscape:flex landscape:flex-col landscape:h-full landscape:overflow-hidden landscape:min-h-0",
         isPreviewMode && "hidden"
       )}>
         {/* Filters */}
-        {(currentTab === 'cards' || currentTab === 'coverage' || (isDeckBuilderMode && currentTab === 'decks')) && (
+        {(currentTab === 'cards' || (isDeckBuilderMode && currentTab === 'decks')) && (
           <>
             <div className={cn(isDeckBuilderMode && "landscape:shrink-0")}>
               {(activeFilterList.length > 0 || debouncedSearchQuery) && (
@@ -7117,10 +9905,8 @@ function AppContent() {
       <div
         key="coverage"
         className={cn(
-          "fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col overflow-y-auto transition-opacity duration-200 ease-out",
-          currentTab === 'coverage'
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none invisible"
+          "fixed inset-0 z-[60] bg-[#F5F5F0] flex flex-col",
+          currentTab === 'coverage' ? "flex" : "hidden"
         )}
       >
         <EventCoverage 
