@@ -3380,7 +3380,7 @@ const GridItem = React.memo(({
     <div
       onClick={() => onSelect(card)}
       className={cn(
-        "bg-white rounded-[5px] overflow-hidden shadow-xs border cursor-pointer active:scale-[0.98] transition-transform duration-100",
+        "bg-white rounded-[5px] overflow-hidden shadow-xs border cursor-pointer active:scale-[0.98] transition-transform duration-100 select-none [-webkit-touch-callout:none]",
         card.variantType === "LR++" || (card.isVariant && card.variantType?.includes("LR++"))
           ? "border-red-400/50 bg-gradient-to-b from-white to-red-50/10"
           : card.variantType === "LR+" || (card.isVariant && card.variantType?.includes("LR+"))
@@ -7569,7 +7569,7 @@ function AppContent() {
         isDeckBuilderMode 
           ? (deckBuilderView === 'list' ? "block" : "hidden landscape:block")
           : (currentTab !== 'cards' ? "hidden" : "block"),
-        isDeckBuilderMode && "landscape:w-[35%] landscape:ml-0 landscape:max-w-none landscape:px-4 landscape:pb-[40px] builder-mode landscape:flex-1 landscape:flex landscape:flex-col landscape:h-full landscape:overflow-hidden landscape:min-h-0",
+        isDeckBuilderMode && "landscape:w-[35%] landscape:ml-0 landscape:max-w-none landscape:px-4 landscape:pb-[40px] builder-mode landscape:flex-1 landscape:flex landscape:flex-col landscape:h-full landscape:overflow-hidden landscape:min-h-0 select-none [-webkit-touch-callout:none]",
         isPreviewMode && "hidden"
       )}>
         {/* Filters */}
@@ -8296,7 +8296,7 @@ function AppContent() {
 
                 <div className="flex items-center gap-2">
                   {isDeckBuilderMode && activeDeckId ? (
-                    <div className="flex items-center gap-1 bg-stone-100 rounded-full p-1 border border-stone-200">
+                    <div className="flex items-center gap-1 bg-stone-100 rounded-full p-1 border border-stone-200 select-none [-webkit-touch-callout:none]">
                       <HoldMinusButton 
                         onSingleClick={() => {
                           if (selectedCount === 1) {
@@ -9225,7 +9225,7 @@ function AppContent() {
                     return (
                       <div 
                         key={deck.id}
-                        className="grid grid-cols-[1fr_auto] items-center gap-4 p-4 bg-stone-50 border border-stone-200 rounded-2xl transition-colors overflow-hidden"
+                        className="grid grid-cols-[1fr_auto] items-center gap-4 p-4 bg-stone-50 border border-stone-200 rounded-2xl transition-colors overflow-hidden select-none [-webkit-touch-callout:none]"
                       >
                         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
                           <div className="min-w-0 flex-1">

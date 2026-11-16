@@ -177,7 +177,7 @@ const CardGridItem = React.memo(({
 
   return (
     <motion.div 
-      className="bg-white rounded-xl overflow-hidden shadow-sm border border-stone-200 flex flex-col relative"
+      className="bg-white rounded-xl overflow-hidden shadow-sm border border-stone-200 flex flex-col relative select-none [-webkit-touch-callout:none]"
     >
       <div className="relative aspect-[2/3] bg-stone-100 flex items-center justify-center cursor-pointer" onClick={() => onPreviewCard(item.card)}>
         <ProgressiveImage 
@@ -755,7 +755,7 @@ export const DeckEditor = React.forwardRef<DeckEditorHandle, DeckEditorProps>(({
   return (
     <div 
       className={cn(
-        "fixed inset-0 z-[55] bg-[#F5F5F0] flex flex-col",
+        "fixed inset-0 z-[55] bg-[#F5F5F0] flex flex-col select-none [-webkit-touch-callout:none]",
         isDeckBuilderMode && !isPreviewMode && "landscape:left-[35%] landscape:w-[65%] landscape:bottom-[64px] landscape:border-l landscape:border-stone-200 landscape:shadow-[-8px_0_24px_rgba(0,0,0,0.05)]",
         !visible && !isDeckBuilderMode && "hidden",
         !visible && isDeckBuilderMode && "hidden landscape:flex"

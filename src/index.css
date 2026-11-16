@@ -12,6 +12,12 @@
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
   }
+
+  input, textarea {
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-touch-callout: default;
+  }
   
   /* Hide Scrollbar Globally */
   * {
