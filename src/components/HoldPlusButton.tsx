@@ -190,11 +190,13 @@ export const HoldActionButton: React.FC<HoldActionButtonProps> = ({
 
       if (disabled) return;
 
-      if (wasMenuOpen && finalHit) {
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          try { navigator.vibrate(25); } catch (_) {}
+      if (wasMenuOpen) {
+        if (finalHit) {
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(25); } catch (_) {}
+          }
+          triggerHold();
         }
-        triggerHold();
       } else {
         onSingleClick();
       }
